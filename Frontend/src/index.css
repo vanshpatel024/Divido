@@ -152,3 +152,45 @@
 .card-hover-border:hover::after {
   opacity: 1;
 }
+
+/* Right-to-Left Shimmer Animation */
+@keyframes shimmer-rtl {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #EFECE6 15%, #F5F2EC 50%, #EFECE6 80%);
+  background-size: 200% 100%;
+  animation: shimmer-rtl 1.5s infinite linear;
+}
+
+/* Global Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #EFECE6;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #dcd8d0;
+}
+
+/* Firefox scrollbar styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #EFECE6 transparent;
+}
+

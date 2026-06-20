@@ -22,4 +22,11 @@ export interface Trip {
   categories: Category[];
   start_date?: string;
   end_date?: string;
+  debts?: {
+    fromId: string;
+    fromName: string;
+    toId: string;
+    toName: string;
+    amount: number;
+  }[];
 }

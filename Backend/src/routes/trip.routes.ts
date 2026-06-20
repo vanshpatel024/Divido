@@ -14,5 +14,9 @@ router.get('/', TripController.getUserTrips);
 router.get('/:id', TripController.getSingleTrip);
 router.post('/', TripController.createTrip);
 router.put('/:id/end', TripController.endTrip);
+router.delete('/:id', TripController.deleteTrip);
+
+router.get('/:id/stops', TripController.getStops);
+router.post('/:id/stops', TripController.createStop);
 
 export default router;
