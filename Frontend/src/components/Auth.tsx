@@ -171,18 +171,6 @@ export default function Auth() {
       <div className="w-full md:w-[60%] h-full flex flex-col items-center justify-center p-6 md:p-12 overflow-y-auto">
         <div className="w-full max-w-sm flex flex-col items-center">
           
-          {/* Mobile Panda placeholder (only visible on screens < md) */}
-          <div className="flex md:hidden flex-col items-center mb-5">
-            <div className="w-[130px] h-[155px] bg-[#F5F0E8] border border-dashed border-[#D4CFC8] rounded-2xl flex flex-col items-center justify-center shadow-sm relative overflow-hidden group mb-2">
-              {pandaMascotSvg}
-              <span className="text-[9px] text-[#8B8A9B] font-semibold mt-2 tracking-wide uppercase select-none">
-                Panda mascot here
-              </span>
-            </div>
-            <p className="font-display italic text-[#8B8A9B] text-xs text-center select-none">
-              Split trips, not friendships.
-            </p>
-          </div>
 
           {/* Logo & Brand name */}
           <div className="flex items-center gap-2 mb-3 select-none">
@@ -243,7 +231,7 @@ export default function Auth() {
                       Email
                     </label>
                     <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B]">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
                         <Mail size={16} />
                       </span>
                       <input
@@ -251,7 +239,7 @@ export default function Auth() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] hover:scale-[1.01] focus:border-[#AAD9BB] focus:scale-[1.01] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
                           emailError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
                         }`}
                       />
@@ -277,7 +265,7 @@ export default function Auth() {
                       </Link>
                     </div>
                     <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B]">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
                         <Lock size={16} />
                       </span>
                       <input
@@ -285,14 +273,14 @@ export default function Auth() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] hover:scale-[1.01] focus:border-[#AAD9BB] focus:scale-[1.01] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
                           passwordError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B8A9B] hover:text-[#2B2A4C] cursor-pointer transition-colors duration-200"
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B8A9B] hover:text-[#2B2A4C] cursor-pointer transition-colors duration-200 z-10"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -333,7 +321,7 @@ export default function Auth() {
                       Full Name
                     </label>
                     <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B]">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
                         <User size={16} />
                       </span>
                       <input
@@ -341,7 +329,7 @@ export default function Auth() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Aarav Shah"
-                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] hover:scale-[1.01] focus:border-[#AAD9BB] focus:scale-[1.01] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
                           fullNameError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
                         }`}
                       />
@@ -359,7 +347,7 @@ export default function Auth() {
                       Email
                     </label>
                     <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B]">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
                         <Mail size={16} />
                       </span>
                       <input
@@ -367,7 +355,7 @@ export default function Auth() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] hover:scale-[1.01] focus:border-[#AAD9BB] focus:scale-[1.01] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
                           emailError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
                         }`}
                       />
@@ -385,7 +373,7 @@ export default function Auth() {
                       Password
                     </label>
                     <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B]">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
                         <Lock size={16} />
                       </span>
                       <input
@@ -393,14 +381,14 @@ export default function Auth() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] hover:scale-[1.01] focus:border-[#AAD9BB] focus:scale-[1.01] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
                           passwordError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B8A9B] hover:text-[#2B2A4C] cursor-pointer transition-colors duration-200"
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B8A9B] hover:text-[#2B2A4C] cursor-pointer transition-colors duration-200 z-10"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -418,7 +406,7 @@ export default function Auth() {
                       Confirm Password
                     </label>
                     <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B]">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
                         <Lock size={16} />
                       </span>
                       <input
@@ -426,14 +414,14 @@ export default function Auth() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] hover:scale-[1.01] focus:border-[#AAD9BB] focus:scale-[1.01] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
                           confirmPasswordError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B8A9B] hover:text-[#2B2A4C] cursor-pointer transition-colors duration-200"
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B8A9B] hover:text-[#2B2A4C] cursor-pointer transition-colors duration-200 z-10"
                       >
                         {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
