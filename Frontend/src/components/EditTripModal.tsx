@@ -105,7 +105,7 @@ export default function EditTripModal({ isOpen, onClose, trip, onSave }: EditTri
     if (onSave) {
       onSave(updatedData);
     }
-    showToast("Changes saved successfully! 🎉", "success");
+    showToast("Changes saved successfully", "success");
     onClose();
   };
 

@@ -15,5 +15,6 @@ router.post('/logout', AuthController.logout);
 // Protected routes
 router.get('/me', authMiddleware, AuthController.me);
 router.put('/profile', authMiddleware, AuthController.updateProfile);
+router.delete('/delete-account', authMiddleware, AuthController.deleteAccount);
 
 export default router;

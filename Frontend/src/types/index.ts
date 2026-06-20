@@ -6,7 +6,7 @@ export type Balance =
   | { kind: "settled" };
 
 export interface Participant {
-  id: string;
+  id?: string;
   name: string;
   color: string;
   avatar_url?: string;

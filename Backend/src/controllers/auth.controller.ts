@@ -81,4 +81,18 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+
+      await AuthService.deleteAccount(req.user.id);
+      res.status(200).json(createResponse(true, 'Account deleted successfully'));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

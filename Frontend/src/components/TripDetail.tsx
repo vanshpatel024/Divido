@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ChevronLeft,
   Plus,
@@ -11,8 +11,6 @@ import {
   Ticket,
   ShoppingBag,
   Landmark,
-  MoreHorizontal,
-  CheckCircle2,
   Flag
 } from "lucide-react";
 import Navbar from "./Navbar";
@@ -66,7 +64,7 @@ export default function TripDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [stops, setStops] = useState<Stop[]>([
+  const stops: Stop[] = [
     {
       id: "dinner",
       name: "Beachside Dinner",
@@ -88,7 +86,7 @@ export default function TripDetail() {
         { paidBy: "Rahul", amount: 12000, splitCount: 5, avatarColor: "#C9B7E0" },
       ],
     },
-  ]);
+  ];
 
   const fetchTrip = async () => {
     if (!token || !id) return;
@@ -139,8 +137,7 @@ export default function TripDetail() {
     }
   };
 
-  const [isAddStopOpen, setIsAddStopOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<{ stopId: string; txIndex: number } | null>(null);
+
 
   if (isLoading) {
     return (
@@ -214,7 +211,7 @@ export default function TripDetail() {
                 </button>
               )}
               <button
-                onClick={() => setIsAddStopOpen(true)}
+                onClick={() => alert("Add Stop feature is coming soon!")}
                 className="inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] px-4 py-2 text-xs font-bold text-white transition-transform duration-200 cursor-pointer shadow-xs hover:bg-[#1f1e36]"
               >
                 <Plus size={13} /> Add Stop
