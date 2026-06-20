@@ -1,71 +1,143 @@
-# Divido
-
-Divido is a backend system for managing and splitting shared expenses within a trip. It allows users to create trips, add participants, record spending events (stops), and generate final settlement calculations to determine who owes whom.
+# Trip Expense Splitter
 
 ## Overview
 
-The system is designed to simplify shared expense management by automatically calculating net balances between participants based on all recorded transactions in a trip.
+Trip Expense Splitter is a full-stack web application designed to manage shared expenses between multiple users during a Trip. It allows users to create Trips, add Participants, record financial activities at different Stops, and automatically calculate final settlements between participants.
 
-A trip consists of multiple participants and multiple stops. Each stop contains one or more transactions where participants record payments.
+The system ensures accurate tracking of shared spending and simplifies the process of determining who owes whom at the end of a Trip.
 
-## Core Entities
+---
+
+## Core Concept
+
+The application is built around three main entities:
 
 ### Trip
-A trip is a container for a shared activity such as a vacation, outing, or event. It contains participants and stops.
+A Trip represents a shared financial context created by a group of users.
 
-### Participant
-A participant is a user who is part of a trip and can make or share payments.
+Examples:
+- Mumbai Trip
+- Night Out
+- Goa Vacation
+- Weekend Outing
 
-### Stop
-A stop represents a spending event within a trip. Examples include meals, travel fares, accommodation, or any shared cost point.
+A Trip acts as the parent container for all activity.
 
-A stop can contain multiple transactions.
+---
 
-### Transaction
-A transaction represents a payment made by a participant within a stop.
+### Participants
+Participants are users who are part of a Trip. They can:
+- contribute payments
+- be included in expense splits
+- receive settlement calculations
 
-Each transaction includes:
-- paidBy (participant)
-- amount
+Each Trip has its own independent set of Participants.
 
-## How It Works
+---
 
-1. Users create a trip and add participants.
-2. Users add stops to the trip.
-3. Each stop records one or more transactions.
-4. The system calculates the total amount paid and the total share for each participant.
-5. Net balances are computed for each participant across all stops.
-6. Final settlements are generated to minimize the number of transactions required to settle all balances.
+### Stops
+A Stop represents a financial event within a Trip where money is spent.
 
-## Settlement Logic
+Examples:
+- Dinner
+- Hotel booking
+- Uber ride
+- Movie tickets
 
-- Each participant's net balance is calculated as:
-  net balance = total paid - total share
-- Participants with a positive balance are creditors.
-- Participants with a negative balance are debtors.
-- The system matches debtors with creditors to minimize the number of transactions required to settle all balances.
+A Stop may contain multiple payments made by different Participants.
 
-## Design Notes
+Each Stop supports multiple Transactions.
 
-- Stops are used only for organizing transactions and do not affect settlement logic directly.
-- All calculations are based on aggregated trip-level balances.
-- Money values should be handled using integers (e.g., paise) to avoid floating-point errors.
+---
 
-## Future Scope
+### Transactions
+A Transaction represents a payment made by a Participant within a Stop.
 
-- Support for custom and percentage-based splits
-- Partial settlements
+Example:
+Stop: Dinner
+- User A paid 300
+- User B paid 200
+
+---
+
+## System Flow
+
+1. A Trip is created.
+2. Participants are added to the Trip.
+3. Multiple Stops are created within the Trip.
+4. Each Stop records Transactions made by Participants.
+5. The system calculates total contributions and required shares per Participant.
+6. Final net balances are computed for each Participant.
+7. A settlement algorithm determines the minimum set of transactions required to settle all debts.
+
+---
+
+## Core Logic
+
+- Each Stop contributes to the overall Trip balance.
+- Stops are not treated as independent accounting units.
+- All financial data is aggregated at the Trip level.
+- Final settlement is based on net balances:
+  - Positive balance indicates money to receive
+  - Negative balance indicates money to pay
+
+---
+
+## Tech Stack
+
+### Frontend
+- React
+- TypeScript
+- Tailwind CSS
+
+### Backend
+- Node.js
+- Express.js
+- TypeScript
+
+### Database & Authentication
+- Supabase (PostgreSQL + Auth)
+
+---
+
+## Key Features
+
+- Trip-based expense tracking
+- Multiple Participants per Trip
+- Multiple Stops per Trip
+- Multiple Transactions per Stop
+- Automatic balance calculation
+- Optimized settlement generation
+- Scalable backend architecture
+
+---
+
+## Settlement Strategy
+
+The system calculates net balances for all Participants in a Trip and then applies a greedy algorithm to minimize the number of transactions required to settle all debts.
+
+Steps:
+1. Calculate total paid and total share per Participant
+2. Compute net balance
+3. Separate creditors and debtors
+4. Match and settle balances optimally
+
+---
+
+## Design Principles
+
+- Stops are used only for organizing transactions, not for settlement logic
+- All calculations are performed at Trip level
+- Money is handled using integer values (to avoid floating-point errors)
+- Each Trip is independent and self-contained
+- System is designed to support future extensions such as custom splits and partial settlements
+
+---
+
+## Future Improvements
+
 - Real-time balance updates
-- Analytics for spending patterns per trip
-- Group-level permissions and roles
-
-## Tech Stack (Suggested)
-
-- Node.js with Express for backend
-- MongoDB or PostgreSQL for database
-- JWT for authentication
-- REST API architecture
-
-## License
-
-This project is open-source and available under the MIT License.
+- Custom split methods (percentage, exact amounts)
+- Partial settlement tracking
+- Notifications for payments
+- Analytics for spending patterns per Trip
