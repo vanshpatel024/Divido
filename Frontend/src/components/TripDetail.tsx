@@ -477,8 +477,25 @@ export default function TripDetail() {
           </h2>
 
           <div className="space-y-5 w-full">
-            {stops.map((stop) => {
-              const { icon: CatIcon, label: CatLabel } = getCategoryDetails(stop.category);
+            {stops.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D4CFC8] bg-white px-6 py-12 text-center select-none shadow-xs">
+                {/* Mascot Placeholder */}
+                <div className="w-[120px] h-[140px] bg-[#F5F0E8] rounded-2xl border border-dashed border-[#D4CFC8] flex flex-col items-center justify-center p-3 mb-4">
+                  <span className="text-[9px] font-semibold uppercase tracking-wider text-[#8B8A9B] text-center leading-normal">
+                    Panda mascot here
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-[#8B8A9B] mb-2 select-none">No stops added yet.</p>
+                <button
+                  onClick={() => setIsAddStopOpen(true)}
+                  className="text-xs font-bold text-[#1A5C3A] hover:text-[#13442a] hover:underline cursor-pointer transition-colors"
+                >
+                  + Add your first stop
+                </button>
+              </div>
+            ) : (
+              stops.map((stop) => {
+                const { icon: CatIcon, label: CatLabel } = getCategoryDetails(stop.category);
 
               return (
                 <motion.article
@@ -589,7 +606,7 @@ export default function TripDetail() {
                   </div>
                 </motion.article>
               );
-            })}
+            }))}
           </div>
         </section>
 

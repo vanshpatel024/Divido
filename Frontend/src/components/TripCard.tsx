@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -7,18 +8,23 @@ import {
   Plane,
   Film,
   ArrowRight,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  ShoppingBag,
 } from "lucide-react";
 import type { Trip, Balance } from "../types";
 
 const formatInr = (n: number) =>
   "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
-const categoryMeta = {
+const categoryMeta: Record<string, { icon: any; label: string }> = {
   food: { icon: Utensils, label: "Food" },
   hotel: { icon: Hotel, label: "Hotel" },
   transport: { icon: Car, label: "Transport" },
   flight: { icon: Plane, label: "Flight" },
   entertainment: { icon: Film, label: "Entertainment" },
+  shopping: { icon: ShoppingBag, label: "Shopping" }
 };
 
 function BalancePill({ balance }: { balance: Balance }) {
@@ -72,9 +78,13 @@ function AvatarStack({ participants }: { participants: Trip["participants"] }) {
 interface TripCardProps {
   trip: Trip;
   index: number;
+  onEdit?: (trip: Trip) => void;
+  onDelete?: (trip: Trip) => void;
 }
 
-export default function TripCard({ trip, index }: TripCardProps) {
+export default function TripCard({ trip, index, onEdit, onDelete }: TripCardProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const leftBorderColor =
     trip.balance.kind === "owed"
       ? "border-l-[#AAD9BB]"
@@ -88,7 +98,7 @@ export default function TripCard({ trip, index }: TripCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
       whileHover={{ y: -4 }}
-      className={`group flex flex-col rounded-2xl border border-[#E8E2D9] bg-card p-6 shadow-md transition-shadow duration-300 hover:shadow-lg border-l-4 ${leftBorderColor}`}
+      className={`group flex flex-col rounded-2xl border border-[#E8E2D9] bg-card p-6 shadow-md transition-shadow duration-300 hover:shadow-lg border-l-4 ${leftBorderColor} relative`}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -97,7 +107,64 @@ export default function TripCard({ trip, index }: TripCardProps) {
           </h3>
           <p className="mt-1 text-sm text-foreground/55">{trip.dates}</p>
         </div>
-        <BalancePill balance={trip.balance} />
+        
+        <div className="flex items-center gap-2 select-none">
+          <BalancePill balance={trip.balance} />
+          
+          {/* Dropdown Menu Trigger */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDropdownOpen(!isDropdownOpen);
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/40 hover:bg-[#F5F0E8] hover:text-foreground cursor-pointer transition-colors"
+              aria-label="Trip Actions"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+
+            {isDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20 cursor-default"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDropdownOpen(false);
+                  }}
+                />
+                <div 
+                  className="absolute right-0 top-8 bg-white border border-[#EFECE6] rounded-xl shadow-lg py-1.5 w-32 z-30 font-sans text-xs select-none"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => {
+                      if (onEdit) onEdit(trip);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-[#F5F0E8] text-[#2B2A4C] font-semibold cursor-pointer transition-colors"
+                  >
+                    <Pencil size={12} />
+                    <span>Edit Trip</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (onDelete) onDelete(trip);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-red-50 text-red-600 font-semibold cursor-pointer transition-colors"
+                  >
+                    <Trash2 size={12} className="text-red-500" />
+                    <span>Delete Trip</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="mt-5 flex items-center justify-between">

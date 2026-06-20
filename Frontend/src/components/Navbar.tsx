@@ -35,7 +35,7 @@ export default function Navbar() {
           </span>
         </Link>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2.5 select-none">
+          <Link to="/profile" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity decoration-none">
             {user?.avatar_url ? (
               <img
                 src={user.avatar_url}
@@ -44,15 +44,15 @@ export default function Navbar() {
               />
             ) : (
               <div
-                className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-foreground shadow-sm border border-primary/20 bg-primary"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-[#2B2A4C] shadow-sm border border-primary/20 bg-primary"
               >
                 {initials}
               </div>
             )}
-            <span className="hidden text-sm font-medium text-foreground sm:inline max-w-[120px] truncate">
+            <span className="hidden text-sm font-medium text-[#2B2A4C] sm:inline max-w-[120px] truncate">
               {displayName}
             </span>
-          </div>
+          </Link>
           <button
             onClick={handleLogout}
             className="flex h-9 w-9 items-center justify-center rounded-full text-foreground/60 transition-colors hover:bg-[#EFECE6] hover:text-foreground cursor-pointer"
