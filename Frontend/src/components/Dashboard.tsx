@@ -27,7 +27,7 @@ function EmptyState() {
       <h3 className="font-display mt-6 text-lg font-semibold text-foreground">
         No trips yet. Start by creating one!
       </h3>
-      <button className="mt-6 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02] cursor-pointer">
+      <button className="mt-6 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition-transform cursor-pointer">
         <Plus size={16} /> New Trip
       </button>
     </div>
@@ -56,7 +56,7 @@ export default function Dashboard() {
               Track spending, balances, and who owes whom.
             </p>
           </div>
-          <button className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02] cursor-pointer">
+          <button className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition-transform cursor-pointer">
             <Plus size={16} /> New Trip
           </button>
         </motion.div>

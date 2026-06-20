@@ -43,6 +43,15 @@ const participantColors = ["#AAD9BB", "#C9B7E0", "#F7DCB9", "#FBC4AB", "#B7D4E0"
 const formatInr = (n: number) =>
   "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
+const getInitials = (name: string) => {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((n) => n.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join("");
+};
+
 const getCategoryDetails = (category: string) => {
   switch (category.toLowerCase()) {
     case "food":
@@ -240,7 +249,7 @@ export default function TripDetail() {
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         <Navbar />
         <main className="mx-auto max-w-5xl px-8 py-10 flex-1">
-          <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground/60 hover:text-foreground mb-6 decoration-none">
+          <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground/60 hover:text-foreground mb-6 decoration-none">
             <ChevronLeft size={16} /> Back to Dashboard
           </Link>
           <h1 className="font-display text-3xl font-bold">Trip Not Found</h1>
@@ -262,14 +271,14 @@ export default function TripDetail() {
       <div className="border-b border-[#EFECE6] bg-white/50 py-3">
         <div className="mx-auto max-w-5xl px-8 flex items-center gap-2">
           <Link
-            to="/"
+            to="/dashboard"
             className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/60 transition-colors hover:bg-[#EFECE6] hover:text-foreground cursor-pointer"
             aria-label="Back to dashboard"
           >
             <ChevronLeft size={16} />
           </Link>
           <nav className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] flex items-center gap-1.5 select-none">
-            <Link to="/" className="hover:text-foreground transition-colors decoration-none">Your Trips</Link>
+            <Link to="/dashboard" className="hover:text-foreground transition-colors decoration-none">Your Trips</Link>
             <span className="text-foreground/30">/</span>
             <span className="text-foreground">Goa Vacation</span>
           </nav>
@@ -297,13 +306,13 @@ export default function TripDetail() {
             <div className="flex items-center gap-2 select-none shrink-0">
               <button
                 onClick={() => setIsAddParticipantOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#2B2A4C] bg-white px-4 py-2 text-xs font-bold text-[#2B2A4C] transition-transform duration-200 hover:scale-[1.02] cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#2B2A4C] bg-white px-4 py-2 text-xs font-bold text-[#2B2A4C] transition-transform duration-200 cursor-pointer shadow-xs"
               >
                 <Plus size={13} /> Add Participant
               </button>
               <button
                 onClick={() => setIsAddStopOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] px-4 py-2 text-xs font-bold text-white transition-transform duration-200 hover:scale-[1.02] cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] px-4 py-2 text-xs font-bold text-white transition-transform duration-200 cursor-pointer shadow-xs"
               >
                 <Plus size={13} /> Add Stop
               </button>
@@ -319,7 +328,7 @@ export default function TripDetail() {
                 style={{ backgroundColor: p.color }}
                 title={p.name}
               >
-                {p.name[0]}
+                {getInitials(p.name)}
               </div>
             ))}
           </div>
@@ -356,7 +365,7 @@ export default function TripDetail() {
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-foreground border border-white shadow-xs"
                       style={{ backgroundColor: p.color }}
                     >
-                      {p.name[0]}
+                      {getInitials(p.name)}
                     </div>
                     <span className="text-sm font-medium text-[#2B2A4C] ml-2.5 shrink-0">
                       {p.name}
@@ -418,7 +427,7 @@ export default function TripDetail() {
                         className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-foreground border-2 border-white shadow-sm"
                         style={{ backgroundColor: s.from.color }}
                       >
-                        {s.from.name[0]}
+                        {getInitials(s.from.name)}
                       </div>
                       <span className="text-[10px] font-semibold text-foreground mt-1 text-center truncate w-full">
                         {s.from.name}
@@ -448,7 +457,7 @@ export default function TripDetail() {
                         className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-foreground border-2 border-white shadow-sm"
                         style={{ backgroundColor: s.to.color }}
                       >
-                        {s.to.name[0]}
+                        {getInitials(s.to.name)}
                       </div>
                       <span className="text-[10px] font-semibold text-foreground mt-1 text-center truncate w-full">
                         {s.to.name}
@@ -509,7 +518,7 @@ export default function TripDetail() {
                             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-foreground border border-white shadow-xs"
                             style={{ backgroundColor: tx.avatarColor }}
                           >
-                            {tx.paidBy[0]}
+                            {getInitials(tx.paidBy)}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-[#2B2A4C]">
@@ -610,8 +619,8 @@ export default function TripDetail() {
                   <input type="date" required value={stopDate} onChange={(e) => setStopDate(e.target.value)} className="w-full rounded-xl border border-[#EFECE6] bg-white py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] text-foreground cursor-pointer" />
                 </div>
                 <div className="flex items-center justify-end gap-2.5 pt-2 select-none">
-                  <button type="button" onClick={() => setIsAddStopOpen(false)} className="rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] hover:scale-[1.02] transition-transform duration-200 cursor-pointer bg-white">Cancel</button>
-                  <button type="submit" className="rounded-full bg-[#2B2A4C] text-white px-5 py-2 text-xs font-bold hover:scale-[1.02] transition-transform duration-200 cursor-pointer">Add Stop</button>
+                  <button type="button" onClick={() => setIsAddStopOpen(false)} className="rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] transition-transform duration-200 cursor-pointer bg-white">Cancel</button>
+                  <button type="submit" className="rounded-full bg-[#2B2A4C] text-white px-5 py-2 text-xs font-bold transition-transform duration-200 cursor-pointer">Add Stop</button>
                 </div>
               </form>
             </motion.div>
@@ -634,8 +643,8 @@ export default function TripDetail() {
                   <input type="email" value={newParticipantEmail} onChange={(e) => setNewParticipantEmail(e.target.value)} placeholder="rohan@example.com" className="w-full rounded-xl border border-[#EFECE6] bg-white py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] text-foreground" />
                 </div>
                 <div className="flex items-center justify-end gap-2.5 pt-2 select-none">
-                  <button type="button" onClick={() => setIsAddParticipantOpen(false)} className="rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] hover:scale-[1.02] transition-transform duration-200 cursor-pointer bg-white">Cancel</button>
-                  <button type="submit" className="rounded-full bg-[#2B2A4C] text-white px-5 py-2 text-xs font-bold hover:scale-[1.02] transition-transform duration-200 cursor-pointer">Confirm</button>
+                  <button type="button" onClick={() => setIsAddParticipantOpen(false)} className="rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] transition-transform duration-200 cursor-pointer bg-white">Cancel</button>
+                  <button type="submit" className="rounded-full bg-[#2B2A4C] text-white px-5 py-2 text-xs font-bold transition-transform duration-200 cursor-pointer">Confirm</button>
                 </div>
               </form>
             </motion.div>
@@ -683,8 +692,8 @@ export default function TripDetail() {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2.5 pt-2 select-none">
-                  <button type="button" onClick={() => setIsAddTransactionOpen(false)} className="rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] hover:scale-[1.02] transition-transform duration-200 cursor-pointer bg-white">Cancel</button>
-                  <button type="submit" className="rounded-full bg-[#2B2A4C] text-white px-5 py-2 text-xs font-bold hover:scale-[1.02] transition-transform duration-200 cursor-pointer">Add Transaction</button>
+                  <button type="button" onClick={() => setIsAddTransactionOpen(false)} className="rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] transition-transform duration-200 cursor-pointer bg-white">Cancel</button>
+                  <button type="submit" className="rounded-full bg-[#2B2A4C] text-white px-5 py-2 text-xs font-bold transition-transform duration-200 cursor-pointer">Add Transaction</button>
                 </div>
               </form>
             </motion.div>

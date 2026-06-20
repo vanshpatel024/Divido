@@ -9,23 +9,28 @@ import {
   Lock,
   User,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { login, signup } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   // Form Fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   // Error States
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [fullNameError, setFullNameError] = useState("");
+  const [firstNameError, setFirstNameError] = useState("");
+  const [lastNameError, setLastNameError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [generalError, setGeneralError] = useState("");
 
   // Password Visibility
   const [showPassword, setShowPassword] = useState(false);
@@ -36,12 +41,15 @@ export default function Auth() {
     setIsLogin(loginState);
     setEmailError("");
     setPasswordError("");
-    setFullNameError("");
+    setFirstNameError("");
+    setLastNameError("");
     setConfirmPasswordError("");
+    setGeneralError("");
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setGeneralError("");
     let hasError = false;
 
     if (!email) {
@@ -66,25 +74,34 @@ export default function Auth() {
 
     if (!hasError) {
       setIsLoading(true);
-      setTimeout(() => {
+      try {
+        await login(email, password);
+        navigate("/dashboard");
+      } catch (err: any) {
+        setGeneralError(err.message || "Invalid email or password");
+      } finally {
         setIsLoading(false);
-        navigate("/");
-      }, 1200);
+      }
     }
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setGeneralError("");
     let hasError = false;
 
-    if (!fullName) {
-      setFullNameError("Full name is required");
-      hasError = true;
-    } else if (fullName.trim().split(" ").length < 2) {
-      setFullNameError("Enter first and last name");
+    if (!firstName.trim()) {
+      setFirstNameError("First name is required");
       hasError = true;
     } else {
-      setFullNameError("");
+      setFirstNameError("");
+    }
+
+    if (!lastName.trim()) {
+      setLastNameError("Last name is required");
+      hasError = true;
+    } else {
+      setLastNameError("");
     }
 
     if (!email) {
@@ -119,10 +136,15 @@ export default function Auth() {
 
     if (!hasError) {
       setIsLoading(true);
-      setTimeout(() => {
+      try {
+        const fullName = `${firstName.trim()} ${lastName.trim()}`;
+        await signup(email, password, fullName);
+        navigate("/dashboard");
+      } catch (err: any) {
+        setGeneralError(err.message || "Registration failed");
+      } finally {
         setIsLoading(false);
-        navigate("/");
-      }, 1200);
+      }
     }
   };
 
@@ -225,6 +247,15 @@ export default function Auth() {
                   onSubmit={handleLoginSubmit}
                   className="flex flex-col gap-3 w-full"
                 >
+                  {generalError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-xl text-center"
+                    >
+                      {generalError}
+                    </motion.div>
+                  )}
                   {/* Email Field */}
                   <div className="flex flex-col">
                     <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
@@ -296,7 +327,7 @@ export default function Auth() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#3B3A5C] active:scale-[0.99] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
+                    className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-[#3B3A5C] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
                   >
                     {isLoading ? (
                       <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -315,30 +346,66 @@ export default function Auth() {
                   onSubmit={handleSignupSubmit}
                   className="flex flex-col gap-3 w-full"
                 >
-                  {/* Full Name Field */}
-                  <div className="flex flex-col">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
-                      Full Name
-                    </label>
-                    <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
-                        <User size={16} />
-                      </span>
-                      <input
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Aarav Shah"
-                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
-                          fullNameError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
-                        }`}
-                      />
+                  {generalError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-xl text-center"
+                    >
+                      {generalError}
+                    </motion.div>
+                  )}
+                  {/* First Name & Last Name Fields */}
+                  <div className="flex gap-3">
+                    <div className="flex flex-col flex-1">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
+                        First Name
+                      </label>
+                      <div className="relative mt-1">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
+                          <User size={16} />
+                        </span>
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="Aarav"
+                          className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                            firstNameError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
+                          }`}
+                        />
+                      </div>
+                      {firstNameError && (
+                        <p className="mt-1 text-xs font-medium text-destructive leading-none">
+                          {firstNameError}
+                        </p>
+                      )}
                     </div>
-                    {fullNameError && (
-                      <p className="mt-1 text-xs font-medium text-destructive leading-none">
-                        {fullNameError}
-                      </p>
-                    )}
+
+                    <div className="flex flex-col flex-1">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
+                        Last Name
+                      </label>
+                      <div className="relative mt-1">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
+                          <User size={16} />
+                        </span>
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Shah"
+                          className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                            lastNameError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
+                          }`}
+                        />
+                      </div>
+                      {lastNameError && (
+                        <p className="mt-1 text-xs font-medium text-destructive leading-none">
+                          {lastNameError}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   {/* Email Field */}
@@ -437,7 +504,7 @@ export default function Auth() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#3B3A5C] active:scale-[0.99] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
+                    className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-[#3B3A5C] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
                   >
                     {isLoading ? (
                       <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
