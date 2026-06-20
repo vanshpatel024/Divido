@@ -1,16 +1,13 @@
 # Divido API Testing Guide
 
-You can use these payloads to test your authentication and profile endpoints using tools like **Postman**, **Insomnia**, or **cURL**.
-
-Make sure your backend server is running (`npm run dev` in the `Backend` directory) and listening on `http://localhost:3000`.
+You can use these payloads to test your endpoints. Ensure your backend is running on `http://localhost:3000`.
 
 ---
 
-## 1. Sign Up a New User
-**Endpoint:** `POST http://localhost:3000/auth/signup`
-**Headers:** `Content-Type: application/json`
+## 1. Auth & Profiles
 
-**Body (JSON):**
+### 1.1 Sign Up
+**POST** `http://localhost:3000/auth/signup`
 ```json
 {
   "email": "testuser1@gmail.com",
@@ -19,44 +16,23 @@ Make sure your backend server is running (`npm run dev` in the `Backend` directo
 }
 ```
 
-*Note: The `displayName` is optional. If provided, the database trigger will use it to set up their profile and initial avatar. If omitted, it will default to their email prefix (e.g. `testuser1`).*
-
----
-
-## 2. Log In
-**Endpoint:** `POST http://localhost:3000/auth/login`
-**Headers:** `Content-Type: application/json`
-
-**Body (JSON):**
+### 1.2 Log In
+**POST** `http://localhost:3000/auth/login`
 ```json
 {
   "email": "testuser1@gmail.com",
   "password": "securepassword123"
 }
 ```
+*Note: Extract the `access_token` from the response to use as a Bearer Token for the protected endpoints below.*
 
-**Expected Response:** You will receive a success response containing your `user` details and a `session`. Look inside the `session` object for the `access_token`. You will need this token for the next step.
+### 1.3 Get User Profile (Protected)
+**GET** `http://localhost:3000/auth/me`
+*Header:* `Authorization: Bearer YOUR_ACCESS_TOKEN`
 
----
-
-## 3. Get User Profile (Protected Route)
-**Endpoint:** `GET http://localhost:3000/auth/me`
-**Headers:** 
-- `Authorization`: `Bearer YOUR_ACCESS_TOKEN_HERE`
-
-*Replace `YOUR_ACCESS_TOKEN_HERE` with the token you received from the login response.*
-
-**Expected Response:** You will receive the authentication user object along with the resolved `profile` database details (display name, avatar URL, etc.).
-
----
-
-## 4. Update Profile (Protected Route)
-**Endpoint:** `PUT http://localhost:3000/auth/profile`
-**Headers:** 
-- `Authorization`: `Bearer YOUR_ACCESS_TOKEN_HERE`
-- `Content-Type`: `application/json`
-
-**Body (JSON):**
+### 1.4 Update Profile (Protected)
+**PUT** `http://localhost:3000/auth/profile`
+*Header:* `Authorization: Bearer YOUR_ACCESS_TOKEN`
 ```json
 {
   "displayName": "Johnny Doe",
@@ -64,38 +40,27 @@ Make sure your backend server is running (`npm run dev` in the `Backend` directo
 }
 ```
 
-**Expected Response:** The updated profile database record showing your changes.
-
 ---
 
-## 5. Log Out
-**Endpoint:** `POST http://localhost:3000/auth/logout`
-**Headers:** 
-- `Authorization`: `Bearer YOUR_ACCESS_TOKEN_HERE`
+## 2. Trips
 
-**Expected Response:**
+### 2.1 Get All Trips (Protected)
+**GET** `http://localhost:3000/trips`
+*Header:* `Authorization: Bearer YOUR_ACCESS_TOKEN`
+
+### 2.2 Create Trip (Protected)
+**POST** `http://localhost:3000/trips`
+*Header:* `Authorization: Bearer YOUR_ACCESS_TOKEN`
 ```json
 {
-  "success": true,
-  "message": "User logged out successfully"
+  "name": "Goa Vacation",
+  "dates": "12 – 17 Mar 2026",
+  "categories": ["food", "hotel", "transport", "entertainment"],
+  "participants": [
+    { "name": "Aarav", "color": "#AAD9BB" },
+    { "name": "Isha", "color": "#F7DCB9" },
+    { "name": "Vikram", "color": "#C9B7E0" },
+    { "name": "Neha", "color": "#FBC4AB" }
+  ]
 }
 ```
-
----
-
-## 6. Test Validation Errors
-You can also test the Zod validation by sending invalid data to see the error responses.
-
-**Endpoint:** `POST http://localhost:3000/auth/signup`
-**Headers:** `Content-Type: application/json`
-
-**Body (JSON):**
-```json
-{
-  "email": "not-an-email",
-  "password": "123",
-  "displayName": "A"
-}
-```
-
-**Expected Response:** A `400 Bad Request` showing validation errors (invalid email, too short password, and too short display name).
