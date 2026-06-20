@@ -12,7 +12,8 @@ router.post('/signup', AuthController.signup);
 router.post('/login', AuthController.login);
 router.post('/logout', AuthController.logout);
 
-// Protected route
+// Protected routes
 router.get('/me', authMiddleware, AuthController.me);
+router.put('/profile', authMiddleware, AuthController.updateProfile);
 
 export default router;
