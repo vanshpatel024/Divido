@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthService, authSchema } from '../services/auth.service';
+import { AuthService, authSchema, profileUpdateSchema } from '../services/auth.service';
 import { createResponse } from '../utils/response';
 import { ZodError } from 'zod';
 
@@ -21,7 +21,9 @@ export class AuthController {
 
   static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const parsedData = authSchema.parse(req.body);
+      // Login doesn't need displayName validation
+      const loginSchema = authSchema.omit({ displayName: true });
+      const parsedData = loginSchema.parse(req.body);
       const data = await AuthService.login(parsedData);
       
       res.status(200).json(createResponse(true, 'User logged in successfully', data));
@@ -36,9 +38,6 @@ export class AuthController {
 
   static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // In a pure JWT stateless setup with Supabase, client simply drops the token.
-      // We can also tell Supabase to signout if we had session management.
-      // For now, we just acknowledge.
       res.status(200).json(createResponse(true, 'User logged out successfully'));
     } catch (error) {
       next(error);
@@ -47,9 +46,39 @@ export class AuthController {
 
   static async me(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // req.user is attached by authMiddleware
-      res.status(200).json(createResponse(true, 'User profile retrieved', req.user));
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+      
+      // Get detailed profile from database
+      const profile = await AuthService.getProfile(req.user.id);
+      
+      res.status(200).json(createResponse(true, 'User profile retrieved', {
+        auth: req.user,
+        profile
+      }));
     } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+
+      const parsedData = profileUpdateSchema.parse(req.body);
+      const updatedProfile = await AuthService.updateProfile(req.user.id, parsedData);
+
+      res.status(200).json(createResponse(true, 'Profile updated successfully', updatedProfile));
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json(createResponse(false, 'Validation error', undefined, (error as any).errors));
+        return;
+      }
       next(error);
     }
   }

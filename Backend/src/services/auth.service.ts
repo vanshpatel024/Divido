@@ -4,15 +4,27 @@ import { z } from 'zod';
 export const authSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
+  displayName: z.string().min(2, 'Display name must be at least 2 characters long').optional(),
+});
+
+export const profileUpdateSchema = z.object({
+  displayName: z.string().min(2, 'Display name must be at least 2 characters long').optional(),
+  avatarUrl: z.string().url('Invalid avatar URL').optional(),
 });
 
 export type AuthInput = z.infer<typeof authSchema>;
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
 export class AuthService {
   static async signup(input: AuthInput) {
     const { data, error } = await supabaseAnon.auth.signUp({
       email: input.email,
       password: input.password,
+      options: {
+        data: {
+          display_name: input.displayName, // This will be read by our DB trigger
+        },
+      },
     });
 
     if (error) {
@@ -22,7 +34,7 @@ export class AuthService {
     return data;
   }
 
-  static async login(input: AuthInput) {
+  static async login(input: Omit<AuthInput, 'displayName'>) {
     const { data, error } = await supabaseAnon.auth.signInWithPassword({
       email: input.email,
       password: input.password,
@@ -36,10 +48,40 @@ export class AuthService {
   }
 
   static async logout(token: string) {
-    // In a stateless JWT backend, logout is typically handled by the client dropping the token.
-    // Supabase tokens expire based on the project's JWT expiration settings.
-    // If we wanted to globally revoke all sessions for a user, we could use:
-    // await supabaseAdmin.auth.admin.signOut(userId, 'global')
     return true;
+  }
+
+  static async updateProfile(userId: string, input: ProfileUpdateInput) {
+    const updateData: Record<string, any> = {};
+    if (input.displayName) updateData.display_name = input.displayName;
+    if (input.avatarUrl) updateData.avatar_url = input.avatarUrl;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  }
+
+  static async getProfile(userId: string) {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
   }
 }

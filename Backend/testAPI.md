@@ -1,6 +1,6 @@
 # Divido API Testing Guide
 
-You can use these payloads to test your authentication endpoints using tools like **Postman**, **Insomnia**, or **cURL**.
+You can use these payloads to test your authentication and profile endpoints using tools like **Postman**, **Insomnia**, or **cURL**.
 
 Make sure your backend server is running (`npm run dev` in the `Backend` directory) and listening on `http://localhost:3000`.
 
@@ -13,12 +13,13 @@ Make sure your backend server is running (`npm run dev` in the `Backend` directo
 **Body (JSON):**
 ```json
 {
-  "email": "testuser1@example.com",
-  "password": "securepassword123"
+  "email": "testuser1@gmail.com",
+  "password": "securepassword123",
+  "displayName": "John Doe"
 }
 ```
 
-*Note: Supabase requires passwords to be at least 6 characters. If email confirmations are enabled in your Supabase project settings, you might need to confirm the email before logging in.*
+*Note: The `displayName` is optional. If provided, the database trigger will use it to set up their profile and initial avatar. If omitted, it will default to their email prefix (e.g. `testuser1`).*
 
 ---
 
@@ -29,7 +30,7 @@ Make sure your backend server is running (`npm run dev` in the `Backend` directo
 **Body (JSON):**
 ```json
 {
-  "email": "testuser1@example.com",
+  "email": "testuser1@gmail.com",
   "password": "securepassword123"
 }
 ```
@@ -45,11 +46,29 @@ Make sure your backend server is running (`npm run dev` in the `Backend` directo
 
 *Replace `YOUR_ACCESS_TOKEN_HERE` with the token you received from the login response.*
 
-**Expected Response:** You should receive your user profile details confirming the token is valid.
+**Expected Response:** You will receive the authentication user object along with the resolved `profile` database details (display name, avatar URL, etc.).
 
 ---
 
-## 4. Log Out
+## 4. Update Profile (Protected Route)
+**Endpoint:** `PUT http://localhost:3000/auth/profile`
+**Headers:** 
+- `Authorization`: `Bearer YOUR_ACCESS_TOKEN_HERE`
+- `Content-Type`: `application/json`
+
+**Body (JSON):**
+```json
+{
+  "displayName": "Johnny Doe",
+  "avatarUrl": "https://api.dicebear.com/7.x/initials/svg?seed=Johnny+Doe"
+}
+```
+
+**Expected Response:** The updated profile database record showing your changes.
+
+---
+
+## 5. Log Out
 **Endpoint:** `POST http://localhost:3000/auth/logout`
 **Headers:** 
 - `Authorization`: `Bearer YOUR_ACCESS_TOKEN_HERE`
@@ -64,7 +83,7 @@ Make sure your backend server is running (`npm run dev` in the `Backend` directo
 
 ---
 
-## 5. Test Validation Errors
+## 6. Test Validation Errors
 You can also test the Zod validation by sending invalid data to see the error responses.
 
 **Endpoint:** `POST http://localhost:3000/auth/signup`
@@ -74,8 +93,9 @@ You can also test the Zod validation by sending invalid data to see the error re
 ```json
 {
   "email": "not-an-email",
-  "password": "123"
+  "password": "123",
+  "displayName": "A"
 }
 ```
 
-**Expected Response:** A `400 Bad Request` showing the validation errors for both the invalid email and the short password.
+**Expected Response:** A `400 Bad Request` showing validation errors (invalid email, too short password, and too short display name).
