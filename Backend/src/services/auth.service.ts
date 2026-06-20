@@ -5,6 +5,7 @@ export const authSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
   displayName: z.string().min(2, 'Display name must be at least 2 characters long').optional(),
+  username: z.string().min(3, 'Username must be at least 3 characters').regex(/^[a-zA-Z0-9_]+$/, 'Alphanumeric and underscores only'),
 });
 
 export const profileUpdateSchema = z.object({
@@ -17,12 +18,31 @@ export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
 export class AuthService {
   static async signup(input: AuthInput) {
+    // Check if username is already taken
+    const { data: existingUser } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('username', input.username)
+      .maybeSingle();
+
+    if (existingUser) {
+      const err = new Error('Username is already taken');
+      (err as any).status = 409;
+      throw err;
+    }
+
+    const colors = ["AAD9BB", "C9B7E0", "F7DCB9", "FBC4AB", "B7D4E0", "E0CFB7"];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const displayName = input.displayName || '';
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=${randomColor}&color=000`;
+
     const { data, error } = await supabaseAnon.auth.signUp({
       email: input.email,
       password: input.password,
       options: {
         data: {
-          display_name: input.displayName, // This will be read by our DB trigger
+          display_name: displayName, // This will be read by our DB trigger
+          avatar_url: avatarUrl,
         },
       },
     });
@@ -31,10 +51,15 @@ export class AuthService {
       throw error;
     }
 
+    if (data.user && input.username) {
+      // Assuming trigger already created the profile row, we just update it
+      await supabaseAdmin.from('profiles').update({ username: input.username }).eq('id', data.user.id);
+    }
+
     return data;
   }
 
-  static async login(input: Omit<AuthInput, 'displayName'>) {
+  static async login(input: Pick<AuthInput, 'email' | 'password'>) {
     const { data, error } = await supabaseAnon.auth.signInWithPassword({
       email: input.email,
       password: input.password,

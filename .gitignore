@@ -115,4 +115,4 @@ public
 *.swo
 
 # Test/Dev files
-testAPI.md
+*test*

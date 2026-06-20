@@ -22,6 +22,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   // Error States
@@ -29,6 +30,7 @@ export default function Auth() {
   const [passwordError, setPasswordError] = useState("");
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [generalError, setGeneralError] = useState("");
 
@@ -43,6 +45,7 @@ export default function Auth() {
     setPasswordError("");
     setFirstNameError("");
     setLastNameError("");
+    setUsernameError("");
     setConfirmPasswordError("");
     setGeneralError("");
   };
@@ -104,6 +107,19 @@ export default function Auth() {
       setLastNameError("");
     }
 
+    if (!username.trim()) {
+      setUsernameError("Username is required");
+      hasError = true;
+    } else if (username.trim().length < 3) {
+      setUsernameError("At least 3 characters");
+      hasError = true;
+    } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+      setUsernameError("Letters, numbers, and underscores only");
+      hasError = true;
+    } else {
+      setUsernameError("");
+    }
+
     if (!email) {
       setEmailError("Email is required");
       hasError = true;
@@ -138,10 +154,14 @@ export default function Auth() {
       setIsLoading(true);
       try {
         const fullName = `${firstName.trim()} ${lastName.trim()}`;
-        await signup(email, password, fullName);
+        await signup(email, password, fullName, username.trim());
         navigate("/dashboard");
       } catch (err: any) {
-        setGeneralError(err.message || "Registration failed");
+        if (err.message === "Username is already taken") {
+          setUsernameError(err.message);
+        } else {
+          setGeneralError(err.message || "Registration failed");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -406,6 +426,32 @@ export default function Auth() {
                         </p>
                       )}
                     </div>
+                  </div>
+
+                  {/* Username Field */}
+                  <div className="flex flex-col">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
+                      Username
+                    </label>
+                    <div className="relative mt-1">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
+                        <User size={16} />
+                      </span>
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="cool_panda"
+                        className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                          usernameError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
+                        }`}
+                      />
+                    </div>
+                    {usernameError && (
+                      <p className="mt-1 text-xs font-medium text-destructive leading-none">
+                        {usernameError}
+                      </p>
+                    )}
                   </div>
 
                   {/* Email Field */}

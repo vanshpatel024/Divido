@@ -21,8 +21,7 @@ export class AuthController {
 
   static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Login doesn't need displayName validation
-      const loginSchema = authSchema.omit({ displayName: true });
+      const loginSchema = authSchema.pick({ email: true, password: true });
       const parsedData = loginSchema.parse(req.body);
       const data = await AuthService.login(parsedData);
       

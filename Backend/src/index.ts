@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { env } from './config/env';
 import authRoutes from './routes/auth.routes';
 import tripRoutes from './routes/trip.routes';
+import userRoutes from './routes/user.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { createResponse } from './utils/response';
 
@@ -27,6 +28,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/trips', tripRoutes);
+app.use('/users', userRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

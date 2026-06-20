@@ -5,6 +5,7 @@ export interface User {
   email?: string;
   display_name?: string;
   avatar_url?: string;
+  username?: string;
 }
 
 interface AuthContextType {
@@ -12,11 +13,25 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, displayName: string) => Promise<void>;
+  signup: (email: string, password: string, displayName: string, username: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const resolveAvatarUrl = (url: string, nameOrId: string): string => {
+  if (url && url.includes("ui-avatars.com") && url.includes("background=random")) {
+    const colors = ["AAD9BB", "C9B7E0", "F7DCB9", "FBC4AB", "B7D4E0", "E0CFB7"];
+    let hash = 0;
+    for (let i = 0; i < nameOrId.length; i++) {
+      hash = nameOrId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    const color = colors[index];
+    return url.replace("background=random", `background=${color}`);
+  }
+  return url;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -43,12 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (responseData.success) {
               const profile = responseData.data.profile || {};
               const authUser = responseData.data.auth || {};
+              const resolvedDisplayName = profile.display_name || authUser.user_metadata?.display_name || "";
+              const rawAvatarUrl = profile.avatar_url || authUser.user_metadata?.avatar_url || "";
+              const resolvedAvatarUrl = resolveAvatarUrl(rawAvatarUrl, authUser.id || profile.id || resolvedDisplayName);
+
               setToken(storedToken);
               setUser({
                 id: authUser.id || profile.id,
                 email: authUser.email || profile.email,
-                display_name: profile.display_name || authUser.user_metadata?.display_name || "",
-                avatar_url: profile.avatar_url || authUser.user_metadata?.avatar_url || "",
+                display_name: resolvedDisplayName,
+                avatar_url: resolvedAvatarUrl,
               });
             } else {
               localStorage.removeItem("divido_token");
@@ -104,23 +123,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn("Could not fetch profile, using user metadata:", e);
     }
 
+    const resolvedAvatarUrl = resolveAvatarUrl(avatar_url, authUser.id || display_name);
+
     localStorage.setItem("divido_token", tokenStr);
     setToken(tokenStr);
     setUser({
       id: authUser.id,
       email: authUser.email,
       display_name,
-      avatar_url,
+      avatar_url: resolvedAvatarUrl,
     });
   };
 
-  const signup = async (email: string, password: string, displayName: string) => {
+  const signup = async (email: string, password: string, displayName: string, username: string) => {
     const res = await fetch("http://localhost:3000/auth/signup", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password, displayName }),
+      body: JSON.stringify({ email, password, displayName, username }),
     });
 
     const responseData = await res.json();
@@ -133,12 +154,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (session && session.access_token) {
       const tokenStr = session.access_token;
+      const rawAvatarUrl = authUser.user_metadata?.avatar_url || "";
+      const resolvedAvatarUrl = resolveAvatarUrl(rawAvatarUrl, authUser.id || displayName);
+
       localStorage.setItem("divido_token", tokenStr);
       setToken(tokenStr);
       setUser({
         id: authUser.id,
         email: authUser.email,
         display_name: displayName,
+        avatar_url: resolvedAvatarUrl,
+        username,
       });
     } else {
       // If signup does not auto-login (e.g. requires verification)

@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Utensils,
   Hotel,
   Car,
   Plane,
   Film,
-  ArrowRight,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -83,7 +82,12 @@ interface TripCardProps {
 }
 
 export default function TripCard({ trip, index, onEdit, onDelete }: TripCardProps) {
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const handleCardClick = () => {
+    navigate(`/trip/${trip.id}`);
+  };
 
   const leftBorderColor =
     trip.balance.kind === "owed"
@@ -97,8 +101,8 @@ export default function TripCard({ trip, index, onEdit, onDelete }: TripCardProp
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
-      whileHover={{ y: -4 }}
-      className={`group flex flex-col rounded-2xl border border-[#E8E2D9] bg-card p-6 shadow-md transition-shadow duration-300 hover:shadow-lg border-l-4 ${leftBorderColor} relative`}
+      onClick={handleCardClick}
+      className={`group flex flex-col rounded-2xl border border-[#E8E2D9] bg-card p-6 shadow-sm border-l-4 ${leftBorderColor} relative cursor-pointer select-none card-hover-border`}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -197,16 +201,6 @@ export default function TripCard({ trip, index, onEdit, onDelete }: TripCardProp
         })}
       </div>
 
-      <Link
-        to={`/trip/${trip.id}`}
-        className="mt-6 inline-flex items-center gap-1 self-start text-sm font-medium text-foreground/70 transition-colors hover:text-foreground decoration-none"
-      >
-        View Details
-        <ArrowRight
-          size={14}
-          className="transition-transform group-hover:translate-x-0.5"
-        />
-      </Link>
     </motion.article>
   );
 }

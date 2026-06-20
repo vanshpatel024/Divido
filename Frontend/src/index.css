@@ -131,3 +131,24 @@
     color: var(--color-foreground);
   }
 }
+
+/* Custom card hover border animation */
+.card-hover-border {
+  position: relative;
+}
+
+.card-hover-border::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 2px solid #8bc79f;
+  border-radius: 1rem; /* matches rounded-2xl (16px) */
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.card-hover-border:hover::after {
+  opacity: 1;
+}

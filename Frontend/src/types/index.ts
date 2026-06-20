@@ -6,8 +6,10 @@ export type Balance =
   | { kind: "settled" };
 
 export interface Participant {
+  id: string;
   name: string;
   color: string;
+  avatar_url?: string;
 }
 
 export interface Trip {
@@ -18,4 +20,6 @@ export interface Trip {
   total: number;
   balance: Balance;
   categories: Category[];
+  start_date?: string;
+  end_date?: string;
 }
