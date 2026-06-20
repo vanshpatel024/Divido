@@ -1,6 +1,6 @@
-# TripSplit
+# Divido
 
-TripSplit is a backend system for managing and splitting shared expenses within a trip. It allows users to create trips, add participants, record spending events (stops), and generate final settlement calculations to determine who owes whom.
+Divido is a backend system for managing and splitting shared expenses within a trip. It allows users to create trips, add participants, record spending events (stops), and generate final settlement calculations to determine who owes whom.
 
 ## Overview
 
