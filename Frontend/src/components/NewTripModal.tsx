@@ -1,24 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Utensils, Building2, Car, Plane, Ticket, ShoppingBag, Search, User as UserIcon } from "lucide-react";
+import { X, Search, User as UserIcon } from "lucide-react";
 import { useToast } from "./Toast";
-import type { Category } from "../types";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 
 interface NewTripModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate?: (tripData: any) => void;
+  isSubmitting?: boolean;
 }
-
-const CATEGORIES: { value: Category; label: string; icon: React.ReactNode }[] = [
-  { value: "food", label: "Food", icon: <Utensils size={14} /> },
-  { value: "hotel", label: "Hotel", icon: <Building2 size={14} /> },
-  { value: "transport", label: "Transport", icon: <Car size={14} /> },
-  { value: "flight", label: "Flight", icon: <Plane size={14} /> },
-  { value: "entertainment", label: "Entertainment", icon: <Ticket size={14} /> },
-  { value: "shopping", label: "Shopping", icon: <ShoppingBag size={14} /> } as any
-];
 
 interface SearchedUser {
   id: string;
@@ -27,13 +18,12 @@ interface SearchedUser {
   avatar_url: string;
 }
 
-export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModalProps) {
+export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting = false }: NewTripModalProps) {
   const { showToast } = useToast();
   const { token, user } = useAuth();
   const [name, setName] = useState("");
   const [participantInput, setParticipantInput] = useState("");
   const [participants, setParticipants] = useState<SearchedUser[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   
   const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -107,14 +97,6 @@ export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModal
     setParticipants(participants.filter((p) => p.id !== userId));
   };
 
-  const handleToggleCategory = (cat: Category) => {
-    if (selectedCategories.includes(cat)) {
-      setSelectedCategories(selectedCategories.filter((c) => c !== cat));
-    } else {
-      setSelectedCategories([...selectedCategories, cat]);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -125,7 +107,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModal
     const tripData = {
       name: name.trim(),
       invitees: participants.map(p => p.id),
-      categories: selectedCategories,
+      categories: [],
     };
 
     if (onCreate) {
@@ -136,7 +118,6 @@ export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModal
     setName("");
     setParticipantInput("");
     setParticipants([]);
-    setSelectedCategories([]);
     onClose();
   };
 
@@ -170,12 +151,13 @@ export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModal
               Trip Name
             </label>
             <input
+              disabled={isSubmitting}
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Goa Vacation"
-              className="w-full rounded-xl border border-[#EFECE6] bg-white py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] text-foreground"
+              className="w-full rounded-xl border border-[#EFECE6] bg-white py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -189,11 +171,12 @@ export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModal
                 <Search size={14} />
               </span>
               <input
+                disabled={isSubmitting}
                 type="text"
                 value={participantInput}
                 onChange={(e) => setParticipantInput(e.target.value)}
                 placeholder="Search by username or name..."
-                className="w-full rounded-xl border border-[#EFECE6] bg-white py-2.5 pl-9 pr-3.5 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] text-foreground"
+                className="w-full rounded-xl border border-[#EFECE6] bg-white py-2.5 pl-9 pr-3.5 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               />
               {isSearching && (
                 <span className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -211,9 +194,9 @@ export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModal
                   exit={{ opacity: 0, y: -5 }}
                   className="absolute left-0 right-0 top-full mt-2 bg-white border border-[#EFECE6] rounded-xl shadow-lg overflow-hidden z-50 max-h-48 overflow-y-auto"
                 >
-                  {searchResults.map(u => (
+                  {searchResults.map((u, idx) => (
                     <div 
-                      key={u.id}
+                      key={u.id ? `${u.id}-${idx}` : idx}
                       onClick={() => handleAddParticipant(u)}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F5F0E8] cursor-pointer transition-colors"
                     >
@@ -251,9 +234,10 @@ export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModal
                     )}
                     {p.username}
                     <button
+                      disabled={isSubmitting}
                       type="button"
                       onClick={() => handleRemoveParticipant(p.id)}
-                      className="flex h-4.5 w-4.5 items-center justify-center rounded-full hover:bg-black/10 transition-colors text-foreground/60 cursor-pointer ml-1"
+                      className="flex h-4.5 w-4.5 items-center justify-center rounded-full hover:bg-black/10 transition-colors text-foreground/60 cursor-pointer ml-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <X size={10} />
                     </button>
@@ -263,47 +247,30 @@ export default function NewTripModal({ isOpen, onClose, onCreate }: NewTripModal
             )}
           </div>
 
-          {/* Categories */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] mb-2 select-none">
-              Category Tags (Optional)
-            </label>
-            <div className="flex flex-wrap gap-2 select-none">
-              {CATEGORIES.map((cat) => {
-                const isSelected = selectedCategories.includes(cat.value);
-                return (
-                  <button
-                    key={cat.value}
-                    type="button"
-                    onClick={() => handleToggleCategory(cat.value)}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold border transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-[#AAD9BB] border-[#8bc79f] text-[#1A5C3A]"
-                        : "bg-[#F5F0E8] border-[#EFECE6] text-[#2B2A4C]"
-                    }`}
-                  >
-                    {cat.icon}
-                    <span>{cat.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Form Actions */}
           <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[#F5F0E8] select-none mt-2 shrink-0">
             <button
+              disabled={isSubmitting}
               type="button"
               onClick={onClose}
-              className="rounded-full border border-[#2B2A4C] px-6 py-2.5 text-xs font-bold text-[#2B2A4C] hover:scale-[1.02] transition-transform duration-200 cursor-pointer bg-white"
+              className={`rounded-full border border-[#2B2A4C] px-6 py-2.5 text-xs font-bold text-[#2B2A4C] transition-colors duration-200 cursor-pointer bg-white ${
+                isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F5F0E8]"
+              }`}
             >
               Cancel
             </button>
             <button
+              disabled={isSubmitting}
               type="submit"
-              className="rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] text-white px-6 py-2.5 text-xs font-bold hover:scale-[1.02] transition-transform duration-200 cursor-pointer"
+              className={`inline-flex items-center justify-center rounded-full bg-[#2B2A4C] text-white px-6 py-2.5 text-xs font-bold transition-colors duration-200 min-w-32 cursor-pointer ${
+                isSubmitting ? "opacity-75 cursor-not-allowed" : "hover:bg-[#1f1e36]"
+              }`}
             >
-              Create Trip
+              {isSubmitting ? (
+                <span className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                "Create Trip"
+              )}
             </button>
           </div>
         </form>

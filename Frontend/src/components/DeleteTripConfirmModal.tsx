@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
-import { useToast } from "./Toast";
 import type { Trip } from "../types";
 
 interface DeleteTripConfirmModalProps {
@@ -9,6 +8,7 @@ interface DeleteTripConfirmModalProps {
   onClose: () => void;
   trip: Trip | null;
   onConfirm?: (tripId: string) => void;
+  isDeleting?: boolean;
 }
 
 export default function DeleteTripConfirmModal({
@@ -16,29 +16,29 @@ export default function DeleteTripConfirmModal({
   onClose,
   trip,
   onConfirm,
+  isDeleting = false,
 }: DeleteTripConfirmModalProps) {
-  const { showToast } = useToast();
 
   // ESC key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (e.key === "Escape" && isOpen && !isDeleting) {
         onClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isDeleting]);
 
   if (!isOpen || !trip) return null;
 
+  const isDeletable = trip.end_date && trip.balance.kind === 'settled';
+
   const handleDelete = () => {
-    console.log("delete trip", trip.id);
+    if (!isDeletable || isDeleting) return;
     if (onConfirm) {
       onConfirm(trip.id);
     }
-    showToast(`Trip "${trip.name}" deleted`, "success");
-    onClose();
   };
 
   return (
@@ -48,7 +48,9 @@ export default function DeleteTripConfirmModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
+        onClick={() => {
+          if (!isDeleting) onClose();
+        }}
         className="absolute inset-0 bg-black/30 backdrop-blur-xs cursor-pointer"
       />
 
@@ -70,23 +72,47 @@ export default function DeleteTripConfirmModal({
         </div>
 
         <p className="text-sm text-[#8B8A9B] leading-relaxed mb-6">
-          This will permanently delete <span className="font-semibold text-[#2B2A4C]">{trip.name}</span> and all its stops and transactions. This cannot be undone.
+          This will permanently remove you from <span className="font-semibold text-[#2B2A4C]">{trip.name}</span>. If you are the last participant, the trip will be completely deleted.
         </p>
+
+        {!isDeletable && (
+          <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-medium">
+            {!trip.end_date ? (
+              <p>You cannot delete or leave this trip because it hasn't ended yet.</p>
+            ) : trip.balance.kind !== 'settled' ? (
+              <p>You cannot delete or leave this trip because your balance is not settled.</p>
+            ) : null}
+          </div>
+        )}
 
         <div className="flex items-center justify-end gap-2.5 select-none">
           <button
             type="button"
+            disabled={isDeleting}
             onClick={onClose}
-            className="rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] hover:scale-[1.02] transition-transform duration-200 cursor-pointer bg-white"
+            className={`rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] transition-colors duration-200 bg-white ${
+              isDeleting ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F5F0E8] cursor-pointer"
+            }`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleDelete}
-            className="rounded-full bg-red-500 hover:bg-red-600 text-white px-5 py-2 text-xs font-bold hover:scale-[1.02] transition-transform duration-200 cursor-pointer"
+            disabled={!isDeletable || isDeleting}
+            className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-bold transition-colors duration-200 min-w-20 ${
+              isDeleting
+                ? "bg-red-300 text-white cursor-not-allowed"
+                : isDeletable 
+                ? "bg-red-500 hover:bg-red-600 text-white cursor-pointer" 
+                : "bg-red-200 text-white cursor-not-allowed"
+            }`}
           >
-            Delete
+            {isDeleting ? (
+              <span className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            ) : (
+              "Delete"
+            )}
           </button>
         </div>
       </motion.div>

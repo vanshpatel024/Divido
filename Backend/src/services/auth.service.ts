@@ -109,4 +109,60 @@ export class AuthService {
 
     return data;
   }
+
+  static async requestPasswordReset(email: string, redirectTo?: string) {
+    const { data, error } = await supabaseAnon.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    if (error) {
+      throw error;
+    }
+    return data;
+  }
+
+  static async checkEmailExists(email: string): Promise<boolean> {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    if (error) {
+      throw error;
+    }
+    return (data.users || []).some((user: any) => user.email?.toLowerCase() === email.toLowerCase());
+  }
+
+  static async updatePassword(userId: string, newPassword: string) {
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword
+    });
+    if (error) {
+      throw error;
+    }
+    return data;
+  }
+
+  static async deleteAccount(userId: string) {
+    // 1. Delete all invitations sent or received by this user
+    await supabaseAdmin
+      .from('trip_invitations')
+      .delete()
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+    // 2. Delete all trips created by this user
+    // (This cascades to delete participants, stops, and transactions for these trips)
+    await supabaseAdmin
+      .from('trips')
+      .delete()
+      .eq('created_by', userId);
+
+    // 3. Delete participant entries for trips owned by other users
+    await supabaseAdmin
+      .from('trip_participants')
+      .delete()
+      .eq('user_id', userId);
+
+    // 4. Finally, delete the user from Supabase Auth
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (error) {
+      throw error;
+    }
+    return true;
+  }
 }

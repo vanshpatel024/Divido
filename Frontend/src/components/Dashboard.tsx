@@ -4,11 +4,11 @@ import { Plus, Check, X } from "lucide-react";
 import Navbar from "./Navbar";
 import TripCard from "./TripCard";
 import NewTripModal from "./NewTripModal";
-import EditTripModal from "./EditTripModal";
 import DeleteTripConfirmModal from "./DeleteTripConfirmModal";
 import type { Trip } from "../types";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useRealtimeDashboard } from "../hooks/useRealtimeDashboard";
 
 function EmptyState({ onAddClick }: { onAddClick: () => void }) {
   return (
@@ -33,7 +33,7 @@ function EmptyState({ onAddClick }: { onAddClick: () => void }) {
       
       <button
         onClick={onAddClick}
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-6 py-2.5 text-xs font-bold text-white transition-transform hover:scale-[1.02] cursor-pointer shadow-xs"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-6 py-2.5 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs"
       >
         <Plus size={14} /> Create Trip
       </button>
@@ -43,7 +43,7 @@ function EmptyState({ onAddClick }: { onAddClick: () => void }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
   const [tripsList, setTripsList] = useState<Trip[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,11 +51,14 @@ export default function Dashboard() {
 
   // Modals Visibility
   const [isNewOpen, setIsNewOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   // Active Trip for Editing/Deleting
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
+
+  const [respondingInviteId, setRespondingInviteId] = useState<string | null>(null);
+  const [isCreatingTrip, setIsCreatingTrip] = useState(false);
+  const [isDeletingTrip, setIsDeletingTrip] = useState(false);
 
   const fetchDashboardData = async () => {
     if (!token) return;
@@ -95,12 +98,16 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [token, logout, navigate]);
 
+  // Real-time: refetch whenever any trip-level event fires for this user
+  useRealtimeDashboard(token, user?.id, fetchDashboardData);
+
   const hasTrips = tripsList.length > 0;
   const hasInvitations = invitations.length > 0;
 
   // Handlers
   const handleCreateTrip = async (newTripData: any) => {
     if (!token) return;
+    setIsCreatingTrip(true);
     try {
       const res = await fetch("http://localhost:3000/trips", {
         method: "POST",
@@ -124,17 +131,21 @@ export default function Dashboard() {
       const responseData = await res.json();
       if (responseData.success) {
         setTripsList((prev) => [responseData.data, ...prev]);
+        setIsNewOpen(false);
       } else {
         alert(responseData.message || "Failed to create trip");
       }
     } catch (err) {
       console.error("Error creating trip:", err);
       alert("Network error creating trip");
+    } finally {
+      setIsCreatingTrip(false);
     }
   };
 
   const handleRespondInvite = async (invitationId: string, accept: boolean) => {
-    if (!token) return;
+    if (!token || respondingInviteId !== null) return;
+    setRespondingInviteId(invitationId);
     try {
       const res = await fetch(`http://localhost:3000/trips/invitations/${invitationId}/respond`, {
         method: "POST",
@@ -147,21 +158,13 @@ export default function Dashboard() {
 
       if (res.ok) {
         // Refresh data to show new trip if accepted
-        fetchDashboardData();
+        await fetchDashboardData();
       }
     } catch (error) {
       console.error("Failed to respond to invite:", error);
+    } finally {
+      setRespondingInviteId(null);
     }
-  };
-
-  const handleEditClick = (trip: Trip) => {
-    setActiveTrip(trip);
-    setIsEditOpen(true);
-  };
-
-  const handleSaveTrip = (updatedTrip: Trip) => {
-    setTripsList(tripsList.map((t) => (t.id === updatedTrip.id ? updatedTrip : t)));
-    setActiveTrip(null);
   };
 
   const handleDeleteClick = (trip: Trip) => {
@@ -169,30 +172,78 @@ export default function Dashboard() {
     setIsDeleteOpen(true);
   };
 
-  const handleConfirmDelete = (tripId: string) => {
-    setTripsList(tripsList.filter((t) => t.id !== tripId));
-    setActiveTrip(null);
+  const handleConfirmDelete = async (tripId: string) => {
+    if (!token) return;
+    setIsDeletingTrip(true);
+    try {
+      const res = await fetch(`http://localhost:3000/trips/${tripId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTripsList(tripsList.filter((t) => t.id !== tripId));
+        setIsDeleteOpen(false);
+      } else {
+        alert(data.message || "Failed to delete trip");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error");
+    } finally {
+      setIsDeletingTrip(false);
+      setActiveTrip(null);
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background text-foreground font-sans pb-20">
+      <div className="min-h-screen bg-background text-foreground font-sans pb-20 select-none">
         <Navbar />
-        <div className="flex flex-col items-center justify-center py-32">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
-            className="h-12 w-12 border-4 border-[#2B2A4C]/10 border-t-[#2B2A4C] rounded-full"
-          />
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0.4, 1, 0.4] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            className="mt-4 text-xs text-[#8B8A9B] font-semibold uppercase tracking-wider select-none"
-          >
-            Loading trips...
-          </motion.p>
-        </div>
+        <main className="mx-auto max-w-5xl px-8 py-10 sm:py-14">
+          {/* Header Skeleton */}
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#EFECE6] pb-6">
+            <div>
+              <div className="h-10 w-48 bg-[#EFECE6] rounded-xl skeleton-shimmer" />
+              <div className="h-4 w-72 bg-[#EFECE6] rounded-lg mt-3 skeleton-shimmer" />
+            </div>
+            <div className="h-9 w-28 bg-[#EFECE6] rounded-full skeleton-shimmer" />
+          </div>
+
+          {/* Cards Grid Skeleton */}
+          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex flex-col rounded-2xl border border-[#E8E2D9] bg-white p-6 shadow-sm border-l-4 border-l-[#E8E8E8] relative select-none">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-6 w-36 rounded-md bg-[#EFECE6] skeleton-shimmer" />
+                    <div className="h-4 w-24 rounded-md bg-[#EFECE6] skeleton-shimmer" />
+                  </div>
+                  <div className="h-6 w-20 rounded-full bg-[#EFECE6] skeleton-shimmer" />
+                </div>
+                <div className="mt-5 flex items-center justify-between">
+                  <div className="flex -space-x-2">
+                    {[1, 2, 3].map((a) => (
+                      <div key={a} className="h-8 w-8 rounded-full border-2 border-white bg-[#EFECE6] skeleton-shimmer" />
+                    ))}
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <div className="h-3 w-16 rounded bg-[#EFECE6] skeleton-shimmer" />
+                    <div className="h-6 w-20 rounded bg-[#EFECE6] mt-1.5 skeleton-shimmer" />
+                  </div>
+                </div>
+                <div className="mt-5 flex gap-1.5">
+                  <div className="inline-flex items-center gap-1 rounded-full bg-[#F5F0E8] px-2.5 py-1 text-xs">
+                    <div className="h-3 w-10 rounded bg-[#EFECE6] skeleton-shimmer" />
+                  </div>
+                  <div className="inline-flex items-center gap-1 rounded-full bg-[#F5F0E8] px-2.5 py-1 text-xs">
+                    <div className="h-3 w-12 rounded bg-[#EFECE6] skeleton-shimmer" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -250,18 +301,36 @@ export default function Dashboard() {
                         <p className="text-xs text-[#8B8A9B]">from @{inv.sender.username}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 select-none">
                       <button 
+                        disabled={respondingInviteId !== null}
                         onClick={() => handleRespondInvite(inv.id, false)}
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                          respondingInviteId !== null
+                            ? "bg-red-50/50 text-red-300 cursor-not-allowed"
+                            : "bg-red-50 text-red-500 hover:bg-red-100 cursor-pointer"
+                        }`}
+                        title="Decline"
                       >
                         <X size={14} strokeWidth={2.5} />
                       </button>
                       <button 
+                        disabled={respondingInviteId !== null}
                         onClick={() => handleRespondInvite(inv.id, true)}
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-[#AAD9BB] text-[#1A5C3A] hover:bg-[#8bc79f] transition-colors"
+                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                          respondingInviteId === inv.id
+                            ? "bg-[#AAD9BB]/50 text-[#1A5C3A]"
+                            : respondingInviteId !== null
+                            ? "bg-[#AAD9BB]/30 text-[#1A5C3A]/50 cursor-not-allowed"
+                            : "bg-[#AAD9BB] text-[#1A5C3A] hover:bg-[#8bc79f] cursor-pointer"
+                        }`}
+                        title="Accept"
                       >
-                        <Check size={14} strokeWidth={2.5} />
+                        {respondingInviteId === inv.id ? (
+                          <span className="h-4 w-4 border-2 border-[#1A5C3A]/20 border-t-[#1A5C3A] rounded-full animate-spin" />
+                        ) : (
+                          <Check size={14} strokeWidth={2.5} />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -288,7 +357,7 @@ export default function Dashboard() {
           </div>
           <button
             onClick={() => setIsNewOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-5 py-2.5 text-xs font-bold text-white transition-transform hover:scale-[1.02] cursor-pointer shadow-xs select-none"
+            className="inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-5 py-2.5 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs select-none"
           >
             <Plus size={14} /> New Trip
           </button>
@@ -302,7 +371,6 @@ export default function Dashboard() {
                 key={trip.id}
                 trip={trip}
                 index={i}
-                onEdit={handleEditClick}
                 onDelete={handleDeleteClick}
               />
             ))}
@@ -321,28 +389,21 @@ export default function Dashboard() {
             isOpen={isNewOpen}
             onClose={() => setIsNewOpen(false)}
             onCreate={handleCreateTrip}
-          />
-        )}
-        {isEditOpen && activeTrip && (
-          <EditTripModal
-            isOpen={isEditOpen}
-            onClose={() => {
-              setIsEditOpen(false);
-              setActiveTrip(null);
-            }}
-            trip={activeTrip}
-            onSave={handleSaveTrip}
+            isSubmitting={isCreatingTrip}
           />
         )}
         {isDeleteOpen && activeTrip && (
           <DeleteTripConfirmModal
             isOpen={isDeleteOpen}
             onClose={() => {
-              setIsDeleteOpen(false);
-              setActiveTrip(null);
+              if (!isDeletingTrip) {
+                setIsDeleteOpen(false);
+                setActiveTrip(null);
+              }
             }}
             trip={activeTrip}
             onConfirm={handleConfirmDelete}
+            isDeleting={isDeletingTrip}
           />
         )}
       </AnimatePresence>

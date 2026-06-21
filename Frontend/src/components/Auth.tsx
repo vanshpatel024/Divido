@@ -38,6 +38,46 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Forgot Password states
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetSuccess, setIsResetSuccess] = useState(false);
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGeneralError("");
+    setEmailError("");
+
+    if (!email) {
+      setEmailError("Email is required");
+      return;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      setEmailError("Enter a valid email");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch("http://localhost:3000/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const responseData = await res.json();
+      if (res.ok && responseData.success) {
+        setIsResetSuccess(true);
+      } else {
+        setGeneralError(responseData.message || "Failed to request password reset.");
+      }
+    } catch (err: any) {
+      setGeneralError("Network error. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Reset errors when toggling tabs
   const handleTabToggle = (loginState: boolean) => {
     setIsLogin(loginState);
@@ -225,39 +265,138 @@ export default function Auth() {
           </div>
 
           {/* Toggle switcher pill */}
-          <div className="relative flex rounded-full bg-[#F5F0E8] p-1 w-full max-w-[240px] mb-5 border border-[#EFECE6]/50">
-            <button
-              type="button"
-              onClick={() => handleTabToggle(true)}
-              className={`relative z-10 w-1/2 rounded-full py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
-                isLogin ? "text-white" : "text-[#8B8A9B] hover:bg-[#E8F5EE] hover:text-foreground"
-              }`}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => handleTabToggle(false)}
-              className={`relative z-10 w-1/2 rounded-full py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
-                !isLogin ? "text-white" : "text-[#8B8A9B] hover:bg-[#E8F5EE] hover:text-foreground"
-              }`}
-            >
-              Sign Up
-            </button>
-            
-            {/* Sliding Pill Background */}
-            <motion.div
-              animate={{ x: isLogin ? "0%" : "100%" }}
-              transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              className="absolute top-1 bottom-1 left-1 bg-[#2B2A4C] rounded-full"
-              style={{ width: "calc(50% - 4px)" }}
-            />
-          </div>
+          {!isForgotPassword && (
+            <div className="relative flex rounded-full bg-[#F5F0E8] p-1 w-full max-w-[240px] mb-5 border border-[#EFECE6]/50">
+              <button
+                type="button"
+                onClick={() => handleTabToggle(true)}
+                className={`relative z-10 w-1/2 rounded-full py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
+                  isLogin ? "text-white" : "text-[#8B8A9B] hover:bg-[#E8F5EE] hover:text-foreground"
+                }`}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabToggle(false)}
+                className={`relative z-10 w-1/2 rounded-full py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
+                  !isLogin ? "text-white" : "text-[#8B8A9B] hover:bg-[#E8F5EE] hover:text-foreground"
+                }`}
+              >
+                Sign Up
+              </button>
+              
+              {/* Sliding Pill Background */}
+              <motion.div
+                animate={{ x: isLogin ? "0%" : "100%" }}
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                className="absolute top-1 bottom-1 left-1 bg-[#2B2A4C] rounded-full"
+                style={{ width: "calc(50% - 4px)" }}
+              />
+            </div>
+          )}
 
           {/* Forms switcher */}
           <div className="w-full">
             <AnimatePresence mode="wait">
-              {isLogin ? (
+              {isForgotPassword ? (
+                <motion.form
+                  key="forgot"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  onSubmit={handleForgotPasswordSubmit}
+                  className="flex flex-col gap-3 w-full"
+                >
+                  <div className="w-full text-center mb-2">
+                    <h2 className="font-display text-xl font-bold text-[#2B2A4C]">Reset Password</h2>
+                    <p className="text-xs text-[#8B8A9B] mt-1.5 leading-normal">
+                      We'll send a password recovery link to your inbox.
+                    </p>
+                  </div>
+
+                  {generalError && (
+                    <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-xl text-center">
+                      {generalError}
+                    </div>
+                  )}
+
+                  {isResetSuccess ? (
+                    <div className="p-4 bg-[#eef7f1] border border-[#AAD9BB] rounded-2xl text-center space-y-3">
+                      <p className="text-xs font-semibold text-[#1A5C3A] leading-relaxed">
+                        A password recovery link has been sent to <strong>{email}</strong>. Please check your inbox.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(false);
+                          setIsResetSuccess(false);
+                          setEmail("");
+                        }}
+                        className="text-xs font-bold text-[#2B2A4C] hover:text-[#1f1e36] underline cursor-pointer bg-transparent border-none p-0"
+                      >
+                        Back to Login
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Email Field */}
+                      <div className="flex flex-col">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
+                          Email
+                        </label>
+                        <div className="relative mt-1">
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
+                            <Mail size={16} />
+                          </span>
+                          <input
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="you@example.com"
+                            className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
+                              emailError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
+                            }`}
+                          />
+                        </div>
+                        {emailError && (
+                          <p className="mt-1 text-xs font-medium text-destructive leading-none">
+                            {emailError}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Submit Button */}
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-[#1f1e36] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
+                      >
+                        {isLoading ? (
+                          <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          "Send Reset Link"
+                        )}
+                      </button>
+
+                      {/* Back to Login Link */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(false);
+                          setGeneralError("");
+                          setEmailError("");
+                        }}
+                        className="text-xs font-semibold text-[#8B8A9B] hover:text-[#2B2A4C] transition-colors duration-200 bg-transparent border-none cursor-pointer self-center animate-none"
+                      >
+                        <u>Back to Login</u>
+                      </button>
+                    </>
+                  )}
+                </motion.form>
+              ) : isLogin ? (
                 <motion.form
                   key="login"
                   initial={{ opacity: 0, x: -12 }}
@@ -308,12 +447,17 @@ export default function Auth() {
                       <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
                         Password
                       </label>
-                      <Link
-                        to="/auth"
-                        className="text-xs font-semibold text-[#AAD9BB] hover:text-[#1A5C3A] hover:underline transition-colors duration-200 decoration-none"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(true);
+                          setGeneralError("");
+                          setEmailError("");
+                        }}
+                        className="text-xs font-semibold text-[#AAD9BB] hover:text-[#1A5C3A] hover:underline transition-colors duration-200 bg-transparent border-none cursor-pointer p-0 font-sans"
                       >
                         Forgot password?
-                      </Link>
+                      </button>
                     </div>
                     <div className="relative mt-1">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
@@ -347,7 +491,7 @@ export default function Auth() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-[#3B3A5C] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
+                    className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-[#1f1e36] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
                   >
                     {isLoading ? (
                       <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -550,7 +694,7 @@ export default function Auth() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-[#3B3A5C] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
+                    className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-[#1f1e36] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
                   >
                     {isLoading ? (
                       <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

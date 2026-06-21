@@ -81,4 +81,63 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = req.body || {};
+      if (!email) {
+        res.status(400).json(createResponse(false, 'Email is required'));
+        return;
+      }
+
+      // Check if email exists
+      const exists = await AuthService.checkEmailExists(email);
+      if (!exists) {
+        res.status(404).json(createResponse(false, 'Email address not found'));
+        return;
+      }
+
+      const origin = req.headers.origin || 'http://localhost:5173';
+      const redirectTo = `${origin}/reset-password`;
+
+      await AuthService.requestPasswordReset(email, redirectTo);
+      res.status(200).json(createResponse(true, 'Password reset email sent successfully'));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updatePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+
+      const { password } = req.body;
+      if (!password || password.length < 6) {
+        res.status(400).json(createResponse(false, 'Password must be at least 6 characters long'));
+        return;
+      }
+
+      await AuthService.updatePassword(req.user.id, password);
+      res.status(200).json(createResponse(true, 'Password updated successfully'));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+
+      await AuthService.deleteAccount(req.user.id);
+      res.status(200).json(createResponse(true, 'Account deleted successfully'));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

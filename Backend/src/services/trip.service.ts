@@ -1,8 +1,7 @@
 import { supabaseAdmin } from '../config/supabase';
 import { z } from 'zod';
 
-// Matches the exact frontend types
-const categoryEnum = z.enum(["food", "hotel", "transport", "flight", "entertainment"]);
+const categoryEnum = z.enum(["food", "hotel", "transport", "flight", "entertainment", "shopping"]);
 
 export const tripCreateSchema = z.object({
   name: z.string().min(2, "Trip name must be at least 2 characters long"),
@@ -10,12 +9,94 @@ export const tripCreateSchema = z.object({
   invitees: z.array(z.string().uuid()).default([]),
 });
 
+export const stopCreateSchema = z.object({
+  name: z.string().min(2, "Stop name must be at least 2 characters long"),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid date format",
+  }),
+  totalAmount: z.number().positive("Total amount must be positive"),
+  payments: z.array(z.object({
+    userId: z.string().uuid(),
+    amount: z.number().nonnegative("Payment amount cannot be negative")
+  })).min(1, "At least one payment must be specified"),
+  splits: z.array(z.string().uuid()).min(1, "At least one split participant must be specified")
+});
+
 export type TripCreateInput = z.infer<typeof tripCreateSchema>;
+export type StopCreateInput = z.infer<typeof stopCreateSchema>;
 
 export class TripService {
   /**
-   * Fetch all trips created by or involving the user.
+   * Returns an array of user IDs for all participants of a trip.
+   * Used by controllers to broadcast dashboard events to the right users.
    */
+  static async getTripParticipantIds(tripId: string): Promise<string[]> {
+    const { data, error } = await supabaseAdmin
+      .from('trip_participants')
+      .select('user_id')
+      .eq('trip_id', tripId);
+    if (error || !data) return [];
+    return data.map((p: any) => p.user_id);
+  }
+
+  static async getTripStats(tripId: string, userId: string) {
+    const { data: stops, error: stopsError } = await supabaseAdmin
+      .from('stops')
+      .select('id, name, total_amount')
+      .eq('trip_id', tripId);
+
+    if (stopsError) throw stopsError;
+    if (!stops || stops.length === 0) {
+      return { total: 0, balance: { kind: 'settled' } };
+    }
+
+    const stopIds = stops.map(s => s.id);
+
+    const { data: payments, error: paymentsError } = await supabaseAdmin
+      .from('stop_payments')
+      .select('stop_id, amount')
+      .eq('user_id', userId)
+      .in('stop_id', stopIds);
+
+    if (paymentsError) throw paymentsError;
+
+    const { data: splits, error: splitsError } = await supabaseAdmin
+      .from('stop_splits')
+      .select('stop_id, user_id')
+      .in('stop_id', stopIds);
+
+    if (splitsError) throw splitsError;
+
+    const totalSpend = stops
+      .filter(s => !s.name.startsWith('Settlement:'))
+      .reduce((sum, s) => sum + Number(s.total_amount), 0);
+    const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+    let totalShare = 0;
+    for (const stop of stops) {
+      const stopSplits = splits.filter(sp => sp.stop_id === stop.id);
+      const splitCount = stopSplits.length;
+      const isInSplit = stopSplits.some(sp => sp.user_id === userId);
+      
+      if (isInSplit && splitCount > 0) {
+        totalShare += Number(stop.total_amount) / splitCount;
+      }
+    }
+
+    const roundedPaid = Math.round(totalPaid * 100) / 100;
+    const roundedShare = Math.round(totalShare * 100) / 100;
+    const total = Math.round(totalSpend * 100) / 100;
+
+    let balance: any = { kind: 'settled' };
+    if (roundedPaid > roundedShare) {
+      balance = { kind: 'owed', amount: Math.round((roundedPaid - roundedShare) * 100) / 100 };
+    } else if (roundedPaid < roundedShare) {
+      balance = { kind: 'owe', amount: Math.round((roundedShare - roundedPaid) * 100) / 100 };
+    }
+
+    return { total, balance, raw: { roundedPaid, roundedShare } };
+  }
+
   static async getUserTrips(userId: string) {
     const { data: userTrips, error: userTripsError } = await supabaseAdmin
       .from('trip_participants')
@@ -44,12 +125,11 @@ export class TripService {
       .in('id', tripIds)
       .order('created_at', { ascending: false });
 
-    if (tripsError) {
-      throw tripsError;
-    }
+    if (tripsError) throw tripsError;
 
-    return trips.map((trip: any) => {
-      // Create a nice date string from start_date to end_date
+    const tripPromises = trips.map(async (trip: any) => {
+      const stats = await this.getTripStats(trip.id, userId);
+      
       let datesStr = "Active";
       if (trip.start_date) {
         const start = new Date(trip.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -69,69 +149,141 @@ export class TripService {
           id: tp.user?.id,
           name: tp.user?.display_name || tp.user?.username || 'Unknown',
           avatar_url: tp.user?.avatar_url,
-          color: '#AAD9BB' // Default fallback
+          color: '#AAD9BB'
         })),
-        total: 0, 
-        balance: { kind: "settled" }, 
+        total: stats.total,
+        balance: stats.balance,
         categories: trip.categories || [],
         start_date: trip.start_date,
         end_date: trip.end_date
       };
     });
+
+    return await Promise.all(tripPromises);
   }
 
-  /**
-   * Create a new trip
-   */
-  static async createTrip(userId: string, input: TripCreateInput) {
-    // 1. Create the trip
-    const { data: trip, error: tripError } = await supabaseAdmin
-      .from('trips')
-      .insert({
-        name: input.name,
-        categories: input.categories,
-        created_by: userId,
-        start_date: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (tripError) throw tripError;
-
-    // 2. Insert the creator as a participant
-    await supabaseAdmin
+  static async getTripDebts(tripId: string) {
+    // 1. Get all participants
+    const { data: participants, error: partError } = await supabaseAdmin
       .from('trip_participants')
-      .insert({
-        trip_id: trip.id,
-        user_id: userId
+      .select('user_id, user:profiles(id, display_name, username)')
+      .eq('trip_id', tripId);
+      
+    if (partError || !participants) throw partError || new Error("Trip participants not found");
+    
+    // 2. Get all stops
+    const { data: stops, error: stopsError } = await supabaseAdmin
+      .from('stops')
+      .select('id, name, total_amount')
+      .eq('trip_id', tripId);
+      
+    if (stopsError || !stops) throw stopsError;
+    if (stops.length === 0) return [];
+    
+    const stopIds = stops.map(s => s.id);
+    
+    // 3. Get all payments
+    const { data: payments, error: paymentsError } = await supabaseAdmin
+      .from('stop_payments')
+      .select('stop_id, user_id, amount')
+      .in('stop_id', stopIds);
+      
+    if (paymentsError || !payments) throw paymentsError;
+    
+    // 4. Get all splits
+    const { data: splits, error: splitsError } = await supabaseAdmin
+      .from('stop_splits')
+      .select('stop_id, user_id')
+      .in('stop_id', stopIds);
+      
+    if (splitsError || !splits) throw splitsError;
+    
+    // 5. Calculate net balance for each participant (Payments - Share)
+    const netBalances: Record<string, number> = {};
+    const userNames: Record<string, string> = {};
+    
+    participants.forEach((p: any) => {
+      netBalances[p.user_id] = 0;
+      userNames[p.user_id] = p.user?.display_name || p.user?.username || 'Unknown';
+    });
+    
+    for (const stop of stops) {
+      const stopSplits = splits.filter(sp => sp.stop_id === stop.id);
+      const splitCount = stopSplits.length;
+      const stopPayments = payments.filter(p => p.stop_id === stop.id);
+      
+      // Credit payments
+      stopPayments.forEach(p => {
+        if (netBalances[p.user_id] !== undefined) {
+          netBalances[p.user_id] += Number(p.amount);
+        }
       });
-
-    // 3. Send invitations to invitees
-    if (input.invitees.length > 0) {
-      const invites = input.invitees.map(inviteeId => ({
-        trip_id: trip.id,
-        sender_id: userId,
-        receiver_id: inviteeId
-      }));
-      await supabaseAdmin.from('trip_invitations').insert(invites);
+      
+      // Debit shares
+      if (splitCount > 0) {
+        const share = Number(stop.total_amount) / splitCount;
+        stopSplits.forEach(sp => {
+          if (netBalances[sp.user_id] !== undefined) {
+            netBalances[sp.user_id] -= share;
+          }
+        });
+      }
     }
-
-    return await this.getSingleTrip(trip.id);
+    
+    // 6. Partition into debtors and creditors
+    const debtors: { userId: string; balance: number }[] = [];
+    const creditors: { userId: string; balance: number }[] = [];
+    
+    Object.keys(netBalances).forEach(userId => {
+      const bal = Math.round(netBalances[userId] * 100) / 100;
+      if (bal < -0.01) {
+        debtors.push({ userId, balance: bal });
+      } else if (bal > 0.01) {
+        creditors.push({ userId, balance: bal });
+      }
+    });
+    
+    // Sort so matching is efficient
+    debtors.sort((a, b) => a.balance - b.balance);
+    creditors.sort((a, b) => b.balance - a.balance);
+    
+    const debts: { fromId: string; fromName: string; toId: string; toName: string; amount: number }[] = [];
+    
+    let dIdx = 0;
+    let cIdx = 0;
+    
+    while (dIdx < debtors.length && cIdx < creditors.length) {
+      const debtor = debtors[dIdx];
+      const creditor = creditors[cIdx];
+      
+      const debtAmount = Math.min(Math.abs(debtor.balance), creditor.balance);
+      const roundedAmount = Math.round(debtAmount * 100) / 100;
+      
+      if (roundedAmount > 0) {
+        debts.push({
+          fromId: debtor.userId,
+          fromName: userNames[debtor.userId],
+          toId: creditor.userId,
+          toName: userNames[creditor.userId],
+          amount: roundedAmount
+        });
+      }
+      
+      debtor.balance += debtAmount;
+      creditor.balance -= debtAmount;
+      
+      if (Math.abs(debtor.balance) < 0.01) {
+        dIdx++;
+      }
+      if (Math.abs(creditor.balance) < 0.01) {
+        cIdx++;
+      }
+    }
+    
+    return debts;
   }
 
-  static async endTrip(tripId: string, userId: string) {
-    const { data, error } = await supabaseAdmin
-      .from('trips')
-      .update({ end_date: new Date().toISOString() })
-      .eq('id', tripId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return await this.getSingleTrip(tripId);
-  }
-
-  static async getSingleTrip(tripId: string) {
+  static async getSingleTrip(tripId: string, userId: string) {
     const { data: trip, error: tripsError } = await supabaseAdmin
       .from('trips')
       .select(`
@@ -150,6 +302,9 @@ export class TripService {
       .single();
 
     if (tripsError) throw tripsError;
+
+    const stats = await this.getTripStats(trip.id, userId);
+    const debts = await this.getTripDebts(trip.id);
 
     let datesStr = "Active";
     if (trip.start_date) {
@@ -172,16 +327,233 @@ export class TripService {
         avatar_url: tp.user?.avatar_url,
         color: '#AAD9BB'
       })),
-      total: 0,
-      balance: { kind: "settled" },
+      total: stats.total,
+      balance: stats.balance,
       categories: trip.categories || [],
       start_date: trip.start_date,
-      end_date: trip.end_date
+      end_date: trip.end_date,
+      debts
     };
   }
 
-  // --- Invitations Methods ---
+  static async createTrip(userId: string, input: TripCreateInput) {
+    const { data: trip, error: tripError } = await supabaseAdmin
+      .from('trips')
+      .insert({
+        name: input.name,
+        categories: input.categories,
+        created_by: userId,
+        start_date: new Date().toISOString()
+      })
+      .select()
+      .single();
 
+    if (tripError) throw tripError;
+
+    await supabaseAdmin
+      .from('trip_participants')
+      .insert({
+        trip_id: trip.id,
+        user_id: userId
+      });
+
+    if (input.invitees.length > 0) {
+      const invites = input.invitees.map(inviteeId => ({
+        trip_id: trip.id,
+        sender_id: userId,
+        receiver_id: inviteeId
+      }));
+      await supabaseAdmin.from('trip_invitations').insert(invites);
+    }
+
+    return await this.getSingleTrip(trip.id, userId);
+  }
+
+  static async endTrip(tripId: string, userId: string) {
+    const { data, error } = await supabaseAdmin
+      .from('trips')
+      .update({ end_date: new Date().toISOString() })
+      .eq('id', tripId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return await this.getSingleTrip(tripId, userId);
+  }
+
+  static async deleteTrip(tripId: string, userId: string) {
+    // 1. Verify trip exists and user is participant
+    const { data: trip, error: tripError } = await supabaseAdmin
+      .from('trips')
+      .select('id, end_date')
+      .eq('id', tripId)
+      .single();
+
+    if (tripError) throw new Error("Trip not found");
+
+    const { data: participant, error: partError } = await supabaseAdmin
+      .from('trip_participants')
+      .select('id')
+      .eq('trip_id', tripId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (partError || !participant) throw new Error("You are not a participant in this trip");
+
+    // 2. Validate end_date
+    if (!trip.end_date) {
+      throw new Error("The trip has not ended yet. You can only leave or delete a trip after it has ended.");
+    }
+
+    // 3. Validate settled balance
+    const stats = await this.getTripStats(tripId, userId);
+    if (stats.balance.kind !== 'settled') {
+      throw new Error("Your balance must be settled before you can leave or delete the trip.");
+    }
+
+    // 4. Remove participant
+    await supabaseAdmin
+      .from('trip_participants')
+      .delete()
+      .eq('trip_id', tripId)
+      .eq('user_id', userId);
+
+    // 5. Clean up pending invitations for this user on this trip
+    await supabaseAdmin
+      .from('trip_invitations')
+      .delete()
+      .eq('trip_id', tripId)
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+    // 6. Check remaining participants
+    const { data: remainingParts, error: countError } = await supabaseAdmin
+      .from('trip_participants')
+      .select('id')
+      .eq('trip_id', tripId);
+
+    if (countError) throw countError;
+
+    // 7. Delete trip if empty
+    if (!remainingParts || remainingParts.length === 0) {
+      await supabaseAdmin
+        .from('trips')
+        .delete()
+        .eq('id', tripId);
+    }
+
+    return { success: true };
+  }
+
+  static async getStops(tripId: string) {
+    const { data: stops, error: stopsError } = await supabaseAdmin
+      .from('stops')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('date', { ascending: false });
+
+    if (stopsError) throw stopsError;
+    if (!stops || stops.length === 0) return [];
+
+    const stopIds = stops.map(s => s.id);
+
+    const { data: payments, error: paymentsError } = await supabaseAdmin
+      .from('stop_payments')
+      .select(`
+        stop_id,
+        amount,
+        user_id,
+        user:profiles(display_name, username)
+      `)
+      .in('stop_id', stopIds);
+
+    if (paymentsError) throw paymentsError;
+
+    const { data: splits, error: splitsError } = await supabaseAdmin
+      .from('stop_splits')
+      .select('stop_id, user_id')
+      .in('stop_id', stopIds);
+
+    if (splitsError) throw splitsError;
+
+    return stops.map((stop: any) => {
+      const stopSplits = splits.filter(sp => sp.stop_id === stop.id);
+      const splitCount = stopSplits.length;
+
+      const stopPayments = payments.filter(p => p.stop_id === stop.id);
+      
+      const transactions = stopPayments.map((p: any) => ({
+        paidBy: p.user?.display_name || p.user?.username || 'Unknown',
+        amount: Number(p.amount),
+        splitCount,
+        avatarColor: '#AAD9BB'
+      }));
+
+      return {
+        id: stop.id,
+        name: stop.name,
+        date: stop.date,
+        total: Number(stop.total_amount),
+        transactions
+      };
+    });
+  }
+
+  static async createStop(tripId: string, creatorId: string, input: StopCreateInput) {
+    const { data: isMember, error: memberError } = await supabaseAdmin
+      .from('trip_participants')
+      .select('id')
+      .eq('trip_id', tripId)
+      .eq('user_id', creatorId)
+      .maybeSingle();
+
+    if (memberError || !isMember) {
+      throw new Error("You are not a participant in this trip.");
+    }
+
+    const { data: stop, error: stopError } = await supabaseAdmin
+      .from('stops')
+      .insert({
+        trip_id: tripId,
+        name: input.name,
+        date: input.date,
+        total_amount: input.totalAmount
+      })
+      .select()
+      .single();
+
+    if (stopError) throw stopError;
+
+    const paymentsData = input.payments.map(p => ({
+      stop_id: stop.id,
+      user_id: p.userId,
+      amount: p.amount
+    }));
+    const { error: paymentsError } = await supabaseAdmin
+      .from('stop_payments')
+      .insert(paymentsData);
+
+    if (paymentsError) {
+      await supabaseAdmin.from('stops').delete().eq('id', stop.id);
+      throw paymentsError;
+    }
+
+    const splitsData = input.splits.map(userId => ({
+      stop_id: stop.id,
+      user_id: userId
+    }));
+    const { error: splitsError } = await supabaseAdmin
+      .from('stop_splits')
+      .insert(splitsData);
+
+    if (splitsError) {
+      await supabaseAdmin.from('stops').delete().eq('id', stop.id);
+      throw splitsError;
+    }
+
+    return stop;
+  }
+
+  // --- Invitations Methods ---
   static async getPendingInvitations(userId: string) {
     const { data: invites, error } = await supabaseAdmin
       .from('trip_invitations')
@@ -198,7 +570,6 @@ export class TripService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-
     if (!invites || invites.length === 0) return [];
 
     const senderIds = [...new Set(invites.map((i: any) => i.sender_id))];
@@ -229,7 +600,6 @@ export class TripService {
   }
 
   static async respondToInvitation(invitationId: string, userId: string, accept: boolean) {
-    // Verify invitation belongs to user
     const { data: inv, error: invError } = await supabaseAdmin
       .from('trip_invitations')
       .select('*')
@@ -238,6 +608,11 @@ export class TripService {
       .single();
 
     if (invError || !inv) throw new Error("Invitation not found");
+
+    // Guard: Prevent processing already-handled invitations (blocks duplicate client requests)
+    if (inv.status !== 'pending') {
+      return { success: true };
+    }
 
     const status = accept ? 'accepted' : 'declined';
 
@@ -249,12 +624,22 @@ export class TripService {
     if (updateError) throw updateError;
 
     if (accept) {
-      await supabaseAdmin.from('trip_participants').insert({
-        trip_id: inv.trip_id,
-        user_id: userId
-      });
+      // Guard: Ensure user isn't already a participant to prevent double-insertions
+      const { data: existingParticipant } = await supabaseAdmin
+        .from('trip_participants')
+        .select('id')
+        .eq('trip_id', inv.trip_id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!existingParticipant) {
+        await supabaseAdmin.from('trip_participants').insert({
+          trip_id: inv.trip_id,
+          user_id: userId
+        });
+      }
     }
 
-    return { success: true };
+    return { success: true, tripId: accept ? inv.trip_id : undefined };
   }
 }

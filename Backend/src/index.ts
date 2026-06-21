@@ -1,3 +1,4 @@
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -7,6 +8,7 @@ import tripRoutes from './routes/trip.routes';
 import userRoutes from './routes/user.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { createResponse } from './utils/response';
+import { initWsServer } from './ws/wsServer';
 
 const app = express();
 
@@ -40,6 +42,13 @@ app.use(errorHandler);
 
 const PORT = env.PORT || 3000;
 
-app.listen(PORT, () => {
+// Create HTTP server and attach WebSocket server to share the same port
+const httpServer = http.createServer(app);
+initWsServer(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
 });
+
+// Reload trigger
+

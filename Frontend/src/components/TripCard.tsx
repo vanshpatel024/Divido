@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,12 +6,11 @@ import {
   Car,
   Plane,
   Film,
-  MoreHorizontal,
-  Pencil,
   Trash2,
   ShoppingBag,
 } from "lucide-react";
 import type { Trip, Balance } from "../types";
+import { resolveAvatarUrl } from "../context/AuthContext";
 
 const formatInr = (n: number) =>
   "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -54,16 +52,27 @@ function AvatarStack({ participants }: { participants: Trip["participants"] }) {
   return (
     <div className="flex items-center">
       <div className="flex -space-x-2">
-        {shown.map((p) => (
-          <div
-            key={p.name}
-            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-foreground"
-            style={{ backgroundColor: p.color }}
-            title={p.name}
-          >
-            {p.name[0]}
-          </div>
-        ))}
+        {shown.map((p) => {
+          const avatarUrl = p.avatar_url ? resolveAvatarUrl(p.avatar_url, p.id || p.name) : null;
+          return (
+            <div
+              key={p.id || p.name}
+              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-foreground overflow-hidden"
+              style={{ backgroundColor: p.color }}
+              title={p.name}
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={p.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                p.name[0]
+              )}
+            </div>
+          );
+        })}
         {overflow > 0 && (
           <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#EFECE6] text-xs font-semibold text-foreground/70">
             +{overflow}
@@ -77,13 +86,11 @@ function AvatarStack({ participants }: { participants: Trip["participants"] }) {
 interface TripCardProps {
   trip: Trip;
   index: number;
-  onEdit?: (trip: Trip) => void;
   onDelete?: (trip: Trip) => void;
 }
 
-export default function TripCard({ trip, index, onEdit, onDelete }: TripCardProps) {
+export default function TripCard({ trip, index, onDelete }: TripCardProps) {
   const navigate = useNavigate();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleCardClick = () => {
     navigate(`/trip/${trip.id}`);
@@ -115,59 +122,21 @@ export default function TripCard({ trip, index, onEdit, onDelete }: TripCardProp
         <div className="flex items-center gap-2 select-none">
           <BalancePill balance={trip.balance} />
           
-          {/* Dropdown Menu Trigger */}
-          <div className="relative">
+          {onDelete && (
             <button
               type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setIsDropdownOpen(!isDropdownOpen);
+                onDelete(trip);
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/40 hover:bg-[#F5F0E8] hover:text-foreground cursor-pointer transition-colors"
-              aria-label="Trip Actions"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-foreground/40 hover:bg-red-50 hover:text-red-500 cursor-pointer transition-colors"
+              aria-label="Delete Trip"
+              title="Delete or Leave Trip"
             >
-              <MoreHorizontal size={16} />
+              <Trash2 size={15} />
             </button>
-
-            {isDropdownOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-20 cursor-default"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsDropdownOpen(false);
-                  }}
-                />
-                <div 
-                  className="absolute right-0 top-8 bg-white border border-[#EFECE6] rounded-xl shadow-lg py-1.5 w-32 z-30 font-sans text-xs select-none"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    onClick={() => {
-                      if (onEdit) onEdit(trip);
-                      setIsDropdownOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-[#F5F0E8] text-[#2B2A4C] font-semibold cursor-pointer transition-colors"
-                  >
-                    <Pencil size={12} />
-                    <span>Edit Trip</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (onDelete) onDelete(trip);
-                      setIsDropdownOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-red-50 text-red-600 font-semibold cursor-pointer transition-colors"
-                  >
-                    <Trash2 size={12} className="text-red-500" />
-                    <span>Delete Trip</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          )}
         </div>
       </div>
 

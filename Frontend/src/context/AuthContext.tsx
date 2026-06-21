@@ -15,6 +15,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, displayName: string, username: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updatedFields: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,6 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 email: authUser.email || profile.email,
                 display_name: resolvedDisplayName,
                 avatar_url: resolvedAvatarUrl,
+                username: profile.username || "",
               });
             } else {
               localStorage.removeItem("divido_token");
@@ -106,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     let display_name = authUser.user_metadata?.display_name || "";
     let avatar_url = authUser.user_metadata?.avatar_url || "";
+    let username = "";
     
     // Try to get profile as well if it's there
     try {
@@ -118,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profileData.success && profileData.data.profile) {
         display_name = profileData.data.profile.display_name || display_name;
         avatar_url = profileData.data.profile.avatar_url || avatar_url;
+        username = profileData.data.profile.username || "";
       }
     } catch (e) {
       console.warn("Could not fetch profile, using user metadata:", e);
@@ -132,6 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: authUser.email,
       display_name,
       avatar_url: resolvedAvatarUrl,
+      username,
     });
   };
 
@@ -178,8 +183,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const updateUser = (updatedFields: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const newUser = { ...prev, ...updatedFields };
+      // If we update display_name or avatar_url, let's resolve new avatar if background=random is there
+      if (updatedFields.display_name || updatedFields.avatar_url) {
+        const rawAvatar = newUser.avatar_url || "";
+        newUser.avatar_url = resolveAvatarUrl(rawAvatar, newUser.id || newUser.display_name || "");
+      }
+      return newUser;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

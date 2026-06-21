@@ -1,23 +1,19 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
   Plus,
-  Utensils,
-  Building2,
-  Car,
-  Plane,
-  Ticket,
-  ShoppingBag,
-  Landmark,
-  MoreHorizontal,
-  CheckCircle2,
-  Flag
+  Flag,
+  Check
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import type { Trip } from "../types";
+import NewStopModal from "./NewStopModal";
+import { useToast } from "./Toast";
+import { useRealtimeTrip } from "../hooks/useRealtimeTrip";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface Transaction {
   paidBy: string;
@@ -29,7 +25,6 @@ interface Transaction {
 interface Stop {
   id: string;
   name: string;
-  category: "food" | "hotel" | "transport" | "flight" | "entertainment" | "shopping";
   date: string;
   total: number;
   transactions: Transaction[];
@@ -38,74 +33,70 @@ interface Stop {
 const formatInr = (n: number) =>
   "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
-const getCategoryDetails = (category: string) => {
-  switch (category.toLowerCase()) {
-    case "food":
-      return { icon: <Utensils size={12} />, label: "Food" };
-    case "hotel":
-      return { icon: <Building2 size={12} />, label: "Hotel" };
-    case "transport":
-      return { icon: <Car size={12} />, label: "Transport" };
-    case "flight":
-      return { icon: <Plane size={12} />, label: "Flight" };
-    case "entertainment":
-      return { icon: <Ticket size={12} />, label: "Entertainment" };
-    case "shopping":
-      return { icon: <ShoppingBag size={12} />, label: "Shopping" };
-    default:
-      return { icon: <Landmark size={12} />, label: "Other" };
-  }
-};
+
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
+  const { showToast } = useToast();
   
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [stops, setStops] = useState<Stop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  
+  const [isAddStopOpen, setIsAddStopOpen] = useState(false);
+  const [isEndingTrip, setIsEndingTrip] = useState(false);
+  const [isAddingStop, setIsAddingStop] = useState(false);
+  const [settlingDebtId, setSettlingDebtId] = useState<string | null>(null);
 
-  const [stops, setStops] = useState<Stop[]>([
-    {
-      id: "dinner",
-      name: "Beachside Dinner",
-      category: "food",
-      date: "2026-03-18",
-      total: 4500,
-      transactions: [
-        { paidBy: "Aarav", amount: 3000, splitCount: 5, avatarColor: "#AAD9BB" },
-        { paidBy: "Priya", amount: 1500, splitCount: 5, avatarColor: "#F7DCB9" },
-      ],
-    },
-    {
-      id: "hotel",
-      name: "Hotel Booking",
-      category: "hotel",
-      date: "2026-03-16",
-      total: 12000,
-      transactions: [
-        { paidBy: "Rahul", amount: 12000, splitCount: 5, avatarColor: "#C9B7E0" },
-      ],
-    },
-  ]);
+  // ConfirmDialog state
+  type PendingAction = { kind: "endTrip" } | { kind: "settleDebt"; debt: any };
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
-  const fetchTrip = async () => {
+  const openConfirm = useCallback((action: PendingAction) => {
+    setPendingAction(action);
+    setConfirmOpen(true);
+  }, []);
+
+  const closeConfirm = useCallback(() => {
+    if (confirmLoading) return; // don't dismiss mid-flight
+    setConfirmOpen(false);
+    setPendingAction(null);
+  }, [confirmLoading]);
+
+  const fetchTripAndStops = async () => {
     if (!token || !id) return;
     try {
-      const res = await fetch(`http://localhost:3000/trips/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.status === 401) {
+      const [tripRes, stopsRes] = await Promise.all([
+        fetch(`http://localhost:3000/trips/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch(`http://localhost:3000/trips/${id}/stops`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      if (tripRes.status === 401 || stopsRes.status === 401) {
         logout();
         navigate("/auth");
         return;
       }
-      const data = await res.json();
-      if (data.success) {
-        setTrip(data.data);
+
+      const tripData = await tripRes.json();
+      const stopsData = await stopsRes.json();
+
+      if (tripData.success) {
+        setTrip(tripData.data);
       } else {
-        setError(data.message);
+        setError(tripData.message);
+      }
+
+      if (stopsData.success) {
+        setStops(stopsData.data || []);
       }
     } catch (err) {
       console.error(err);
@@ -116,39 +107,229 @@ export default function TripDetail() {
   };
 
   useEffect(() => {
-    fetchTrip();
+    fetchTripAndStops();
   }, [id, token]);
 
-  const handleEndTrip = async () => {
+  // Real-time: refetch whenever another participant mutates the trip
+  useRealtimeTrip(id, token, fetchTripAndStops);
+
+  const handleEndTrip = () => {
+    if (!token || !id || isEndingTrip) return;
+    openConfirm({ kind: "endTrip" });
+  };
+
+  const executeEndTrip = async () => {
     if (!token || !id) return;
-    if (confirm("Are you sure you want to end this trip?")) {
-      try {
-        const res = await fetch(`http://localhost:3000/trips/${id}/end`, {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (data.success) {
-          fetchTrip(); // refresh to show ended
-        } else {
-          alert(data.message);
-        }
-      } catch (err) {
-        console.error(err);
+    setIsEndingTrip(true);
+    setConfirmLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3000/trips/${id}/end`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setConfirmOpen(false);
+        setPendingAction(null);
+        await fetchTripAndStops();
+      } else {
+        showToast(data.message || "Failed to end trip", "error");
       }
+    } catch (err) {
+      console.error(err);
+      showToast("Network error", "error");
+    } finally {
+      setIsEndingTrip(false);
+      setConfirmLoading(false);
     }
   };
 
-  const [isAddStopOpen, setIsAddStopOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<{ stopId: string; txIndex: number } | null>(null);
+  const handleAddStop = async (stopData: any) => {
+    if (!token || !id) return;
+    setIsAddingStop(true);
+    try {
+      const res = await fetch(`http://localhost:3000/trips/${id}/stops`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(stopData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        showToast("Stop added successfully", "success");
+        setIsAddStopOpen(false);
+        await fetchTripAndStops();
+      } else {
+        showToast(data.message || "Failed to add stop", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Network error", "error");
+    } finally {
+      setIsAddingStop(false);
+    }
+  };
+
+  const handleSettleDebt = (debt: any) => {
+    if (!token || !id || settlingDebtId !== null) return;
+    openConfirm({ kind: "settleDebt", debt });
+  };
+
+  const executeSettleDebt = async (debt: any) => {
+    if (!token || !id) return;
+    const debtId = `${debt.fromId}-${debt.toId}`;
+    setSettlingDebtId(debtId);
+    setConfirmLoading(true);
+    const settlementData = {
+      name: `Settlement: ${debt.fromName} to ${debt.toName}`,
+      date: new Date().toISOString(),
+      totalAmount: debt.amount,
+      payments: [{ userId: debt.fromId, amount: debt.amount }],
+      splits: [debt.toId],
+    };
+    try {
+      const res = await fetch(`http://localhost:3000/trips/${id}/stops`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(settlementData),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setConfirmOpen(false);
+        setPendingAction(null);
+        showToast("Settlement recorded successfully", "success");
+        await fetchTripAndStops();
+      } else {
+        showToast(data.message || "Failed to record settlement", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Network error", "error");
+    } finally {
+      setSettlingDebtId(null);
+      setConfirmLoading(false);
+    }
+  };
+
+  // Dispatch the correct async action when user confirms
+  const handleConfirm = () => {
+    if (!pendingAction) return;
+    if (pendingAction.kind === "endTrip") executeEndTrip();
+    if (pendingAction.kind === "settleDebt") executeSettleDebt(pendingAction.debt);
+  };
+
+  // Build dialog props from current pending action
+  const dialogProps = pendingAction?.kind === "endTrip"
+    ? {
+        title: "End this trip?",
+        message: (
+          <>
+            Are you sure you want to end this trip? Once ended,{" "}
+            <strong>new stops cannot be added</strong> and this action{" "}
+            <strong>cannot be undone</strong>.
+          </>
+        ),
+        confirmLabel: "End Trip",
+        variant: "danger" as const,
+      }
+    : pendingAction?.kind === "settleDebt"
+    ? {
+        title: "Mark as paid?",
+        message: (
+          <>
+            Are you sure you want to mark this debt as paid? This will record a
+            settlement of <strong>{formatInr(pendingAction.debt.amount)}</strong> paid
+            by <strong>{pendingAction.debt.fromName}</strong> to you.
+          </>
+        ),
+        confirmLabel: "Mark as Paid",
+        variant: "primary" as const,
+      }
+    : { title: "", message: "", confirmLabel: "Confirm", variant: "primary" as const };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <div className="min-h-screen bg-background text-foreground font-sans pb-20 select-none">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <span className="h-8 w-8 border-4 border-[#2B2A4C]/10 border-t-[#2B2A4C] rounded-full animate-spin" />
+        {/* Back Link Skeleton */}
+        <div className="border-b border-[#EFECE6] bg-white/50 py-3">
+          <div className="mx-auto max-w-5xl px-8 flex items-center gap-3">
+            <div className="h-7 w-7 rounded-full bg-[#EFECE6] skeleton-shimmer" />
+            <div className="h-4 w-32 bg-[#EFECE6] rounded-md skeleton-shimmer" />
+          </div>
         </div>
+
+        <main className="mx-auto max-w-5xl px-8 mt-10">
+          <section className="py-8 border-b border-[#EFECE6] select-none">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div className="space-y-3">
+                <div className="h-12 w-64 bg-[#EFECE6] rounded-xl skeleton-shimmer" />
+                <div className="h-4 w-48 bg-[#EFECE6] rounded-md skeleton-shimmer" />
+              </div>
+              <div className="flex gap-2">
+                <div className="h-8 w-24 bg-[#EFECE6] rounded-full skeleton-shimmer" />
+                <div className="h-8 w-24 bg-[#EFECE6] rounded-full skeleton-shimmer" />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-9 w-9 rounded-full border border-white bg-[#EFECE6] skeleton-shimmer shadow-sm" />
+              ))}
+            </div>
+            <div className="h-4 w-32 bg-[#EFECE6] rounded-md mt-6 skeleton-shimmer" />
+          </section>
+
+          {/* Balances Skeleton */}
+          <section className="py-8 border-b border-[#EFECE6] select-none">
+            <div className="h-6 w-48 bg-[#EFECE6] rounded-md mb-4 skeleton-shimmer" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2].map(i => (
+                <div key={i} className="bg-white border border-[#EFECE6] rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-32 rounded bg-[#EFECE6] skeleton-shimmer" />
+                    <div className="h-6 w-20 rounded bg-[#EFECE6] skeleton-shimmer" />
+                    <div className="h-3 w-24 rounded bg-[#EFECE6] skeleton-shimmer" />
+                  </div>
+                  <div className="h-8 w-8 rounded-full bg-[#EFECE6] skeleton-shimmer" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Stops List Skeleton */}
+          <section className="mt-8 select-none">
+            <div className="h-6 w-24 bg-[#EFECE6] rounded-md mb-5 skeleton-shimmer" />
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white border border-[#EFECE6] rounded-2xl p-5 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between pb-3.5 border-b border-[#EFECE6]">
+                    <div className="space-y-2">
+                      <div className="h-5 w-44 rounded bg-[#EFECE6] skeleton-shimmer" />
+                      <div className="h-3.5 w-20 rounded bg-[#EFECE6] skeleton-shimmer" />
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div className="h-3 w-10 rounded bg-[#EFECE6] ml-auto skeleton-shimmer" />
+                      <div className="h-5 w-16 rounded bg-[#EFECE6] ml-auto skeleton-shimmer" />
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <div className="flex justify-between items-center">
+                      <div className="h-4 w-36 rounded bg-[#EFECE6] skeleton-shimmer" />
+                      <div className="h-4 w-20 rounded bg-[#EFECE6] skeleton-shimmer" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
       </div>
     );
   }
@@ -168,7 +349,9 @@ export default function TripDetail() {
     );
   }
 
-  const totalSpend = stops.reduce((acc, s) => acc + s.total, 0);
+  const settlementStops = stops.filter((s) => s.name.startsWith("Settlement:"));
+  const normalStops = stops.filter((s) => !s.name.startsWith("Settlement:"));
+  const totalSpend = normalStops.reduce((acc, s) => acc + s.total, 0);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans pb-20">
@@ -207,25 +390,34 @@ export default function TripDetail() {
             <div className="flex items-center gap-2 select-none shrink-0">
               {(!trip.end_date) && (
                 <button
+                  disabled={isEndingTrip || isAddingStop || settlingDebtId !== null}
                   onClick={handleEndTrip}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-red-500 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-transform duration-200 cursor-pointer shadow-xs hover:bg-red-100"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-red-500 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-all duration-200 cursor-pointer shadow-xs hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Flag size={13} /> End Trip
+                  {isEndingTrip ? (
+                    <span className="h-3.5 w-3.5 border-2 border-red-600/20 border-t-red-600 rounded-full animate-spin" />
+                  ) : (
+                    <Flag size={13} />
+                  )}
+                  {isEndingTrip ? "Ending..." : "End Trip"}
                 </button>
               )}
-              <button
-                onClick={() => setIsAddStopOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] px-4 py-2 text-xs font-bold text-white transition-transform duration-200 cursor-pointer shadow-xs hover:bg-[#1f1e36]"
-              >
-                <Plus size={13} /> Add Stop
-              </button>
+              {(!trip.end_date) && (
+                <button
+                  disabled={isEndingTrip || isAddingStop || settlingDebtId !== null}
+                  onClick={() => setIsAddStopOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-4 py-2 text-xs font-bold text-white transition-all duration-200 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus size={13} /> Add Stop
+                </button>
+              )}
             </div>
           </div>
 
           <div className="flex -space-x-1.5 mt-4 select-none">
-            {trip.participants.map((p) => (
+            {trip.participants.map((p, idx) => (
               <img
-                key={p.id}
+                key={p.id ? `${p.id}-${idx}` : idx}
                 src={resolveAvatarUrl(p.avatar_url || "", p.id || p.name)}
                 alt={p.name}
                 title={p.name}
@@ -241,44 +433,206 @@ export default function TripDetail() {
           </div>
         </section>
 
-        {/* Stops Display - Mocked for visual */}
-        <section className="mb-8 mt-8">
+        {/* Balances & Debts Panel */}
+        <section className="py-8 border-b border-[#EFECE6]">
           <h2 className="font-display text-2xl font-bold tracking-tight text-foreground mb-5 select-none">
-            Stops (Mocked Data)
+            Balances & Debts
           </h2>
-
-          <div className="space-y-5 w-full">
-            {stops.map((stop) => {
-              const { icon: CatIcon, label: CatLabel } = getCategoryDetails(stop.category);
-              return (
-                <motion.article
-                  key={stop.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white border border-[#EFECE6] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#AAD9BB] transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-between gap-4 pb-3.5 border-b border-[#EFECE6]">
-                    <div className="flex items-center gap-2.5">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F5F0E8] px-3 py-1 text-xs text-[#2B2A4C] font-semibold border border-[#EFECE6] select-none">
-                        {CatIcon}
-                        <span>{CatLabel}</span>
+          
+          {((trip.debts && trip.debts.length > 0) || (settlementStops && settlementStops.length > 0)) ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Active Debts */}
+              {trip.debts && trip.debts.map((debt, idx) => {
+                const isCreditor = debt.toId === user?.id;
+                const isDebtor = debt.fromId === user?.id;
+                
+                return (
+                  <div
+                    key={`debt-${idx}`}
+                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 ${
+                      isCreditor
+                        ? "border-[#AAD9BB] bg-[#eef7f1]/10"
+                        : isDebtor
+                        ? "border-[#F7DCB9] bg-[#fdfaf5]"
+                        : "border-[#EFECE6] bg-white"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-sm text-foreground font-medium truncate">
+                        <span className="font-bold">{debt.fromName}</span> owes{" "}
+                        <span className="font-bold">{debt.toName}</span>
                       </span>
-                      <div>
-                        <h3 className="font-semibold text-[#2B2A4C] leading-snug">{stop.name}</h3>
-                        <span className="text-[11px] text-[#8B8A9B] block mt-0.5 select-none">{stop.date}</span>
+                      <span className={`text-lg font-extrabold ${isCreditor ? "text-[#1A5C3A]" : isDebtor ? "text-[#7A4A00]" : "text-[#2B2A4C]"}`}>
+                        {formatInr(debt.amount)}
+                      </span>
+                      {isCreditor && (
+                        <span className="text-[10px] text-[#1A5C3A] font-semibold">
+                          You are owed this money
+                        </span>
+                      )}
+                      {isDebtor && (
+                        <span className="text-[10px] text-[#7A4A00] font-semibold">
+                          You owe this money
+                        </span>
+                      )}
+                    </div>
+                    
+                    {isCreditor && (
+                      <button
+                        disabled={settlingDebtId !== null}
+                        onClick={() => handleSettleDebt(debt)}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 shrink-0 ${
+                          settlingDebtId === `${debt.fromId}-${debt.toId}`
+                            ? "bg-[#EFECE6] text-[#8B8A9B]"
+                            : "bg-[#2B2A4C] hover:bg-[#1f1e36] text-white cursor-pointer"
+                        }`}
+                        title="Mark as Paid"
+                      >
+                        {settlingDebtId === `${debt.fromId}-${debt.toId}` ? (
+                          <span className="h-4 w-4 border-2 border-[#8B8A9B]/20 border-t-[#8B8A9B] rounded-full animate-spin" />
+                        ) : (
+                          <Check size={16} strokeWidth={2.5} />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Completed Settlements */}
+              {settlementStops
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .map((stop) => (
+                  <motion.div
+                    key={`settlement-${stop.id}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between p-4 rounded-2xl border border-[#AAD9BB]/40 bg-[#eef7f1]/5 transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef7f1] text-[#1A5C3A] border border-[#AAD9BB]/50 shrink-0">
+                        <Check size={14} strokeWidth={3} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-sm font-semibold text-[#1A5C3A] leading-snug truncate block">
+                          {stop.name}
+                        </span>
+                        <span className="text-[10px] text-[#8B8A9B] block mt-0.5 select-none">
+                          {new Date(stop.date).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-right select-none shrink-0">
-                      <span className="text-[10px] text-[#8B8A9B] block font-semibold uppercase tracking-wider">Total</span>
-                      <span className="font-bold text-lg text-foreground">{formatInr(stop.total)}</span>
+                    <div className="text-right select-none shrink-0 pl-2">
+                      <span className="text-[9px] text-[#1A5C3A] font-bold uppercase tracking-wider block">
+                        Settled
+                      </span>
+                      <span className="font-extrabold text-[#1A5C3A] text-base">
+                        {formatInr(stop.total)}
+                      </span>
                     </div>
-                  </div>
-                </motion.article>
-              );
-            })}
-          </div>
+                  </motion.div>
+                ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[#8B8A9B] font-medium select-none">
+              No activity yet.
+            </p>
+          )}
+        </section>
+
+        {/* Stops Display */}
+        <section className="mb-8 mt-8">
+          <h2 className="font-display text-2xl font-bold tracking-tight text-foreground mb-5 select-none">
+            Stops
+          </h2>
+
+          {normalStops.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-2xl border border-[#EFECE6] border-dashed">
+              <p className="text-[#8B8A9B] font-medium text-sm">No stops added yet.</p>
+              {!trip.end_date && (
+                <button
+                  onClick={() => setIsAddStopOpen(true)}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] px-4 py-2 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs hover:bg-[#1f1e36]"
+                >
+                  <Plus size={13} /> Add First Stop
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-5 w-full">
+              {normalStops.map((stop) => {
+                return (
+                  <motion.article
+                    key={stop.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white border border-[#EFECE6] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#AAD9BB] transition-all duration-200 group"
+                  >
+                    <div className="flex items-center justify-between gap-4 pb-3.5 border-b border-[#EFECE6]">
+                      <div className="flex items-center gap-2.5">
+                        <div>
+                          <h3 className="font-semibold text-[#2B2A4C] leading-snug">{stop.name}</h3>
+                          <span className="text-[11px] text-[#8B8A9B] block mt-0.5 select-none">{new Date(stop.date).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="text-right select-none shrink-0">
+                        <span className="text-[10px] text-[#8B8A9B] block font-semibold uppercase tracking-wider">Total</span>
+                        <span className="font-bold text-lg text-foreground">{formatInr(stop.total)}</span>
+                      </div>
+                    </div>
+                    
+                    {stop.transactions && stop.transactions.length > 0 && (
+                      <div className="pt-3.5 space-y-2 select-none">
+                        {stop.transactions.map((tx, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs">
+                            <span className="text-[#8B8A9B]">
+                              Paid by <span className="font-semibold text-[#2B2A4C]">{tx.paidBy}</span>
+                            </span>
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-[#2B2A4C]">{formatInr(tx.amount)}</span>
+                              <span className="text-[10px] text-[#8B8A9B] bg-[#F5F0E8] px-2 py-0.5 rounded border border-[#EFECE6]">
+                                split with {tx.splitCount}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.article>
+                );
+              })}
+            </div>
+          )}
         </section>
       </main>
+
+      <AnimatePresence>
+        {isAddStopOpen && trip && (
+          <NewStopModal
+            isOpen={isAddStopOpen}
+            onClose={() => {
+              if (!isAddingStop) setIsAddStopOpen(false);
+            }}
+            onCreate={handleAddStop}
+            participants={trip.participants.map(p => ({
+              ...p,
+              id: p.id || ""
+            }))}
+            isSubmitting={isAddingStop}
+          />
+        )}
+      </AnimatePresence>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title={dialogProps.title}
+        message={dialogProps.message}
+        confirmLabel={dialogProps.confirmLabel}
+        variant={dialogProps.variant}
+        isLoading={confirmLoading}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }
