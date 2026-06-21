@@ -7,12 +7,12 @@ import { wsManager } from '../ws/wsManager';
 export class TripController {
   static async getUserTrips(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
       
-      const trips = await TripService.getUserTrips((req as any).user.id);
+      const trips = await TripService.getUserTrips(req.user.id);
       
       res.status(200).json(createResponse(true, 'Trips retrieved successfully', trips));
     } catch (error) {
@@ -22,12 +22,12 @@ export class TripController {
 
   static async getSingleTrip(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
       
-      const trip = await TripService.getSingleTrip(req.params.id as string, (req as any).user.id);
+      const trip = await TripService.getSingleTrip(req.params.id as string, req.user.id);
       res.status(200).json(createResponse(true, 'Trip retrieved successfully', trip));
     } catch (error) {
       next(error);
@@ -36,13 +36,13 @@ export class TripController {
 
   static async createTrip(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
 
       const parsedData = tripCreateSchema.parse(req.body);
-      const newTrip = await TripService.createTrip((req as any).user.id, parsedData);
+      const newTrip = await TripService.createTrip(req.user.id, parsedData);
 
       // Notify each invitee's dashboard in real-time so invitations appear without a refresh
       if (parsedData.invitees.length > 0) {
@@ -61,12 +61,12 @@ export class TripController {
 
   static async endTrip(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
       const tripId = req.params.id as string;
-      const trip = await TripService.endTrip(tripId, (req as any).user.id);
+      const trip = await TripService.endTrip(tripId, req.user.id);
 
       // Broadcast to all clients in the trip room
       wsManager.broadcast(tripId, 'trip_ended', {});
@@ -82,11 +82,11 @@ export class TripController {
 
   static async deleteTrip(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
-      await TripService.deleteTrip(req.params.id as string, (req as any).user.id);
+      await TripService.deleteTrip(req.params.id as string, req.user.id);
       res.status(200).json(createResponse(true, 'Trip deleted/left successfully'));
     } catch (error: any) {
       if (error.message && (error.message.includes('not ended') || error.message.includes('settled'))) {
@@ -103,7 +103,7 @@ export class TripController {
 
   static async getStops(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
@@ -116,13 +116,13 @@ export class TripController {
 
   static async createStop(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
       const parsedData = stopCreateSchema.parse(req.body);
       const tripId = req.params.id as string;
-      const newStop = await TripService.createStop(tripId, (req as any).user.id, parsedData);
+      const newStop = await TripService.createStop(tripId, req.user.id, parsedData);
 
       // Broadcast to all clients viewing this trip
       wsManager.broadcast(tripId, 'stop_created', { stopId: newStop.id });
@@ -142,11 +142,11 @@ export class TripController {
 
   static async getPendingInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
-      const invites = await TripService.getPendingInvitations((req as any).user.id);
+      const invites = await TripService.getPendingInvitations(req.user.id);
       res.status(200).json(createResponse(true, 'Invitations retrieved', invites));
     } catch (error) {
       next(error);
@@ -155,7 +155,7 @@ export class TripController {
 
   static async respondToInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!(req as any).user) {
+      if (!req.user) {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
@@ -164,7 +164,7 @@ export class TripController {
         res.status(400).json(createResponse(false, 'Validation error', undefined, [{ message: 'accept must be a boolean' }]));
         return;
       }
-      const result = await TripService.respondToInvitation(req.params.id as string, (req as any).user.id, accept);
+      const result = await TripService.respondToInvitation(req.params.id as string, req.user.id, accept);
 
       if (accept && (result as any).tripId) {
         const tripId = (result as any).tripId;

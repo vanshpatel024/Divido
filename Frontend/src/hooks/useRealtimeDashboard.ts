@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 const WS_URL = 'ws://localhost:3000/ws';
 
@@ -22,65 +22,65 @@ export function useRealtimeDashboard(
   userId: string | undefined,
   onUpdate: () => void
 ): void {
-  const wsRef       = useRef<WebSocket | null>(null);
-  const attemptRef  = useRef(0);
-  const mountedRef  = useRef(true);
+  const wsRef = useRef<WebSocket | null>(null);
+  const attemptRef = useRef(0);
+  const mountedRef = useRef(true);
   const onUpdateRef = useRef(onUpdate);
 
-  onUpdateRef.current = onUpdate;
-
-  const connect = useCallback(() => {
-    if (!token || !userId || !mountedRef.current) return;
-
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      attemptRef.current = 0;
-      ws.send(JSON.stringify({ type: 'auth', token }));
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data as string) as { type: string };
-
-        if (msg.type === 'authenticated') {
-          // Subscribe to dashboard room
-          ws.send(JSON.stringify({ type: 'subscribe_dashboard', userId }));
-          return;
-        }
-
-        // Any trip change triggers a full dashboard refetch
-        if (
-          msg.type === 'trip_created'       ||
-          msg.type === 'trip_ended'         ||
-          msg.type === 'stop_created'       ||
-          msg.type === 'participant_joined' ||
-          msg.type === 'invitation_received'
-        ) {
-          onUpdateRef.current();
-        }
-      } catch {
-        // Ignore malformed messages
-      }
-    };
-
-    ws.onclose = (event) => {
-      if (!mountedRef.current) return;
-      if (event.code === 1000) return;
-      const delay = backoff(attemptRef.current++);
-      setTimeout(() => {
-        if (mountedRef.current) connect();
-      }, delay);
-    };
-
-    ws.onerror = () => {
-      // onclose fires after onerror — reconnect handled there
-    };
-  }, [token, userId]);
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     mountedRef.current = true;
+
+    function connect() {
+      if (!token || !userId || !mountedRef.current) return;
+
+      const ws = new WebSocket(WS_URL);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        attemptRef.current = 0;
+        ws.send(JSON.stringify({ type: 'auth', token }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data as string) as { type: string };
+
+          if (msg.type === 'authenticated') {
+            ws.send(JSON.stringify({ type: 'subscribe_dashboard', userId }));
+            return;
+          }
+
+          if (
+            msg.type === 'trip_created' ||
+            msg.type === 'trip_ended' ||
+            msg.type === 'stop_created' ||
+            msg.type === 'participant_joined' ||
+            msg.type === 'invitation_received'
+          ) {
+            onUpdateRef.current();
+          }
+        } catch {
+          // Ignore malformed messages
+        }
+      };
+
+      ws.onclose = (event) => {
+        if (!mountedRef.current) return;
+        if (event.code === 1000) return;
+        
+        const delay = backoff(attemptRef.current++);
+        setTimeout(() => {
+          if (mountedRef.current) connect();
+        }, delay);
+      };
+
+      ws.onerror = () => {};
+    }
+
     connect();
 
     return () => {
@@ -90,5 +90,5 @@ export function useRealtimeDashboard(
         wsRef.current = null;
       }
     };
-  }, [connect]);
+  }, [token, userId]);
 }

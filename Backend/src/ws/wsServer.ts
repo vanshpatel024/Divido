@@ -46,7 +46,7 @@ function send(ws: ExtendedWs, payload: object): void {
 export function initWsServer(httpServer: Server): void {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
-  // ── Heartbeat interval ────────────────────────────────────────────────────
+  // Setup ping/pong heartbeat interval to clear stale connections
   const heartbeatTimer = setInterval(() => {
     wss.clients.forEach((rawWs) => {
       const ws = rawWs as ExtendedWs;
@@ -63,7 +63,7 @@ export function initWsServer(httpServer: Server): void {
 
   wss.on('close', () => clearInterval(heartbeatTimer));
 
-  // ── New connection ────────────────────────────────────────────────────────
+  // Handle incoming connections
   wss.on('connection', (rawWs: WebSocket, _req: IncomingMessage) => {
     const ws = rawWs as ExtendedWs;
     ws.isAlive = true;
@@ -80,7 +80,7 @@ export function initWsServer(httpServer: Server): void {
       }
     }, HEARTBEAT_TIMEOUT_MS);
 
-    // ── Message handler ───────────────────────────────────────────────────
+    // Handle incoming messages
     ws.on('message', async (raw) => {
       let msg: { type: string; token?: string; tripId?: string };
 
@@ -91,7 +91,7 @@ export function initWsServer(httpServer: Server): void {
         return;
       }
 
-      // ── Step 1: auth ──────────────────────────────────────────────────
+      // Step 1: Authentication
       if (msg.type === 'auth') {
         if (!msg.token) {
           send(ws, { type: 'error', message: 'Token required' });
@@ -120,7 +120,7 @@ export function initWsServer(httpServer: Server): void {
         return;
       }
 
-      // ── Step 2: subscribe to a trip ───────────────────────────────────
+      // Step 2: Subscribe to a specific trip room
       if (msg.type === 'subscribe') {
         if (!msg.tripId) {
           send(ws, { type: 'error', message: 'tripId required' });
@@ -139,7 +139,7 @@ export function initWsServer(httpServer: Server): void {
         return;
       }
 
-      // ── Step 3: unsubscribe ───────────────────────────────────────────
+      // Step 3: Unsubscribe from a trip room
       if (msg.type === 'unsubscribe') {
         if (msg.tripId) {
           wsManager.removeFromRoom(msg.tripId, ws);
@@ -148,7 +148,7 @@ export function initWsServer(httpServer: Server): void {
         return;
       }
 
-      // ── Step 4: subscribe to dashboard (user-scoped room) ────────────
+      // Step 4: Subscribe to personal dashboard room
       if (msg.type === 'subscribe_dashboard') {
         // Dashboard room key is prefixed to avoid collision with trip ids
         const dashRoomId = `dashboard:${ws.userId}`;
@@ -158,7 +158,7 @@ export function initWsServer(httpServer: Server): void {
       }
     });
 
-    // ── Cleanup on disconnect ─────────────────────────────────────────────
+    // Cleanup resources upon disconnect
     ws.on('close', () => {
       if (authTimeout) clearTimeout(authTimeout);
       wsManager.removeFromAllRooms(ws);

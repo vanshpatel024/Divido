@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 const WS_URL = 'ws://localhost:3000/ws';
 
@@ -20,67 +20,63 @@ export function useRealtimeTrip(
   token: string | null,
   onUpdate: () => void
 ): void {
-  const wsRef        = useRef<WebSocket | null>(null);
-  const attemptRef   = useRef(0);
-  const mountedRef   = useRef(true);
-  const onUpdateRef  = useRef(onUpdate);
+  const wsRef = useRef<WebSocket | null>(null);
+  const attemptRef = useRef(0);
+  const mountedRef = useRef(true);
+  const onUpdateRef = useRef(onUpdate);
 
-  // Keep the callback ref fresh without re-triggering the effect
-  onUpdateRef.current = onUpdate;
-
-  const connect = useCallback(() => {
-    if (!tripId || !token || !mountedRef.current) return;
-
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      attemptRef.current = 0; // reset backoff on success
-      // Step 1: authenticate (token in message body — never in URL)
-      ws.send(JSON.stringify({ type: 'auth', token }));
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data as string) as { type: string; userId?: string; tripId?: string };
-
-        if (msg.type === 'authenticated') {
-          // Step 2: subscribe to this trip's room
-          ws.send(JSON.stringify({ type: 'subscribe', tripId }));
-          return;
-        }
-
-        // Any of these events means trip data has changed — refetch
-        if (
-          msg.type === 'stop_created'     ||
-          msg.type === 'trip_ended'       ||
-          msg.type === 'participant_joined'
-        ) {
-          onUpdateRef.current();
-        }
-      } catch {
-        // Ignore malformed messages
-      }
-    };
-
-    ws.onclose = (event) => {
-      if (!mountedRef.current) return;
-      // Don't reconnect if closed cleanly on unmount (code 1000)
-      if (event.code === 1000) return;
-
-      const delay = backoff(attemptRef.current++);
-      setTimeout(() => {
-        if (mountedRef.current) connect();
-      }, delay);
-    };
-
-    ws.onerror = () => {
-      // onclose fires immediately after onerror — reconnect handled there
-    };
-  }, [tripId, token]);
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     mountedRef.current = true;
+
+    function connect() {
+      if (!tripId || !token || !mountedRef.current) return;
+
+      const ws = new WebSocket(WS_URL);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        attemptRef.current = 0;
+        ws.send(JSON.stringify({ type: 'auth', token }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data as string) as { type: string; userId?: string; tripId?: string };
+
+          if (msg.type === 'authenticated') {
+            ws.send(JSON.stringify({ type: 'subscribe', tripId }));
+            return;
+          }
+
+          if (
+            msg.type === 'stop_created' ||
+            msg.type === 'trip_ended' ||
+            msg.type === 'participant_joined'
+          ) {
+            onUpdateRef.current();
+          }
+        } catch {
+          // Ignore malformed messages
+        }
+      };
+
+      ws.onclose = (event) => {
+        if (!mountedRef.current) return;
+        if (event.code === 1000) return;
+        
+        const delay = backoff(attemptRef.current++);
+        setTimeout(() => {
+          if (mountedRef.current) connect();
+        }, delay);
+      };
+
+      ws.onerror = () => {};
+    }
+
     connect();
 
     return () => {
@@ -90,5 +86,5 @@ export function useRealtimeTrip(
         wsRef.current = null;
       }
     };
-  }, [connect]);
+  }, [tripId, token]);
 }

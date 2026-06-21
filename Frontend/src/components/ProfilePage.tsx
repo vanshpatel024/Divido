@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { ShieldAlert, Mail, AtSign, ChevronLeft, KeyRound } from "lucide-react";
 import Navbar from "./Navbar";
 import { useToast } from "./Toast";
