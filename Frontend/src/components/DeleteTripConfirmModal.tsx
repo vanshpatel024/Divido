@@ -90,8 +90,8 @@ export default function DeleteTripConfirmModal({
             type="button"
             disabled={isDeleting}
             onClick={onClose}
-            className={`rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] transition-transform duration-200 bg-white ${
-              isDeleting ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] cursor-pointer"
+            className={`rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] transition-colors duration-200 bg-white ${
+              isDeleting ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F5F0E8] cursor-pointer"
             }`}
           >
             Cancel
@@ -100,11 +100,11 @@ export default function DeleteTripConfirmModal({
             type="button"
             onClick={handleDelete}
             disabled={!isDeletable || isDeleting}
-            className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-bold transition-all duration-200 min-w-20 ${
+            className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-bold transition-colors duration-200 min-w-20 ${
               isDeleting
                 ? "bg-red-300 text-white cursor-not-allowed"
                 : isDeletable 
-                ? "bg-red-500 hover:bg-red-600 text-white hover:scale-[1.02] cursor-pointer" 
+                ? "bg-red-500 hover:bg-red-600 text-white cursor-pointer" 
                 : "bg-red-200 text-white cursor-not-allowed"
             }`}
           >

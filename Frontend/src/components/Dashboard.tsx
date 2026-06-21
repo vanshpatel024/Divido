@@ -8,6 +8,7 @@ import DeleteTripConfirmModal from "./DeleteTripConfirmModal";
 import type { Trip } from "../types";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useRealtimeDashboard } from "../hooks/useRealtimeDashboard";
 
 function EmptyState({ onAddClick }: { onAddClick: () => void }) {
   return (
@@ -32,7 +33,7 @@ function EmptyState({ onAddClick }: { onAddClick: () => void }) {
       
       <button
         onClick={onAddClick}
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-6 py-2.5 text-xs font-bold text-white transition-transform hover:scale-[1.02] cursor-pointer shadow-xs"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-6 py-2.5 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs"
       >
         <Plus size={14} /> Create Trip
       </button>
@@ -42,7 +43,7 @@ function EmptyState({ onAddClick }: { onAddClick: () => void }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
   const [tripsList, setTripsList] = useState<Trip[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,6 +97,9 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardData();
   }, [token, logout, navigate]);
+
+  // Real-time: refetch whenever any trip-level event fires for this user
+  useRealtimeDashboard(token, user?.id, fetchDashboardData);
 
   const hasTrips = tripsList.length > 0;
   const hasInvitations = invitations.length > 0;
@@ -353,7 +357,7 @@ export default function Dashboard() {
           </div>
           <button
             onClick={() => setIsNewOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-5 py-2.5 text-xs font-bold text-white transition-transform hover:scale-[1.02] cursor-pointer shadow-xs select-none"
+            className="inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-5 py-2.5 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs select-none"
           >
             <Plus size={14} /> New Trip
           </button>

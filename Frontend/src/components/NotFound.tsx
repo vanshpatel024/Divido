@@ -33,7 +33,7 @@ export default function NotFound() {
       {/* Action Button */}
       <Link
         to="/dashboard"
-        className="inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] text-white px-6 py-3 text-sm font-bold transition-transform hover:scale-[1.02] shadow-sm decoration-none"
+        className="inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] text-white px-6 py-3 text-sm font-bold transition-colors duration-200 shadow-sm decoration-none"
       >
         <ChevronLeft size={16} />
         Go back to your trips

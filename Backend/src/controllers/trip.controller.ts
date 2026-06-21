@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { TripService, tripCreateSchema, stopCreateSchema } from '../services/trip.service';
 import { createResponse } from '../utils/response';
 import { ZodError } from 'zod';
+import { wsManager } from '../ws/wsManager';
 
 export class TripController {
   static async getUserTrips(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -43,6 +44,11 @@ export class TripController {
       const parsedData = tripCreateSchema.parse(req.body);
       const newTrip = await TripService.createTrip((req as any).user.id, parsedData);
 
+      // Notify each invitee's dashboard in real-time so invitations appear without a refresh
+      if (parsedData.invitees.length > 0) {
+        wsManager.broadcastToDashboards(parsedData.invitees, 'invitation_received', { tripId: newTrip.id });
+      }
+
       res.status(201).json(createResponse(true, 'Trip created successfully', newTrip));
     } catch (error) {
       if (error instanceof ZodError) {
@@ -59,7 +65,15 @@ export class TripController {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
-      const trip = await TripService.endTrip(req.params.id as string, (req as any).user.id);
+      const tripId = req.params.id as string;
+      const trip = await TripService.endTrip(tripId, (req as any).user.id);
+
+      // Broadcast to all clients in the trip room
+      wsManager.broadcast(tripId, 'trip_ended', {});
+      // Also push to each participant's dashboard room
+      const participantIds = (trip.participants || []).map((p: any) => p.id).filter(Boolean);
+      wsManager.broadcastToDashboards(participantIds, 'trip_ended', { tripId });
+
       res.status(200).json(createResponse(true, 'Trip ended successfully', trip));
     } catch (error) {
       next(error);
@@ -107,7 +121,15 @@ export class TripController {
         return;
       }
       const parsedData = stopCreateSchema.parse(req.body);
-      const newStop = await TripService.createStop(req.params.id as string, (req as any).user.id, parsedData);
+      const tripId = req.params.id as string;
+      const newStop = await TripService.createStop(tripId, (req as any).user.id, parsedData);
+
+      // Broadcast to all clients viewing this trip
+      wsManager.broadcast(tripId, 'stop_created', { stopId: newStop.id });
+      // Also push to each participant's dashboard room so their totals refresh
+      const participantIds = await TripService.getTripParticipantIds(tripId);
+      wsManager.broadcastToDashboards(participantIds, 'stop_created', { tripId });
+
       res.status(201).json(createResponse(true, 'Stop created', newStop));
     } catch (error) {
       if (error instanceof ZodError) {
@@ -142,7 +164,18 @@ export class TripController {
         res.status(400).json(createResponse(false, 'Validation error', undefined, [{ message: 'accept must be a boolean' }]));
         return;
       }
-      await TripService.respondToInvitation(req.params.id as string, (req as any).user.id, accept);
+      const result = await TripService.respondToInvitation(req.params.id as string, (req as any).user.id, accept);
+
+      if (accept && (result as any).tripId) {
+        const tripId = (result as any).tripId;
+        // Broadcast to anyone currently viewing the trip detail page
+        wsManager.broadcast(tripId, 'participant_joined', {});
+        // Also broadcast to all existing participants' dashboard rooms
+        // (the sender is likely on the dashboard, not the trip page)
+        const participantIds = await TripService.getTripParticipantIds(tripId);
+        wsManager.broadcastToDashboards(participantIds, 'participant_joined', { tripId });
+      }
+
       res.status(200).json(createResponse(true, 'Invitation response saved'));
     } catch (error) {
       next(error);

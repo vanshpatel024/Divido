@@ -110,6 +110,34 @@ export class AuthService {
     return data;
   }
 
+  static async requestPasswordReset(email: string, redirectTo?: string) {
+    const { data, error } = await supabaseAnon.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    if (error) {
+      throw error;
+    }
+    return data;
+  }
+
+  static async checkEmailExists(email: string): Promise<boolean> {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    if (error) {
+      throw error;
+    }
+    return (data.users || []).some((user: any) => user.email?.toLowerCase() === email.toLowerCase());
+  }
+
+  static async updatePassword(userId: string, newPassword: string) {
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword
+    });
+    if (error) {
+      throw error;
+    }
+    return data;
+  }
+
   static async deleteAccount(userId: string) {
     // 1. Delete all invitations sent or received by this user
     await supabaseAdmin

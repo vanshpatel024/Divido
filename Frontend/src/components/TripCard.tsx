@@ -10,6 +10,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import type { Trip, Balance } from "../types";
+import { resolveAvatarUrl } from "../context/AuthContext";
 
 const formatInr = (n: number) =>
   "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -51,16 +52,27 @@ function AvatarStack({ participants }: { participants: Trip["participants"] }) {
   return (
     <div className="flex items-center">
       <div className="flex -space-x-2">
-        {shown.map((p) => (
-          <div
-            key={p.id || p.name}
-            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-foreground"
-            style={{ backgroundColor: p.color }}
-            title={p.name}
-          >
-            {p.name[0]}
-          </div>
-        ))}
+        {shown.map((p) => {
+          const avatarUrl = p.avatar_url ? resolveAvatarUrl(p.avatar_url, p.id || p.name) : null;
+          return (
+            <div
+              key={p.id || p.name}
+              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-foreground overflow-hidden"
+              style={{ backgroundColor: p.color }}
+              title={p.name}
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={p.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                p.name[0]
+              )}
+            </div>
+          );
+        })}
         {overflow > 0 && (
           <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#EFECE6] text-xs font-semibold text-foreground/70">
             +{overflow}

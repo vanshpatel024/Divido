@@ -253,8 +253,8 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
               disabled={isSubmitting}
               type="button"
               onClick={onClose}
-              className={`rounded-full border border-[#2B2A4C] px-6 py-2.5 text-xs font-bold text-[#2B2A4C] transition-transform duration-200 cursor-pointer bg-white ${
-                isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"
+              className={`rounded-full border border-[#2B2A4C] px-6 py-2.5 text-xs font-bold text-[#2B2A4C] transition-colors duration-200 cursor-pointer bg-white ${
+                isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F5F0E8]"
               }`}
             >
               Cancel
@@ -262,8 +262,8 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
             <button
               disabled={isSubmitting}
               type="submit"
-              className={`inline-flex items-center justify-center rounded-full bg-[#2B2A4C] text-white px-6 py-2.5 text-xs font-bold transition-all duration-200 min-w-32 cursor-pointer ${
-                isSubmitting ? "opacity-75 cursor-not-allowed" : "hover:scale-[1.02] hover:bg-[#1f1e36]"
+              className={`inline-flex items-center justify-center rounded-full bg-[#2B2A4C] text-white px-6 py-2.5 text-xs font-bold transition-colors duration-200 min-w-32 cursor-pointer ${
+                isSubmitting ? "opacity-75 cursor-not-allowed" : "hover:bg-[#1f1e36]"
               }`}
             >
               {isSubmitting ? (

@@ -8,6 +8,7 @@ import { ToastProvider } from "./components/Toast";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import ResetPassword from "./components/ResetPassword";
 
 export default function App() {
   return (
@@ -50,6 +51,10 @@ export default function App() {
                   <Auth />
                 </PublicRoute>
               }
+            />
+            <Route
+              path="/reset-password"
+              element={<ResetPassword />}
             />
             <Route path="*" element={<NotFound />} />
           </Routes>

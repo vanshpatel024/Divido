@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,6 +12,8 @@ import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import type { Trip } from "../types";
 import NewStopModal from "./NewStopModal";
 import { useToast } from "./Toast";
+import { useRealtimeTrip } from "../hooks/useRealtimeTrip";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface Transaction {
   paidBy: string;
@@ -48,6 +50,23 @@ export default function TripDetail() {
   const [isEndingTrip, setIsEndingTrip] = useState(false);
   const [isAddingStop, setIsAddingStop] = useState(false);
   const [settlingDebtId, setSettlingDebtId] = useState<string | null>(null);
+
+  // ConfirmDialog state
+  type PendingAction = { kind: "endTrip" } | { kind: "settleDebt"; debt: any };
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+
+  const openConfirm = useCallback((action: PendingAction) => {
+    setPendingAction(action);
+    setConfirmOpen(true);
+  }, []);
+
+  const closeConfirm = useCallback(() => {
+    if (confirmLoading) return; // don't dismiss mid-flight
+    setConfirmOpen(false);
+    setPendingAction(null);
+  }, [confirmLoading]);
 
   const fetchTripAndStops = async () => {
     if (!token || !id) return;
@@ -91,26 +110,37 @@ export default function TripDetail() {
     fetchTripAndStops();
   }, [id, token]);
 
-  const handleEndTrip = async () => {
+  // Real-time: refetch whenever another participant mutates the trip
+  useRealtimeTrip(id, token, fetchTripAndStops);
+
+  const handleEndTrip = () => {
     if (!token || !id || isEndingTrip) return;
-    if (confirm("Are you sure you want to end this trip?")) {
-      setIsEndingTrip(true);
-      try {
-        const res = await fetch(`http://localhost:3000/trips/${id}/end`, {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (data.success) {
-          await fetchTripAndStops();
-        } else {
-          alert(data.message);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsEndingTrip(false);
+    openConfirm({ kind: "endTrip" });
+  };
+
+  const executeEndTrip = async () => {
+    if (!token || !id) return;
+    setIsEndingTrip(true);
+    setConfirmLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3000/trips/${id}/end`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setConfirmOpen(false);
+        setPendingAction(null);
+        await fetchTripAndStops();
+      } else {
+        showToast(data.message || "Failed to end trip", "error");
       }
+    } catch (err) {
+      console.error(err);
+      showToast("Network error", "error");
+    } finally {
+      setIsEndingTrip(false);
+      setConfirmLoading(false);
     }
   };
 
@@ -144,48 +174,85 @@ export default function TripDetail() {
     }
   };
 
-  const handleSettleDebt = async (debt: any) => {
+  const handleSettleDebt = (debt: any) => {
     if (!token || !id || settlingDebtId !== null) return;
+    openConfirm({ kind: "settleDebt", debt });
+  };
+
+  const executeSettleDebt = async (debt: any) => {
+    if (!token || !id) return;
     const debtId = `${debt.fromId}-${debt.toId}`;
-    if (confirm(`Are you sure you want to mark the debt of ${formatInr(debt.amount)} from ${debt.fromName} to you as paid? This will record a settlement transaction.`)) {
-      setSettlingDebtId(debtId);
-      const settlementData = {
-        name: `Settlement: ${debt.fromName} to ${debt.toName}`,
-        date: new Date().toISOString(),
-        totalAmount: debt.amount,
-        payments: [
-          { userId: debt.fromId, amount: debt.amount }
-        ],
-        splits: [debt.toId]
-      };
-      
-      try {
-        const res = await fetch(`http://localhost:3000/trips/${id}/stops`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(settlementData),
-        });
-
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-          showToast("Settlement recorded successfully", "success");
-          await fetchTripAndStops();
-        } else {
-          showToast(data.message || "Failed to record settlement", "error");
-        }
-      } catch (error) {
-        console.error(error);
-        showToast("Network error", "error");
-      } finally {
-        setSettlingDebtId(null);
+    setSettlingDebtId(debtId);
+    setConfirmLoading(true);
+    const settlementData = {
+      name: `Settlement: ${debt.fromName} to ${debt.toName}`,
+      date: new Date().toISOString(),
+      totalAmount: debt.amount,
+      payments: [{ userId: debt.fromId, amount: debt.amount }],
+      splits: [debt.toId],
+    };
+    try {
+      const res = await fetch(`http://localhost:3000/trips/${id}/stops`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(settlementData),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setConfirmOpen(false);
+        setPendingAction(null);
+        showToast("Settlement recorded successfully", "success");
+        await fetchTripAndStops();
+      } else {
+        showToast(data.message || "Failed to record settlement", "error");
       }
+    } catch (error) {
+      console.error(error);
+      showToast("Network error", "error");
+    } finally {
+      setSettlingDebtId(null);
+      setConfirmLoading(false);
     }
   };
 
+  // Dispatch the correct async action when user confirms
+  const handleConfirm = () => {
+    if (!pendingAction) return;
+    if (pendingAction.kind === "endTrip") executeEndTrip();
+    if (pendingAction.kind === "settleDebt") executeSettleDebt(pendingAction.debt);
+  };
+
+  // Build dialog props from current pending action
+  const dialogProps = pendingAction?.kind === "endTrip"
+    ? {
+        title: "End this trip?",
+        message: (
+          <>
+            Are you sure you want to end this trip? Once ended,{" "}
+            <strong>new stops cannot be added</strong> and this action{" "}
+            <strong>cannot be undone</strong>.
+          </>
+        ),
+        confirmLabel: "End Trip",
+        variant: "danger" as const,
+      }
+    : pendingAction?.kind === "settleDebt"
+    ? {
+        title: "Mark as paid?",
+        message: (
+          <>
+            Are you sure you want to mark this debt as paid? This will record a
+            settlement of <strong>{formatInr(pendingAction.debt.amount)}</strong> paid
+            by <strong>{pendingAction.debt.fromName}</strong> to you.
+          </>
+        ),
+        confirmLabel: "Mark as Paid",
+        variant: "primary" as const,
+      }
+    : { title: "", message: "", confirmLabel: "Confirm", variant: "primary" as const };
 
   if (isLoading) {
     return (
@@ -417,7 +484,7 @@ export default function TripDetail() {
                         className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 shrink-0 ${
                           settlingDebtId === `${debt.fromId}-${debt.toId}`
                             ? "bg-[#EFECE6] text-[#8B8A9B]"
-                            : "bg-[#2B2A4C] hover:bg-[#1f1e36] text-white hover:scale-[1.05] cursor-pointer"
+                            : "bg-[#2B2A4C] hover:bg-[#1f1e36] text-white cursor-pointer"
                         }`}
                         title="Mark as Paid"
                       >
@@ -485,7 +552,7 @@ export default function TripDetail() {
               {!trip.end_date && (
                 <button
                   onClick={() => setIsAddStopOpen(true)}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] px-4 py-2 text-xs font-bold text-white transition-transform duration-200 cursor-pointer shadow-xs hover:bg-[#1f1e36]"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] px-4 py-2 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs hover:bg-[#1f1e36]"
                 >
                   <Plus size={13} /> Add First Stop
                 </button>
@@ -555,6 +622,17 @@ export default function TripDetail() {
           />
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title={dialogProps.title}
+        message={dialogProps.message}
+        confirmLabel={dialogProps.confirmLabel}
+        variant={dialogProps.variant}
+        isLoading={confirmLoading}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

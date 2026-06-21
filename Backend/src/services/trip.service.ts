@@ -26,6 +26,19 @@ export type TripCreateInput = z.infer<typeof tripCreateSchema>;
 export type StopCreateInput = z.infer<typeof stopCreateSchema>;
 
 export class TripService {
+  /**
+   * Returns an array of user IDs for all participants of a trip.
+   * Used by controllers to broadcast dashboard events to the right users.
+   */
+  static async getTripParticipantIds(tripId: string): Promise<string[]> {
+    const { data, error } = await supabaseAdmin
+      .from('trip_participants')
+      .select('user_id')
+      .eq('trip_id', tripId);
+    if (error || !data) return [];
+    return data.map((p: any) => p.user_id);
+  }
+
   static async getTripStats(tripId: string, userId: string) {
     const { data: stops, error: stopsError } = await supabaseAdmin
       .from('stops')
@@ -627,6 +640,6 @@ export class TripService {
       }
     }
 
-    return { success: true };
+    return { success: true, tripId: accept ? inv.trip_id : undefined };
   }
 }
