@@ -1,143 +1,112 @@
-# Trip Expense Splitter
+# Divido
 
 ## Overview
+Divido is a real-time expense-sharing and trip-management application. The system solves the problem of managing shared expenses during group activities by providing real-time synchronization, accurate debt calculation, and participant tracking.
 
-Trip Expense Splitter is a full-stack web application designed to manage shared expenses between multiple users during a Trip. It allows users to create Trips, add Participants, record financial activities at different Stops, and automatically calculate final settlements between participants.
+Within the system design, the domain terms "Trips" and "Stops" are modeled as flexible containers rather than literal travel milestones:
+- **Trips**: Think of a "trip" as any shared chapter of time with your group. Whether it is a quick Friday dinner hangout, a spontaneous weekend road trip, or a month-long backpacking adventure, a trip binds your group together in a single shared space.
+- **Stops**: These represent the individual moments, activities, or check-ins along the way where expenses are shared—like grab-and-go coffees, museum tickets, or group accommodation. They capture who paid and how the cost splits among the participants.
 
-The system ensures accurate tracking of shared spending and simplifies the process of determining who owes whom at the end of a Trip.
+Core functionality includes trip creation, invitation management, real-time expense logging (stops), and automated optimal debt settlement calculation.
 
----
+## Architecture
+The system utilizes a two-tier architecture comprising a React Frontend and a Node.js/Express Backend, integrated with a Supabase (PostgreSQL) database.
 
-## Core Concept
+- **Backend Tier**: Exposes a RESTful API for standard CRUD operations and authentication handshakes. An integrated WebSocket (`ws`) server shares the HTTP server port to handle publish/subscribe real-time event broadcasting.
+- **Frontend Tier**: A single-page application utilizing React, Vite, and React Router. Context API manages Authentication state, while custom hooks (`useRealtimeTrip`, `useRealtimeDashboard`) manage WebSocket connections and coordinate auto-refetching.
 
-The application is built around three main entities:
-
-### Trip
-A Trip represents a shared financial context created by a group of users.
-
-Examples:
-- Mumbai Trip
-- Night Out
-- Goa Vacation
-- Weekend Outing
-
-A Trip acts as the parent container for all activity.
-
----
-
-### Participants
-Participants are users who are part of a Trip. They can:
-- contribute payments
-- be included in expense splits
-- receive settlement calculations
-
-Each Trip has its own independent set of Participants.
-
----
-
-### Stops
-A Stop represents a financial event within a Trip where money is spent.
-
-Examples:
-- Dinner
-- Hotel booking
-- Uber ride
-- Movie tickets
-
-A Stop may contain multiple payments made by different Participants.
-
-Each Stop supports multiple Transactions.
-
----
-
-### Transactions
-A Transaction represents a payment made by a Participant within a Stop.
-
-Example:
-Stop: Dinner
-- User A paid 300
-- User B paid 200
-
----
-
-## System Flow
-
-1. A Trip is created.
-2. Participants are added to the Trip.
-3. Multiple Stops are created within the Trip.
-4. Each Stop records Transactions made by Participants.
-5. The system calculates total contributions and required shares per Participant.
-6. Final net balances are computed for each Participant.
-7. A settlement algorithm determines the minimum set of transactions required to settle all debts.
-
----
-
-## Core Logic
-
-- Each Stop contributes to the overall Trip balance.
-- Stops are not treated as independent accounting units.
-- All financial data is aggregated at the Trip level.
-- Final settlement is based on net balances:
-  - Positive balance indicates money to receive
-  - Negative balance indicates money to pay
-
----
+**Data Flow Pipeline**:
+1. Client sends HTTP POST/PUT (e.g., adding an expense) with a JWT.
+2. Express controller validates the payload via Zod and extracts the User ID from the JWT via Supabase Auth.
+3. The Service layer performs transactional inserts to the Supabase Database via `supabase-js`.
+4. Upon successful database mutation, the controller triggers the WebSocket Manager.
+5. The WebSocket Manager broadcasts event payloads (`stop_created`, `trip_ended`) to specific "Rooms" (e.g., trip rooms or user-specific dashboard rooms).
+6. Subscribed clients receive the WS event and trigger an `onUpdate` callback to refetch updated state via the REST API.
 
 ## Tech Stack
+- **Languages**: TypeScript, HTML, CSS
+- **Frontend**: React 19, Vite, Tailwind CSS (v4), Framer Motion, React Three Fiber/Drei, React Router
+- **Backend**: Node.js, Express, `ws` (WebSockets), Zod
+- **Database & Auth**: Supabase (PostgreSQL, Supabase Auth)
 
-### Frontend
-- React
-- TypeScript
-- Tailwind CSS
+## Features
+- **Real-time Event Synchronization**: Implements a custom pub/sub room architecture over WebSockets. Clients subscribe to specific Trip IDs or personal Dashboard rooms to receive instant state invalidation signals.
+- **Automated Debt Settlement Algorithm**: Calculates net balances from individual payments and expected shares, partitioning participants into creditors and debtors to compute optimal peer-to-peer settlement transactions.
+- **Secure WebSocket Handshake**: WebSocket connections are secured via a first-message handshake containing a Supabase JWT. The server assigns a 10-second timeout, forcibly terminating unauthenticated connections.
 
-### Backend
-- Node.js
-- Express.js
-- TypeScript
+## Folder Structure
+```bash
+Divido/
+├── Backend/
+│   ├── src/
+│   │   ├── config/      # Environment variables and Supabase client initialization
+│   │   ├── controllers/ # HTTP route handlers orchestrating services and WS broadcasts
+│   │   ├── middleware/  # Express middlewares (Auth, Error handling)
+│   │   ├── routes/      # Express route definitions
+│   │   ├── services/    # Core business logic, DB interactions, and settlement algorithms
+│   │   └── ws/          # WebSocket server and room-based pub/sub manager
+│   ├── index.ts         # Server entry point (HTTP + WS binding)
+│   └── package.json
+└── Frontend/
+    ├── src/
+    │   ├── components/  # React UI components (Dashboard, Modals, Cards)
+    │   ├── context/     # React Context providers (AuthContext)
+    │   ├── hooks/       # Custom hooks (useRealtimeTrip, useRealtimeDashboard)
+    │   ├── App.tsx      # Main application routing and providers
+    │   └── main.tsx     # React DOM rendering
+    ├── vite.config.ts   # Vite bundler configuration
+    └── package.json
+```
 
-### Database & Authentication
-- Supabase (PostgreSQL + Auth)
+## How It Works
+- **Request Lifecycle**: 
+  - Standard operations hit REST API endpoints.
+  - Zod schemas validate the request body.
+  - The Supabase client executes CRUD operations.
+  - WebSockets push light notification payloads containing event types and entity IDs.
+  - Clients react to WS events by invalidating local state and re-fetching the full entity via REST, avoiding complex state merging on the client.
+- **WebSocket Lifecycle**:
+  - Client connects to `/ws` with an exponential backoff retry mechanism.
+  - Client has 10 seconds to send an `auth` message containing the JWT.
+  - Server verifies the JWT via Supabase. If valid, it binds the connection to the User ID.
+  - Client sends `subscribe` messages for specific Trip IDs.
+  - Server verifies participant authorization against the database before adding the connection to the Trip Room.
+  - A periodic heartbeat (ping/pong) runs every 25s to detect and terminate stale connections, preventing memory leaks.
 
----
+## Key Implementation Details
+- **Settlement Algorithm (`TripService.getTripDebts`)**: 
+  - Iterates through all trip "stops" to aggregate total payments (credits) and total split shares (debits) per user.
+  - Calculates the net balance for each user.
+  - Partitions users into `debtors` (negative net balance) and `creditors` (positive net balance).
+  - Utilizes a greedy two-pointer approach, matching the highest debtors with the highest creditors to generate the minimal number of peer-to-peer repayment transactions.
+- **Security & Concurrency**: 
+  - WebSocket authentication is handled in the message payload rather than URL parameters to prevent token leakage in server access logs.
+  - Guard clauses in the invitation service prevent duplicate database insertions from concurrent client requests.
+- **Performance Considerations**:
+  - WebSockets only transmit invalidation signals rather than full data payloads, keeping message sizes minimal.
+  - Database queries use targeted `select` statements to avoid over-fetching relationship data.
 
-## Key Features
+## Setup & Installation
+```bash
+# Clone the repository
+git clone <repository_url>
+cd Divido
 
-- Trip-based expense tracking
-- Multiple Participants per Trip
-- Multiple Stops per Trip
-- Multiple Transactions per Stop
-- Automatic balance calculation
-- Optimized settlement generation
-- Scalable backend architecture
+# Setup Backend
+cd Backend
+npm install
+npm run dev
 
----
+# Setup Frontend
+cd ../Frontend
+npm install
+npm run dev
+```
 
-## Settlement Strategy
-
-The system calculates net balances for all Participants in a Trip and then applies a greedy algorithm to minimize the number of transactions required to settle all debts.
-
-Steps:
-1. Calculate total paid and total share per Participant
-2. Compute net balance
-3. Separate creditors and debtors
-4. Match and settle balances optimally
-
----
-
-## Design Principles
-
-- Stops are used only for organizing transactions, not for settlement logic
-- All calculations are performed at Trip level
-- Money is handled using integer values (to avoid floating-point errors)
-- Each Trip is independent and self-contained
-- System is designed to support future extensions such as custom splits and partial settlements
-
----
-
-## Future Improvements
-
-- Real-time balance updates
-- Custom split methods (percentage, exact amounts)
-- Partial settlement tracking
-- Notifications for payments
-- Analytics for spending patterns per Trip
+## Usage
+1. Configure environment variables in `Backend/.env` (Supabase URL and Keys).
+2. Start the Backend server (runs on port 3000 by default).
+3. Start the Frontend development server.
+4. Create an account, initiate a trip, and invite users.
+5. Add stops (expenses) by specifying total amounts, who paid, and who is splitting the cost.
+6. The system will automatically calculate the optimal settlement debts.
