@@ -84,7 +84,7 @@ export class AuthController {
 
   static async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { email } = req.body;
+      const { email } = req.body || {};
       if (!email) {
         res.status(400).json(createResponse(false, 'Email is required'));
         return;

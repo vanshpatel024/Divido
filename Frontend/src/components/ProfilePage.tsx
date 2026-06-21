@@ -19,14 +19,16 @@ export default function ProfilePage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleResetPassword = async () => {
-    if (!token) return;
+    if (!token || !user?.email) return;
     setIsResetting(true);
     try {
       const res = await fetch("http://localhost:3000/auth/reset-password", {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({ email: user.email }),
       });
 
       const responseData = await res.json();
