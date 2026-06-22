@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { TripService, tripCreateSchema, stopCreateSchema } from '../services/trip.service';
+import { TripService, tripCreateSchema, stopCreateSchema, tripInviteSchema } from '../services/trip.service';
 import { createResponse } from '../utils/response';
 import { ZodError } from 'zod';
 import { wsManager } from '../ws/wsManager';
@@ -86,7 +86,23 @@ export class TripController {
         res.status(401).json(createResponse(false, 'Unauthorized'));
         return;
       }
-      await TripService.deleteTrip(req.params.id as string, req.user.id);
+      const result = await TripService.deleteTrip(req.params.id as string, req.user.id);
+
+      // Broadcast real-time leaving notifications to the remaining participants
+      if (result.participantIds && result.participantIds.length > 0) {
+        const tripId = req.params.id as string;
+        wsManager.broadcast(tripId, 'participant_left', {
+          tripId,
+          tripName: result.tripName,
+          userName: result.userDisplayName
+        });
+        wsManager.broadcastToDashboards(result.participantIds, 'participant_left', {
+          tripId,
+          tripName: result.tripName,
+          userName: result.userDisplayName
+        });
+      }
+
       res.status(200).json(createResponse(true, 'Trip deleted/left successfully'));
     } catch (error: any) {
       if (error.message && (error.message.includes('not ended') || error.message.includes('settled'))) {
@@ -166,18 +182,77 @@ export class TripController {
       }
       const result = await TripService.respondToInvitation(req.params.id as string, req.user.id, accept);
 
-      if (accept && (result as any).tripId) {
-        const tripId = (result as any).tripId;
-        // Broadcast to anyone currently viewing the trip detail page
-        wsManager.broadcast(tripId, 'participant_joined', {});
-        // Also broadcast to all existing participants' dashboard rooms
-        // (the sender is likely on the dashboard, not the trip page)
-        const participantIds = await TripService.getTripParticipantIds(tripId);
-        wsManager.broadcastToDashboards(participantIds, 'participant_joined', { tripId });
+      const { tripId, senderId, status } = result as any;
+
+      if (tripId && senderId) {
+        // Broadcast invitation response to the sender's dashboard so their activities list updates in real-time
+        wsManager.broadcastToDashboards([senderId], 'invitation_response', { tripId, status });
+        
+        // Broadcast that invitations changed to the trip details room
+        wsManager.broadcast(tripId, 'invitations_changed', { tripId });
+
+        if (accept && !result.alreadyParticipant) {
+          // Broadcast to anyone currently viewing the trip detail page
+          wsManager.broadcast(tripId, 'participant_joined', {
+            userName: result.userDisplayName
+          });
+          
+          // Also broadcast to all existing participants' dashboard rooms
+          const participantIds = await TripService.getTripParticipantIds(tripId);
+          wsManager.broadcastToDashboards(participantIds, 'participant_joined', { tripId });
+        }
       }
 
       res.status(200).json(createResponse(true, 'Invitation response saved'));
     } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getTripInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+      const tripId = req.params.id as string;
+      const invitations = await TripService.getTripPendingInvitations(tripId);
+      res.status(200).json(createResponse(true, 'Trip invitations retrieved', invitations));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async inviteParticipants(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+
+      const tripId = req.params.id as string;
+      const parsedData = tripInviteSchema.parse(req.body);
+
+      const result = await TripService.inviteParticipants(tripId, req.user.id, parsedData.invitees);
+
+      // Notify each newly invited user's dashboard in real-time so invitations appear without a refresh
+      if (result.invitees && result.invitees.length > 0) {
+        wsManager.broadcastToDashboards(result.invitees, 'invitation_received', { tripId });
+      }
+
+      // Broadcast invitations_changed to the trip details room
+      wsManager.broadcast(tripId, 'invitations_changed', { tripId });
+
+      res.status(200).json(createResponse(true, 'Participants invited successfully', result));
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json(createResponse(false, 'Validation error', undefined, (error as any).errors));
+        return;
+      }
+      if (error instanceof Error) {
+        res.status(400).json(createResponse(false, error.message));
+        return;
+      }
       next(error);
     }
   }

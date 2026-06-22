@@ -25,6 +25,12 @@ export const stopCreateSchema = z.object({
 export type TripCreateInput = z.infer<typeof tripCreateSchema>;
 export type StopCreateInput = z.infer<typeof stopCreateSchema>;
 
+export const tripInviteSchema = z.object({
+  invitees: z.array(z.string().uuid()).min(1, "At least one invitee must be specified"),
+});
+export type TripInviteInput = z.infer<typeof tripInviteSchema>;
+
+
 export class TripService {
   /**
    * Returns an array of user IDs for all participants of a trip.
@@ -385,7 +391,7 @@ export class TripService {
     // 1. Verify trip exists and user is participant
     const { data: trip, error: tripError } = await supabaseAdmin
       .from('trips')
-      .select('id, end_date')
+      .select('id, name, end_date')
       .eq('id', tripId)
       .single();
 
@@ -411,6 +417,16 @@ export class TripService {
       throw new Error("Your balance must be settled before you can leave or delete the trip.");
     }
 
+    // Get the user's name before leaving
+    const { data: userProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('display_name')
+      .eq('id', userId)
+      .single();
+
+    // Get all participant IDs before leaving
+    const participantIds = await this.getTripParticipantIds(tripId);
+
     // 4. Remove participant
     await supabaseAdmin
       .from('trip_participants')
@@ -424,6 +440,15 @@ export class TripService {
       .delete()
       .eq('trip_id', tripId)
       .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+    // Create an Activity log stop to persist the leave event for remaining participants
+    const userDisplayName = userProfile?.display_name || 'A user';
+    await supabaseAdmin.from('stops').insert({
+      trip_id: tripId,
+      name: `Activity: ${userDisplayName} left the trip`,
+      total_amount: 0,
+      date: new Date().toISOString()
+    });
 
     // 6. Check remaining participants
     const { data: remainingParts, error: countError } = await supabaseAdmin
@@ -441,7 +466,12 @@ export class TripService {
         .eq('id', tripId);
     }
 
-    return { success: true };
+    return {
+      success: true,
+      tripName: trip.name,
+      userDisplayName,
+      participantIds: participantIds.filter(id => id !== userId)
+    };
   }
 
   static async getStops(tripId: string) {
@@ -616,13 +646,17 @@ export class TripService {
 
     const status = accept ? 'accepted' : 'declined';
 
+    // Update all pending invitations for this user and trip to clean up any duplicates
     const { error: updateError } = await supabaseAdmin
       .from('trip_invitations')
       .update({ status })
-      .eq('id', invitationId);
+      .eq('trip_id', inv.trip_id)
+      .eq('receiver_id', userId)
+      .eq('status', 'pending');
 
     if (updateError) throw updateError;
 
+    let alreadyParticipant = false;
     if (accept) {
       // Guard: Ensure user isn't already a participant to prevent double-insertions
       const { data: existingParticipant } = await supabaseAdmin
@@ -637,9 +671,177 @@ export class TripService {
           trip_id: inv.trip_id,
           user_id: userId
         });
+      } else {
+        alreadyParticipant = true;
       }
     }
 
-    return { success: true, tripId: accept ? inv.trip_id : undefined };
+    // Get joined user's name
+    const { data: userProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('display_name')
+      .eq('id', userId)
+      .single();
+
+    return { 
+      success: true, 
+      tripId: inv.trip_id, 
+      senderId: inv.sender_id, 
+      status,
+      userDisplayName: userProfile?.display_name || 'A user',
+      alreadyParticipant
+    };
+  }
+
+  static async getTripPendingInvitations(tripId: string) {
+    const { data, error } = await supabaseAdmin
+      .from('trip_invitations')
+      .select('receiver_id, receiver:profiles(id, username, display_name, avatar_url)')
+      .eq('trip_id', tripId)
+      .eq('status', 'pending');
+
+    if (error) throw error;
+    
+    return (data || []).map((inv: any) => {
+      const rec = Array.isArray(inv.receiver) ? inv.receiver[0] : inv.receiver;
+      return {
+        id: rec?.id,
+        username: rec?.username,
+        display_name: rec?.display_name,
+        avatar_url: rec?.avatar_url
+      };
+    });
+  }
+
+  static async inviteParticipants(tripId: string, senderId: string, inviteeIds: string[]) {
+    const { data: trip, error: tripError } = await supabaseAdmin
+      .from('trips')
+      .select('id, end_date')
+      .eq('id', tripId)
+      .single();
+
+    if (tripError || !trip) {
+      throw new Error('Trip not found');
+    }
+
+    if (trip.end_date) {
+      throw new Error('Cannot invite participants to a trip that has already ended');
+    }
+
+    // Get current participants
+    const { data: existingParts, error: partsError } = await supabaseAdmin
+      .from('trip_participants')
+      .select('user_id')
+      .eq('trip_id', tripId);
+
+    if (partsError) throw partsError;
+    const participantSet = new Set((existingParts || []).map((p: any) => p.user_id));
+
+    // Get all existing invites for this trip
+    const { data: existingInvites, error: invitesError } = await supabaseAdmin
+      .from('trip_invitations')
+      .select('id, receiver_id, status')
+      .eq('trip_id', tripId);
+
+    if (invitesError) throw invitesError;
+
+    const insertList: string[] = [];
+    const updateList: { id: string; receiver_id: string }[] = [];
+    const alreadyJoined: string[] = [];
+    const alreadyInvited: string[] = [];
+
+    for (const inviteeId of inviteeIds) {
+      if (participantSet.has(inviteeId)) {
+        alreadyJoined.push(inviteeId);
+        continue;
+      }
+
+      const existingInvite = (existingInvites || []).find((inv: any) => inv.receiver_id === inviteeId);
+
+      if (existingInvite) {
+        if (existingInvite.status === 'pending') {
+          alreadyInvited.push(inviteeId);
+        } else {
+          // Re-activate the existing invitation
+          updateList.push({ id: existingInvite.id, receiver_id: inviteeId });
+        }
+      } else {
+        insertList.push(inviteeId);
+      }
+    }
+
+    // Fetch names of already invited / already joined users
+    let alreadyInvitedNames: string[] = [];
+    let alreadyJoinedNames: string[] = [];
+    const idsToFetch = [...alreadyInvited, ...alreadyJoined];
+
+    if (idsToFetch.length > 0) {
+      const { data: profiles } = await supabaseAdmin
+        .from('profiles')
+        .select('id, display_name, username')
+        .in('id', idsToFetch);
+
+      if (profiles) {
+        profiles.forEach(p => {
+          const name = p.display_name || p.username || 'Unknown';
+          if (alreadyInvited.includes(p.id)) {
+            alreadyInvitedNames.push(name);
+          }
+          if (alreadyJoined.includes(p.id)) {
+            alreadyJoinedNames.push(name);
+          }
+        });
+      }
+    }
+
+    if (insertList.length === 0 && updateList.length === 0) {
+      return {
+        success: true,
+        invitees: [],
+        alreadyInvited: alreadyInvitedNames,
+        alreadyJoined: alreadyJoinedNames,
+        alreadyInvitedIds: alreadyInvited,
+        alreadyJoinedIds: alreadyJoined
+      };
+    }
+
+    if (updateList.length > 0) {
+      const updateIds = updateList.map(item => item.id);
+      const { error: updateError } = await supabaseAdmin
+        .from('trip_invitations')
+        .update({
+          status: 'pending',
+          sender_id: senderId,
+          created_at: new Date().toISOString()
+        })
+        .in('id', updateIds);
+
+      if (updateError) throw updateError;
+    }
+
+    if (insertList.length > 0) {
+      const invites = insertList.map(inviteeId => ({
+        trip_id: tripId,
+        sender_id: senderId,
+        receiver_id: inviteeId,
+        status: 'pending'
+      }));
+
+      const { error: insertError } = await supabaseAdmin
+        .from('trip_invitations')
+        .insert(invites);
+
+      if (insertError) throw insertError;
+    }
+
+    const successfullyInvited = [...insertList, ...updateList.map(item => item.receiver_id)];
+    return {
+      success: true,
+      invitees: successfullyInvited,
+      alreadyInvited: alreadyInvitedNames,
+      alreadyJoined: alreadyJoinedNames,
+      alreadyInvitedIds: alreadyInvited,
+      alreadyJoinedIds: alreadyJoined
+    };
   }
 }

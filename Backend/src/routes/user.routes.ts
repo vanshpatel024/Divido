@@ -4,6 +4,10 @@ import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.get('/search', authMiddleware, UserController.search);
+// All user routes must be authenticated
+router.use(authMiddleware);
+
+router.get('/search', UserController.search);
+router.get('/me/activities', UserController.getActivities);
 
 export default router;

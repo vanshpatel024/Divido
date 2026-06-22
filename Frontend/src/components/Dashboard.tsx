@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Check, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import Navbar from "./Navbar";
 import TripCard from "./TripCard";
 import NewTripModal from "./NewTripModal";
 import DeleteTripConfirmModal from "./DeleteTripConfirmModal";
 import type { Trip } from "../types";
-import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useRealtimeDashboard } from "../hooks/useRealtimeDashboard";
 
 function EmptyState({ onAddClick }: { onAddClick: () => void }) {
   return (
@@ -43,9 +42,8 @@ function EmptyState({ onAddClick }: { onAddClick: () => void }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { token, logout, user } = useAuth();
+  const { token, logout } = useAuth();
   const [tripsList, setTripsList] = useState<Trip[]>([]);
-  const [invitations, setInvitations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -56,35 +54,28 @@ export default function Dashboard() {
   // Active Trip for Editing/Deleting
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
 
-  const [respondingInviteId, setRespondingInviteId] = useState<string | null>(null);
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const [isDeletingTrip, setIsDeletingTrip] = useState(false);
 
   const fetchDashboardData = async () => {
     if (!token) return;
     try {
-      const [tripsRes, invitesRes] = await Promise.all([
-        fetch("http://localhost:3000/trips", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("http://localhost:3000/trips/invitations", { headers: { Authorization: `Bearer ${token}` } })
-      ]);
+      const tripsRes = await fetch("http://localhost:3000/trips", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-      if (tripsRes.status === 401 || invitesRes.status === 401) {
+      if (tripsRes.status === 401) {
         logout();
         navigate("/auth");
         return;
       }
 
       const tripsData = await tripsRes.json();
-      const invitesData = await invitesRes.json();
 
       if (tripsData.success) {
         setTripsList(tripsData.data || []);
       } else {
         setError(tripsData.message || "Failed to fetch trips");
-      }
-
-      if (invitesData.success) {
-        setInvitations(invitesData.data || []);
       }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -98,11 +89,15 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [token, logout, navigate]);
 
-  // Real-time: refetch whenever any trip-level event fires for this user
-  useRealtimeDashboard(token, user?.id, fetchDashboardData);
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchDashboardData();
+    };
+    window.addEventListener('divido_dashboard_update', handleUpdate);
+    return () => window.removeEventListener('divido_dashboard_update', handleUpdate);
+  }, [token]);
 
   const hasTrips = tripsList.length > 0;
-  const hasInvitations = invitations.length > 0;
 
   // Handlers
   const handleCreateTrip = async (newTripData: any) => {
@@ -140,30 +135,6 @@ export default function Dashboard() {
       alert("Network error creating trip");
     } finally {
       setIsCreatingTrip(false);
-    }
-  };
-
-  const handleRespondInvite = async (invitationId: string, accept: boolean) => {
-    if (!token || respondingInviteId !== null) return;
-    setRespondingInviteId(invitationId);
-    try {
-      const res = await fetch(`http://localhost:3000/trips/invitations/${invitationId}/respond`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ accept }),
-      });
-
-      if (res.ok) {
-        // Refresh data to show new trip if accepted
-        await fetchDashboardData();
-      }
-    } catch (error) {
-      console.error("Failed to respond to invite:", error);
-    } finally {
-      setRespondingInviteId(null);
     }
   };
 
@@ -273,72 +244,6 @@ export default function Dashboard() {
       <Navbar />
 
       <main className="mx-auto max-w-5xl px-8 py-10 sm:py-14">
-
-        {/* Invitations Section */}
-        <AnimatePresence>
-          {hasInvitations && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-10 overflow-hidden"
-            >
-              <h2 className="font-display text-xl font-bold tracking-tight text-[#2B2A4C] mb-4">Pending Invitations</h2>
-              <div className="flex flex-col gap-3">
-                {invitations.map(inv => (
-                  <div key={inv.id} className="flex items-center justify-between bg-white border border-[#EFECE6] rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={resolveAvatarUrl(inv.sender.avatar_url, inv.sender.id || inv.sender.username)} 
-                        alt="" 
-                        className="w-10 h-10 rounded-full border border-[#EFECE6] object-cover"
-                      />
-                      <div>
-                        <p className="text-sm font-semibold text-[#2B2A4C]">
-                          <span className="text-[#8B8A9B] font-normal">Trip invite to </span> 
-                          {inv.trip.name}
-                        </p>
-                        <p className="text-xs text-[#8B8A9B]">from @{inv.sender.username}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 select-none">
-                      <button 
-                        disabled={respondingInviteId !== null}
-                        onClick={() => handleRespondInvite(inv.id, false)}
-                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
-                          respondingInviteId !== null
-                            ? "bg-red-50/50 text-red-300 cursor-not-allowed"
-                            : "bg-red-50 text-red-500 hover:bg-red-100 cursor-pointer"
-                        }`}
-                        title="Decline"
-                      >
-                        <X size={14} strokeWidth={2.5} />
-                      </button>
-                      <button 
-                        disabled={respondingInviteId !== null}
-                        onClick={() => handleRespondInvite(inv.id, true)}
-                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
-                          respondingInviteId === inv.id
-                            ? "bg-[#AAD9BB]/50 text-[#1A5C3A]"
-                            : respondingInviteId !== null
-                            ? "bg-[#AAD9BB]/30 text-[#1A5C3A]/50 cursor-not-allowed"
-                            : "bg-[#AAD9BB] text-[#1A5C3A] hover:bg-[#8bc79f] cursor-pointer"
-                        }`}
-                        title="Accept"
-                      >
-                        {respondingInviteId === inv.id ? (
-                          <span className="h-4 w-4 border-2 border-[#1A5C3A]/20 border-t-[#1A5C3A] rounded-full animate-spin" />
-                        ) : (
-                          <Check size={14} strokeWidth={2.5} />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Header Section */}
         <motion.div

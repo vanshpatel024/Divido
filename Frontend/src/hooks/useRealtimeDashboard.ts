@@ -59,7 +59,9 @@ export function useRealtimeDashboard(
             msg.type === 'trip_ended' ||
             msg.type === 'stop_created' ||
             msg.type === 'participant_joined' ||
-            msg.type === 'invitation_received'
+            msg.type === 'participant_left' ||
+            msg.type === 'invitation_received' ||
+            msg.type === 'invitation_response'
           ) {
             onUpdateRef.current();
           }

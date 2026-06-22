@@ -41,18 +41,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const handleRefresh = async (storedRefreshToken: string) => {
+      try {
+        const refreshRes = await fetch("http://localhost:3000/auth/refresh", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refreshToken: storedRefreshToken }),
+        });
+
+        const refreshData = await refreshRes.json();
+        if (refreshData.success) {
+          const newSession = refreshData.data.session;
+          localStorage.setItem("divido_token", newSession.access_token);
+          if (newSession.refresh_token) {
+            localStorage.setItem("divido_refresh_token", newSession.refresh_token);
+          }
+          setToken(newSession.access_token);
+          return newSession.access_token;
+        }
+      } catch (e) {
+        console.error("Failed to refresh token", e);
+      }
+      return null;
+    };
+
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem("divido_token");
+      let storedToken = localStorage.getItem("divido_token");
+      const storedRefreshToken = localStorage.getItem("divido_refresh_token");
+
       if (storedToken) {
         try {
-          const res = await fetch("http://localhost:3000/auth/me", {
+          let res = await fetch("http://localhost:3000/auth/me", {
             headers: {
               Authorization: `Bearer ${storedToken}`,
             },
           });
           
+          if (res.status === 401 && storedRefreshToken) {
+            // Try refreshing
+            storedToken = await handleRefresh(storedRefreshToken);
+            if (storedToken) {
+              res = await fetch("http://localhost:3000/auth/me", {
+                headers: {
+                  Authorization: `Bearer ${storedToken}`,
+                },
+              });
+            }
+          }
+
           if (res.status === 401) {
             localStorage.removeItem("divido_token");
+            localStorage.removeItem("divido_refresh_token");
             setToken(null);
             setUser(null);
           } else {
@@ -74,19 +115,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               });
             } else {
               localStorage.removeItem("divido_token");
+              localStorage.removeItem("divido_refresh_token");
               setToken(null);
               setUser(null);
             }
           }
         } catch (error) {
           console.error("Error restoring auth session:", error);
-          // Don't clear token on network failure, just set loading false so offline capability or retry works.
         }
       }
       setLoading(false);
     };
 
     initializeAuth();
+
+    // Auto refresh token every 45 mins
+    const intervalId = setInterval(() => {
+      const storedRefreshToken = localStorage.getItem("divido_refresh_token");
+      if (storedRefreshToken) {
+        handleRefresh(storedRefreshToken);
+      }
+    }, 45 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -130,8 +181,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const resolvedAvatarUrl = resolveAvatarUrl(avatar_url, authUser.id || display_name);
 
-    localStorage.setItem("divido_token", tokenStr);
-    setToken(tokenStr);
+    localStorage.setItem("divido_token", session.access_token);
+    if (session.refresh_token) {
+      localStorage.setItem("divido_refresh_token", session.refresh_token);
+    }
+    setToken(session.access_token);
     setUser({
       id: authUser.id,
       email: authUser.email,
@@ -164,6 +218,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const resolvedAvatarUrl = resolveAvatarUrl(rawAvatarUrl, authUser.id || displayName);
 
       localStorage.setItem("divido_token", tokenStr);
+      if (session.refresh_token) {
+        localStorage.setItem("divido_refresh_token", session.refresh_token);
+      }
       setToken(tokenStr);
       setUser({
         id: authUser.id,
@@ -180,6 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem("divido_token");
+    localStorage.removeItem("divido_refresh_token");
     setToken(null);
     setUser(null);
   };

@@ -23,5 +23,7 @@ router.delete('/:id', tripMemberMiddleware, TripController.deleteTrip);
 
 router.get('/:id/stops', tripMemberMiddleware, TripController.getStops);
 router.post('/:id/stops', tripMemberMiddleware, TripController.createStop);
+router.post('/:id/invite', tripMemberMiddleware, TripController.inviteParticipants);
+router.get('/:id/invitations', tripMemberMiddleware, TripController.getTripInvitations);
 
 export default router;

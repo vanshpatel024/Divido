@@ -5,12 +5,14 @@ import {
   ChevronLeft,
   Plus,
   Flag,
-  Check
+  Check,
+  UserPlus
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import type { Trip } from "../types";
 import NewStopModal from "./NewStopModal";
+import InviteModal from "./InviteModal";
 import { useToast } from "./Toast";
 import { useRealtimeTrip } from "../hooks/useRealtimeTrip";
 import ConfirmDialog from "./ConfirmDialog";
@@ -50,6 +52,7 @@ export default function TripDetail() {
   const [isEndingTrip, setIsEndingTrip] = useState(false);
   const [isAddingStop, setIsAddingStop] = useState(false);
   const [settlingDebtId, setSettlingDebtId] = useState<string | null>(null);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   // ConfirmDialog state
   type PendingAction = { kind: "endTrip" } | { kind: "settleDebt"; debt: any };
@@ -107,11 +110,19 @@ export default function TripDetail() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
+    setError("");
     fetchTripAndStops();
   }, [id, token]);
 
   // Real-time: refetch whenever another participant mutates the trip
-  useRealtimeTrip(id, token, fetchTripAndStops);
+  useRealtimeTrip(id, token, fetchTripAndStops, (type, userName) => {
+    if (type === "joined") {
+      showToast(`${userName} has joined the trip!`, "success");
+    } else if (type === "left") {
+      showToast(`${userName} has left the trip.`, "success");
+    }
+  });
 
   const handleEndTrip = () => {
     if (!token || !id || isEndingTrip) return;
@@ -350,7 +361,7 @@ export default function TripDetail() {
   }
 
   const settlementStops = stops.filter((s) => s.name.startsWith("Settlement:"));
-  const normalStops = stops.filter((s) => !s.name.startsWith("Settlement:"));
+  const normalStops = stops.filter((s) => !s.name.startsWith("Settlement:") && !s.name.startsWith("Activity:"));
   const totalSpend = normalStops.reduce((acc, s) => acc + s.total, 0);
 
   return (
@@ -414,16 +425,27 @@ export default function TripDetail() {
             </div>
           </div>
 
-          <div className="flex -space-x-1.5 mt-4 select-none">
-            {trip.participants.map((p, idx) => (
-              <img
-                key={p.id ? `${p.id}-${idx}` : idx}
-                src={resolveAvatarUrl(p.avatar_url || "", p.id || p.name)}
-                alt={p.name}
-                title={p.name}
-                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white object-cover shadow-sm bg-[#EFECE6]"
-              />
-            ))}
+          <div className="flex items-center gap-3 mt-4">
+            <div className="flex -space-x-1.5 select-none">
+              {trip.participants.map((p, idx) => (
+                <img
+                  key={p.id ? `${p.id}-${idx}` : idx}
+                  src={resolveAvatarUrl(p.avatar_url || "", p.id || p.name)}
+                  alt={p.name}
+                  title={p.name}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white object-cover shadow-sm bg-[#EFECE6]"
+                />
+              ))}
+            </div>
+            {!trip.end_date && (
+              <button
+                onClick={() => setIsInviteOpen(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EFECE6] bg-white text-foreground/60 transition-all duration-200 hover:bg-[#EFECE6] hover:text-foreground cursor-pointer shadow-xs hover:border-[#AAD9BB]"
+                title="Invite Friends"
+              >
+                <UserPlus size={16} />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-4 mt-4 select-none">
@@ -619,6 +641,14 @@ export default function TripDetail() {
               id: p.id || ""
             }))}
             isSubmitting={isAddingStop}
+          />
+        )}
+        {isInviteOpen && trip && (
+          <InviteModal
+            isOpen={isInviteOpen}
+            onClose={() => setIsInviteOpen(false)}
+            tripId={id || ""}
+            existingParticipants={trip.participants}
           />
         )}
       </AnimatePresence>

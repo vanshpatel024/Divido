@@ -67,7 +67,7 @@ export default function DeleteTripConfirmModal({
             <AlertTriangle size={20} />
           </div>
           <h3 className="font-display text-xl font-bold text-[#2B2A4C]">
-            Delete Trip?
+            Leave Trip?
           </h3>
         </div>
 
@@ -78,9 +78,9 @@ export default function DeleteTripConfirmModal({
         {!isDeletable && (
           <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-medium">
             {!trip.end_date ? (
-              <p>You cannot delete or leave this trip because it hasn't ended yet.</p>
+              <p>You cannot leave this trip because it hasn't ended yet.</p>
             ) : trip.balance.kind !== 'settled' ? (
-              <p>You cannot delete or leave this trip because your balance is not settled.</p>
+              <p>You cannot leave this trip because your balance is not settled.</p>
             ) : null}
           </div>
         )}
@@ -111,7 +111,7 @@ export default function DeleteTripConfirmModal({
             {isDeleting ? (
               <span className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
             ) : (
-              "Delete"
+              "Leave"
             )}
           </button>
         </div>

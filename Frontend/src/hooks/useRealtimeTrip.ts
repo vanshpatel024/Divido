@@ -18,16 +18,22 @@ function backoff(attempt: number): number {
 export function useRealtimeTrip(
   tripId: string | undefined,
   token: string | null,
-  onUpdate: () => void
+  onUpdate: () => void,
+  onNotification?: (type: 'joined' | 'left', userName: string) => void
 ): void {
   const wsRef = useRef<WebSocket | null>(null);
   const attemptRef = useRef(0);
   const mountedRef = useRef(true);
   const onUpdateRef = useRef(onUpdate);
+  const onNotificationRef = useRef(onNotification);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
   }, [onUpdate]);
+
+  useEffect(() => {
+    onNotificationRef.current = onNotification;
+  }, [onNotification]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -45,7 +51,16 @@ export function useRealtimeTrip(
 
       ws.onmessage = (event) => {
         try {
-          const msg = JSON.parse(event.data as string) as { type: string; userId?: string; tripId?: string };
+          const msg = JSON.parse(event.data as string) as {
+            type: string;
+            userId?: string;
+            tripId?: string;
+            payload?: {
+              userName?: string;
+              tripId?: string;
+              tripName?: string;
+            };
+          };
 
           if (msg.type === 'authenticated') {
             ws.send(JSON.stringify({ type: 'subscribe', tripId }));
@@ -55,9 +70,18 @@ export function useRealtimeTrip(
           if (
             msg.type === 'stop_created' ||
             msg.type === 'trip_ended' ||
-            msg.type === 'participant_joined'
+            msg.type === 'participant_joined' ||
+            msg.type === 'participant_left' ||
+            msg.type === 'invitations_changed'
           ) {
             onUpdateRef.current();
+            window.dispatchEvent(new CustomEvent('divido_trip_update'));
+
+            if (msg.type === 'participant_joined' && onNotificationRef.current) {
+              onNotificationRef.current('joined', msg.payload?.userName || 'A participant');
+            } else if (msg.type === 'participant_left' && onNotificationRef.current) {
+              onNotificationRef.current('left', msg.payload?.userName || 'A participant');
+            }
           }
         } catch {
           // Ignore malformed messages

@@ -6,7 +6,7 @@ import {
   Car,
   Plane,
   Film,
-  Trash2,
+  DoorOpen,
   ShoppingBag,
 } from "lucide-react";
 import type { Trip, Balance } from "../types";
@@ -131,10 +131,10 @@ export default function TripCard({ trip, index, onDelete }: TripCardProps) {
                 onDelete(trip);
               }}
               className="flex h-8 w-8 items-center justify-center rounded-full text-foreground/40 hover:bg-red-50 hover:text-red-500 cursor-pointer transition-colors"
-              aria-label="Delete Trip"
-              title="Delete or Leave Trip"
+              aria-label="Leave Trip"
+              title="Leave Trip"
             >
-              <Trash2 size={15} />
+              <DoorOpen size={15} />
             </button>
           )}
         </div>

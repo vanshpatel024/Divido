@@ -43,6 +43,20 @@ export class AuthController {
     }
   }
 
+  static async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        res.status(400).json(createResponse(false, 'Refresh token is required'));
+        return;
+      }
+      const data = await AuthService.refreshSession(refreshToken);
+      res.status(200).json(createResponse(true, 'Session refreshed successfully', data));
+    } catch (error) {
+      res.status(401).json(createResponse(false, 'Invalid or expired refresh token'));
+    }
+  }
+
   static async me(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {

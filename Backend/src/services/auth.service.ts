@@ -76,6 +76,18 @@ export class AuthService {
     return true;
   }
 
+  static async refreshSession(refreshToken: string) {
+    const { data, error } = await supabaseAnon.auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  }
+
   static async updateProfile(userId: string, input: ProfileUpdateInput) {
     const updateData: Record<string, any> = {};
     if (input.displayName) updateData.display_name = input.displayName;

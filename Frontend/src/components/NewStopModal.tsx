@@ -434,12 +434,6 @@ export default function NewStopModal({ isOpen, onClose, onCreate, participants, 
           </div>
         </form>
       </motion.div>
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #EFECE6; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #dcd8d0; }
-      `}</style>
     </div>
   );
 }
