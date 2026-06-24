@@ -94,10 +94,13 @@ export class TripService {
     const total = Math.round(totalSpend * 100) / 100;
 
     let balance: any = { kind: 'settled' };
-    if (roundedPaid > roundedShare) {
-      balance = { kind: 'owed', amount: Math.round((roundedPaid - roundedShare) * 100) / 100 };
-    } else if (roundedPaid < roundedShare) {
-      balance = { kind: 'owe', amount: Math.round((roundedShare - roundedPaid) * 100) / 100 };
+    const diff = roundedPaid - roundedShare;
+    if (Math.abs(diff) >= 0.01) {
+      if (diff > 0) {
+        balance = { kind: 'owed', amount: Math.round(diff * 100) / 100 };
+      } else {
+        balance = { kind: 'owe', amount: Math.round(-diff * 100) / 100 };
+      }
     }
 
     return { total, balance, raw: { roundedPaid, roundedShare } };
@@ -443,12 +446,23 @@ export class TripService {
 
     // Create an Activity log stop to persist the leave event for remaining participants
     const userDisplayName = userProfile?.display_name || 'A user';
-    await supabaseAdmin.from('stops').insert({
-      trip_id: tripId,
-      name: `Activity: ${userDisplayName} left the trip`,
-      total_amount: 0,
-      date: new Date().toISOString()
-    });
+    const { data: newStop } = await supabaseAdmin
+      .from('stops')
+      .insert({
+        trip_id: tripId,
+        name: `Activity: ${userDisplayName} left the ${trip.name} trip`,
+        total_amount: 0,
+        date: new Date().toISOString()
+      })
+      .select()
+      .maybeSingle();
+
+    if (newStop) {
+      await supabaseAdmin.from('stop_splits').insert({
+        stop_id: newStop.id,
+        user_id: userId
+      });
+    }
 
     // 6. Check remaining participants
     const { data: remainingParts, error: countError } = await supabaseAdmin
@@ -479,7 +493,8 @@ export class TripService {
       .from('stops')
       .select('*')
       .eq('trip_id', tripId)
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
 
     if (stopsError) throw stopsError;
     if (!stops || stops.length === 0) return [];
@@ -522,6 +537,7 @@ export class TripService {
         id: stop.id,
         name: stop.name,
         date: stop.date,
+        created_at: stop.created_at,
         total: Number(stop.total_amount),
         transactions
       };
@@ -696,7 +712,7 @@ export class TripService {
   static async getTripPendingInvitations(tripId: string) {
     const { data, error } = await supabaseAdmin
       .from('trip_invitations')
-      .select('receiver_id, receiver:profiles(id, username, display_name, avatar_url)')
+      .select('receiver_id, receiver:profiles!trip_invitations_receiver_id_fkey(id, username, display_name, avatar_url)')
       .eq('trip_id', tripId)
       .eq('status', 'pending');
 

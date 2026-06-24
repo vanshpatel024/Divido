@@ -7,13 +7,44 @@ import { wsManager, ExtendedWs } from './wsManager';
 const HEARTBEAT_INTERVAL_MS = 25_000;
 const HEARTBEAT_TIMEOUT_MS  = 10_000;
 
+interface CachedToken {
+  userId: string;
+  expiresAt: number;
+}
+
+const tokenCache = new Map<string, CachedToken>();
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL
+
+// Periodically clean up expired cache entries to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, cache] of tokenCache.entries()) {
+    if (cache.expiresAt < now) {
+      tokenCache.delete(token);
+    }
+  }
+}, 5 * 60 * 1000); // every 5 minutes
+
 /**
  * Validates a Supabase JWT and returns the userId, or null if invalid.
+ * Caches results to speed up frequent reconnections.
  */
 async function verifyToken(token: string): Promise<string | null> {
+  const cached = tokenCache.get(token);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return cached.userId;
+  }
+
   try {
     const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
     if (error || !user) return null;
+    
+    tokenCache.set(token, {
+      userId: user.id,
+      expiresAt: now + CACHE_TTL_MS
+    });
+    
     return user.id;
   } catch {
     return null;

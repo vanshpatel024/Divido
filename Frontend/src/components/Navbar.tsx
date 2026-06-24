@@ -16,8 +16,8 @@ export default function Navbar() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Single shared WebSocket connection for all navbar subcomponents
-  useRealtimeDashboard(token, user?.id, () => {
-    window.dispatchEvent(new CustomEvent('divido_dashboard_update'));
+  useRealtimeDashboard(token, user?.id, (type, payload) => {
+    window.dispatchEvent(new CustomEvent('divido_dashboard_update', { detail: { type, payload } }));
   });
 
   const displayName =

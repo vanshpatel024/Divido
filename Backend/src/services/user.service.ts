@@ -53,10 +53,9 @@ export class UserService {
     const { data: invites } = await supabaseAdmin
       .from('trip_invitations')
       .select(`
-        id, status, created_at,
-        trip_id,
+        id, status, created_at, trip_id, receiver_id,
         trips (name),
-        receiver:profiles!receiver_id (display_name, avatar_url)
+        receiver:profiles!trip_invitations_receiver_id_fkey (display_name, avatar_url)
       `)
       .eq('sender_id', userId)
       .in('status', ['accepted', 'declined']);
@@ -73,6 +72,7 @@ export class UserService {
           userName: Array.isArray(inv.receiver) ? inv.receiver[0]?.display_name : inv.receiver?.display_name || 'Someone',
           userAvatar: Array.isArray(inv.receiver) ? inv.receiver[0]?.avatar_url : inv.receiver?.avatar_url || '',
           date: inv.created_at,
+          actorId: inv.receiver_id,
         });
       }
     }
@@ -109,9 +109,27 @@ export class UserService {
       .select('trip_id')
       .eq('user_id', userId);
       
-    if (myTrips && myTrips.length > 0) {
-      const tripIds = myTrips.map(t => t.trip_id);
+    const tripIds = myTrips ? myTrips.map(t => t.trip_id) : [];
 
+    // Also get all stops where the user is involved (via stop_payments or stop_splits)
+    const { data: myPayments } = await supabaseAdmin
+      .from('stop_payments')
+      .select('stop_id')
+      .eq('user_id', userId);
+
+    const { data: mySplits } = await supabaseAdmin
+      .from('stop_splits')
+      .select('stop_id')
+      .eq('user_id', userId);
+
+    const involvedStopIds = [
+      ...new Set([
+        ...(myPayments?.map(p => p.stop_id) || []),
+        ...(mySplits?.map(s => s.stop_id) || [])
+      ])
+    ];
+
+    if (tripIds.length > 0) {
       // 3. Member joined notifications
       // Fetch all accepted invitations for trips the user is a participant of
       const { data: memberJoinedInvites } = await supabaseAdmin
@@ -120,7 +138,7 @@ export class UserService {
           id, status, created_at, trip_id,
           receiver_id, sender_id,
           trips (name),
-          receiver:profiles!receiver_id (display_name, avatar_url)
+          receiver:profiles!trip_invitations_receiver_id_fkey (display_name, avatar_url)
         `)
         .in('trip_id', tripIds)
         .eq('status', 'accepted');
@@ -146,54 +164,89 @@ export class UserService {
               userName: receiver.display_name,
               userAvatar: receiver.avatar_url,
               date: inv.created_at,
-            });
-          }
-        }
-      }
-      
-      // 4. Settlements & Left Trip activities
-      const { data: stops } = await supabaseAdmin
-        .from('stops')
-        .select(`
-          id, name, date, trip_id, total_amount,
-          stop_payments (user_id),
-          stop_splits (user_id)
-        `)
-        .in('trip_id', tripIds)
-        .or('name.like.Settlement:%,name.like.Activity:%');
-        
-      if (stops) {
-        for (const s of stops) {
-          if (s.name.startsWith('Settlement:')) {
-            const isPayer = s.stop_payments?.some((p: any) => p.user_id === userId);
-            const isReceiver = s.stop_splits?.some((p: any) => p.user_id === userId);
-            
-            if (isPayer || isReceiver) {
-              activities.push({
-                id: `settlement-${s.id}`,
-                type: 'settlement',
-                amount: s.total_amount,
-                tripId: s.trip_id,
-                name: s.name, // e.g. "Settlement: John to Jane"
-                role: isPayer ? 'payer' : 'receiver',
-                date: s.date,
-              });
-            }
-          } else if (s.name.startsWith('Activity:')) {
-            activities.push({
-              id: `activity-${s.id}`,
-              type: 'member_left',
-              tripId: s.trip_id,
-              name: s.name, // e.g. "Activity: Jane left the trip"
-              date: s.date,
+              actorId: inv.receiver_id,
             });
           }
         }
       }
     }
+      
+    // 4. Settlements & Left Trip activities
+    const stopsMap = new Map<string, any>();
+
+    if (tripIds.length > 0) {
+      const { data: stopsByTrip } = await supabaseAdmin
+        .from('stops')
+        .select(`
+          id, name, date, created_at, trip_id, total_amount,
+          stop_payments (user_id),
+          stop_splits (user_id)
+        `)
+        .in('trip_id', tripIds);
+        
+      if (stopsByTrip) {
+        stopsByTrip.forEach(s => stopsMap.set(s.id, s));
+      }
+    }
+
+    if (involvedStopIds.length > 0) {
+      const { data: stopsByInvolvement } = await supabaseAdmin
+        .from('stops')
+        .select(`
+          id, name, date, created_at, trip_id, total_amount,
+          stop_payments (user_id),
+          stop_splits (user_id)
+        `)
+        .in('id', involvedStopIds);
+        
+      if (stopsByInvolvement) {
+        stopsByInvolvement.forEach(s => stopsMap.set(s.id, s));
+      }
+    }
+
+    const stops = Array.from(stopsMap.values());
+      
+    if (stops.length > 0) {
+      for (const s of stops) {
+        if (!s.name) continue;
+        
+        if (s.name.startsWith('Settlement:')) {
+          const isPayer = s.stop_payments?.some((p: any) => p.user_id === userId);
+          const isReceiver = s.stop_splits?.some((p: any) => p.user_id === userId);
+          
+          if (isPayer || isReceiver) {
+            const receiverId = s.stop_splits?.[0]?.user_id;
+            activities.push({
+              id: `settlement-${s.id}`,
+              type: 'settlement',
+              amount: s.total_amount,
+              tripId: s.trip_id,
+              name: s.name, // e.g. "Settlement: John to Jane"
+              role: isPayer ? 'payer' : 'receiver',
+              date: s.created_at || s.date,
+              actorId: receiverId,
+            });
+          }
+        } else if (s.name.startsWith('Activity:')) {
+          const leaverId = s.stop_splits?.[0]?.user_id;
+          activities.push({
+            id: `activity-${s.id}`,
+            type: 'member_left',
+            tripId: s.trip_id,
+            name: s.name, // e.g. "Activity: Jane left the trip"
+            date: s.created_at || s.date,
+            actorId: leaverId,
+          });
+        }
+      }
+    }
 
     // Sort by date descending
-    activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    activities.sort((a, b) => {
+      const timeA = a.date ? new Date(a.date).getTime() : 0;
+      const timeB = b.date ? new Date(b.date).getTime() : 0;
+      return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+    });
 
     return activities;
   }

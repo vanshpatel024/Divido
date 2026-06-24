@@ -69,10 +69,10 @@ export class TripController {
       const trip = await TripService.endTrip(tripId, req.user.id);
 
       // Broadcast to all clients in the trip room
-      wsManager.broadcast(tripId, 'trip_ended', {});
+      wsManager.broadcast(tripId, 'trip_ended', { actorId: req.user.id });
       // Also push to each participant's dashboard room
       const participantIds = (trip.participants || []).map((p: any) => p.id).filter(Boolean);
-      wsManager.broadcastToDashboards(participantIds, 'trip_ended', { tripId });
+      wsManager.broadcastToDashboards(participantIds, 'trip_ended', { tripId, actorId: req.user.id });
 
       res.status(200).json(createResponse(true, 'Trip ended successfully', trip));
     } catch (error) {
@@ -94,12 +94,14 @@ export class TripController {
         wsManager.broadcast(tripId, 'participant_left', {
           tripId,
           tripName: result.tripName,
-          userName: result.userDisplayName
+          userName: result.userDisplayName,
+          actorId: req.user.id
         });
         wsManager.broadcastToDashboards(result.participantIds, 'participant_left', {
           tripId,
           tripName: result.tripName,
-          userName: result.userDisplayName
+          userName: result.userDisplayName,
+          actorId: req.user.id
         });
       }
 
@@ -141,10 +143,10 @@ export class TripController {
       const newStop = await TripService.createStop(tripId, req.user.id, parsedData);
 
       // Broadcast to all clients viewing this trip
-      wsManager.broadcast(tripId, 'stop_created', { stopId: newStop.id });
+      wsManager.broadcast(tripId, 'stop_created', { stopId: newStop.id, actorId: req.user.id });
       // Also push to each participant's dashboard room so their totals refresh
       const participantIds = await TripService.getTripParticipantIds(tripId);
-      wsManager.broadcastToDashboards(participantIds, 'stop_created', { tripId });
+      wsManager.broadcastToDashboards(participantIds, 'stop_created', { tripId, actorId: req.user.id });
 
       res.status(201).json(createResponse(true, 'Stop created', newStop));
     } catch (error) {
@@ -194,12 +196,13 @@ export class TripController {
         if (accept && !result.alreadyParticipant) {
           // Broadcast to anyone currently viewing the trip detail page
           wsManager.broadcast(tripId, 'participant_joined', {
-            userName: result.userDisplayName
+            userName: result.userDisplayName,
+            actorId: req.user.id
           });
           
           // Also broadcast to all existing participants' dashboard rooms
           const participantIds = await TripService.getTripParticipantIds(tripId);
-          wsManager.broadcastToDashboards(participantIds, 'participant_joined', { tripId });
+          wsManager.broadcastToDashboards(participantIds, 'participant_joined', { tripId, actorId: req.user.id });
         }
       }
 

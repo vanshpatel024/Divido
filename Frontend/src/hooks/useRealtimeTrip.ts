@@ -18,6 +18,7 @@ function backoff(attempt: number): number {
 export function useRealtimeTrip(
   tripId: string | undefined,
   token: string | null,
+  currentUserId: string | undefined,
   onUpdate: () => void,
   onNotification?: (type: 'joined' | 'left', userName: string) => void
 ): void {
@@ -26,6 +27,12 @@ export function useRealtimeTrip(
   const mountedRef = useRef(true);
   const onUpdateRef = useRef(onUpdate);
   const onNotificationRef = useRef(onNotification);
+  const currentUserIdRef = useRef(currentUserId);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
@@ -40,6 +47,11 @@ export function useRealtimeTrip(
 
     function connect() {
       if (!tripId || !token || !mountedRef.current) return;
+
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
 
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
@@ -59,11 +71,18 @@ export function useRealtimeTrip(
               userName?: string;
               tripId?: string;
               tripName?: string;
+              actorId?: string;
             };
           };
 
           if (msg.type === 'authenticated') {
             ws.send(JSON.stringify({ type: 'subscribe', tripId }));
+            return;
+          }
+
+          if (msg.type === 'subscribed') {
+            // Reconnected/subscribed successfully — trigger a sync to catch any missed updates
+            onUpdateRef.current();
             return;
           }
 
@@ -77,9 +96,12 @@ export function useRealtimeTrip(
             onUpdateRef.current();
             window.dispatchEvent(new CustomEvent('divido_trip_update'));
 
-            if (msg.type === 'participant_joined' && onNotificationRef.current) {
+            // Suppress notifications for actions the current user performed themselves
+            const isOwnAction = msg.payload?.actorId && currentUserIdRef.current && msg.payload.actorId === currentUserIdRef.current;
+
+            if (!isOwnAction && msg.type === 'participant_joined' && onNotificationRef.current) {
               onNotificationRef.current('joined', msg.payload?.userName || 'A participant');
-            } else if (msg.type === 'participant_left' && onNotificationRef.current) {
+            } else if (!isOwnAction && msg.type === 'participant_left' && onNotificationRef.current) {
               onNotificationRef.current('left', msg.payload?.userName || 'A participant');
             }
           }
@@ -93,7 +115,7 @@ export function useRealtimeTrip(
         if (event.code === 1000) return;
         
         const delay = backoff(attemptRef.current++);
-        setTimeout(() => {
+        reconnectTimeoutRef.current = setTimeout(() => {
           if (mountedRef.current) connect();
         }, delay);
       };
@@ -103,10 +125,32 @@ export function useRealtimeTrip(
 
     connect();
 
+    const handleOnline = () => {
+      if (mountedRef.current && wsRef.current?.readyState !== WebSocket.OPEN && wsRef.current?.readyState !== WebSocket.CONNECTING) {
+        attemptRef.current = 0;
+        connect();
+      }
+    };
+    window.addEventListener('online', handleOnline);
+
     return () => {
       mountedRef.current = false;
+      window.removeEventListener('online', handleOnline);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       if (wsRef.current) {
-        wsRef.current.close(1000, 'unmount');
+        const ws = wsRef.current;
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+        if (ws.readyState === WebSocket.CONNECTING) {
+          ws.onopen = () => ws.close(1000, 'unmount');
+        } else {
+          ws.onopen = null;
+          ws.close(1000, 'unmount');
+        }
         wsRef.current = null;
       }
     };

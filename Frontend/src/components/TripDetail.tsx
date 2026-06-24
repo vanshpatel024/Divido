@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -28,12 +28,29 @@ interface Stop {
   id: string;
   name: string;
   date: string;
+  created_at?: string;
   total: number;
   transactions: Transaction[];
 }
 
 const formatInr = (n: number) =>
   "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+
+const markActivityAsSeen = (activityId: string) => {
+  try {
+    const SEEN_KEY = "divido_seen_activity_ids";
+    const raw = localStorage.getItem(SEEN_KEY);
+    const seenSet = raw ? new Set(JSON.parse(raw) as string[]) : new Set<string>();
+    if (!seenSet.has(activityId)) {
+      seenSet.add(activityId);
+      const arr = Array.from(seenSet).slice(-500);
+      localStorage.setItem(SEEN_KEY, JSON.stringify(arr));
+      window.dispatchEvent(new CustomEvent('divido_dashboard_update'));
+    }
+  } catch (err) {
+    console.error("Failed to mark activity as seen", err);
+  }
+};
 
 
 
@@ -71,7 +88,7 @@ export default function TripDetail() {
     setPendingAction(null);
   }, [confirmLoading]);
 
-  const fetchTripAndStops = async () => {
+  const fetchTripAndStops = useCallback(async () => {
     if (!token || !id) return;
     try {
       const [tripRes, stopsRes] = await Promise.all([
@@ -107,22 +124,22 @@ export default function TripDetail() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, token, logout, navigate]);
 
-  useEffect(() => {
+  const [prevId, setPrevId] = useState(id);
+  if (id !== prevId) {
+    setPrevId(id);
     setIsLoading(true);
     setError("");
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTripAndStops();
-  }, [id, token]);
+  }, [fetchTripAndStops]);
 
   // Real-time: refetch whenever another participant mutates the trip
-  useRealtimeTrip(id, token, fetchTripAndStops, (type, userName) => {
-    if (type === "joined") {
-      showToast(`${userName} has joined the trip!`, "success");
-    } else if (type === "left") {
-      showToast(`${userName} has left the trip.`, "success");
-    }
-  });
+  useRealtimeTrip(id, token, user?.id, fetchTripAndStops);
 
   const handleEndTrip = () => {
     if (!token || !id || isEndingTrip) return;
@@ -142,6 +159,7 @@ export default function TripDetail() {
       if (data.success) {
         setConfirmOpen(false);
         setPendingAction(null);
+        markActivityAsSeen(`trip-end-${id}`);
         await fetchTripAndStops();
       } else {
         showToast(data.message || "Failed to end trip", "error");
@@ -216,6 +234,9 @@ export default function TripDetail() {
         setConfirmOpen(false);
         setPendingAction(null);
         showToast("Settlement recorded successfully", "success");
+        if (data.data?.id) {
+          markActivityAsSeen(`settlement-${data.data.id}`);
+        }
         await fetchTripAndStops();
       } else {
         showToast(data.message || "Failed to record settlement", "error");
@@ -264,6 +285,20 @@ export default function TripDetail() {
         variant: "primary" as const,
       }
     : { title: "", message: "", confirmLabel: "Confirm", variant: "primary" as const };
+
+  // Derived stop arrays — must be declared before any early returns (Rules of Hooks)
+  const settlementStops = useMemo(
+    () => stops.filter((s) => s.name.startsWith("Settlement:")),
+    [stops]
+  );
+  const normalStops = useMemo(
+    () => stops.filter((s) => !s.name.startsWith("Settlement:") && !s.name.startsWith("Activity:")),
+    [stops]
+  );
+  const totalSpend = useMemo(
+    () => normalStops.reduce((acc, s) => acc + s.total, 0),
+    [normalStops]
+  );
 
   if (isLoading) {
     return (
@@ -360,9 +395,6 @@ export default function TripDetail() {
     );
   }
 
-  const settlementStops = stops.filter((s) => s.name.startsWith("Settlement:"));
-  const normalStops = stops.filter((s) => !s.name.startsWith("Settlement:") && !s.name.startsWith("Activity:"));
-  const totalSpend = normalStops.reduce((acc, s) => acc + s.total, 0);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans pb-20">
@@ -467,54 +499,62 @@ export default function TripDetail() {
               {trip.debts && trip.debts.map((debt, idx) => {
                 const isCreditor = debt.toId === user?.id;
                 const isDebtor = debt.fromId === user?.id;
-                
+
+                // First-person contextual labels
+                const fromLabel = isDebtor ? "YOU" : debt.fromName;
+                const toLabel = isCreditor ? "YOU" : debt.toName;
+
                 return (
                   <div
                     key={`debt-${idx}`}
                     className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 ${
                       isCreditor
-                        ? "border-[#AAD9BB] bg-[#eef7f1]/10"
+                        ? "border-[#AAD9BB] bg-[#eef7f1]/30"
                         : isDebtor
                         ? "border-[#F7DCB9] bg-[#fdfaf5]"
                         : "border-[#EFECE6] bg-white"
                     }`}
                   >
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-sm text-foreground font-medium truncate">
-                        <span className="font-bold">{debt.fromName}</span> owes{" "}
-                        <span className="font-bold">{debt.toName}</span>
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <span className="text-sm text-foreground font-medium leading-snug">
+                        <span className={`font-bold ${isDebtor ? "text-[#7A4A00]" : ""}`}>{fromLabel}</span>
+                        {" "}owes{" "}
+                        <span className={`font-bold ${isCreditor ? "text-[#1A5C3A]" : ""}`}>{toLabel}</span>
                       </span>
-                      <span className={`text-lg font-extrabold ${isCreditor ? "text-[#1A5C3A]" : isDebtor ? "text-[#7A4A00]" : "text-[#2B2A4C]"}`}>
+                      <span className={`text-xl font-extrabold tracking-tight ${
+                        isCreditor ? "text-[#1A5C3A]" : isDebtor ? "text-[#7A4A00]" : "text-[#2B2A4C]"
+                      }`}>
                         {formatInr(debt.amount)}
                       </span>
                       {isCreditor && (
-                        <span className="text-[10px] text-[#1A5C3A] font-semibold">
-                          You are owed this money
+                        <span className="text-[10px] text-[#1A5C3A]/70 font-medium">
+                          Tap ✓ once they pay you back
                         </span>
                       )}
                       {isDebtor && (
-                        <span className="text-[10px] text-[#7A4A00] font-semibold">
-                          You owe this money
+                        <span className="text-[10px] text-[#7A4A00]/70 font-medium">
+                          Waiting to be marked paid
                         </span>
                       )}
                     </div>
-                    
+
                     {isCreditor && (
                       <button
                         disabled={settlingDebtId !== null}
                         onClick={() => handleSettleDebt(debt)}
-                        className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 shrink-0 ${
+                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-200 shrink-0 ml-3 ${
                           settlingDebtId === `${debt.fromId}-${debt.toId}`
-                            ? "bg-[#EFECE6] text-[#8B8A9B]"
+                            ? "bg-[#EFECE6] text-[#8B8A9B] cursor-not-allowed"
                             : "bg-[#2B2A4C] hover:bg-[#1f1e36] text-white cursor-pointer"
                         }`}
                         title="Mark as Paid"
                       >
                         {settlingDebtId === `${debt.fromId}-${debt.toId}` ? (
-                          <span className="h-4 w-4 border-2 border-[#8B8A9B]/20 border-t-[#8B8A9B] rounded-full animate-spin" />
+                          <span className="h-3.5 w-3.5 border-2 border-[#8B8A9B]/20 border-t-[#8B8A9B] rounded-full animate-spin" />
                         ) : (
-                          <Check size={16} strokeWidth={2.5} />
+                          <Check size={13} strokeWidth={2.5} />
                         )}
+                        <span className="hidden sm:inline">{settlingDebtId === `${debt.fromId}-${debt.toId}` ? "Settling..." : "Mark Paid"}</span>
                       </button>
                     )}
                   </div>
@@ -523,13 +563,13 @@ export default function TripDetail() {
 
               {/* Completed Settlements */}
               {settlementStops
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .sort((a, b) => new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime())
                 .map((stop) => (
                   <motion.div
                     key={`settlement-${stop.id}`}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between p-4 rounded-2xl border border-[#AAD9BB]/40 bg-[#eef7f1]/5 transition-all duration-200"
+                    className="flex items-center justify-between p-4 rounded-2xl border border-[#AAD9BB]/40 bg-[#eef7f1]/20 transition-all duration-200"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef7f1] text-[#1A5C3A] border border-[#AAD9BB]/50 shrink-0">
@@ -537,10 +577,10 @@ export default function TripDetail() {
                       </div>
                       <div className="min-w-0">
                         <span className="text-sm font-semibold text-[#1A5C3A] leading-snug truncate block">
-                          {stop.name}
+                          {stop.name.replace(/^Settlement:\s*/, "")}
                         </span>
                         <span className="text-[10px] text-[#8B8A9B] block mt-0.5 select-none">
-                          {new Date(stop.date).toLocaleDateString()}
+                          {new Date(stop.created_at || stop.date).toLocaleDateString()} at {new Date(stop.created_at || stop.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </div>
@@ -557,7 +597,7 @@ export default function TripDetail() {
             </div>
           ) : (
             <p className="text-sm text-[#8B8A9B] font-medium select-none">
-              No activity yet.
+              No balances yet. Add a stop to get started.
             </p>
           )}
         </section>

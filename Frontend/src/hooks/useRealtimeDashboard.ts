@@ -20,12 +20,13 @@ function backoff(attempt: number): number {
 export function useRealtimeDashboard(
   token: string | null,
   userId: string | undefined,
-  onUpdate: () => void
+  onUpdate: (type?: string, payload?: unknown) => void
 ): void {
   const wsRef = useRef<WebSocket | null>(null);
   const attemptRef = useRef(0);
   const mountedRef = useRef(true);
   const onUpdateRef = useRef(onUpdate);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
@@ -37,6 +38,11 @@ export function useRealtimeDashboard(
     function connect() {
       if (!token || !userId || !mountedRef.current) return;
 
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
 
@@ -47,10 +53,16 @@ export function useRealtimeDashboard(
 
       ws.onmessage = (event) => {
         try {
-          const msg = JSON.parse(event.data as string) as { type: string };
+          const msg = JSON.parse(event.data as string) as { type: string; payload?: any };
 
           if (msg.type === 'authenticated') {
             ws.send(JSON.stringify({ type: 'subscribe_dashboard', userId }));
+            return;
+          }
+
+          if (msg.type === 'subscribed_dashboard') {
+            // Reconnected/subscribed successfully — trigger a sync to catch any missed updates
+            onUpdateRef.current('subscribed_dashboard');
             return;
           }
 
@@ -63,7 +75,7 @@ export function useRealtimeDashboard(
             msg.type === 'invitation_received' ||
             msg.type === 'invitation_response'
           ) {
-            onUpdateRef.current();
+            onUpdateRef.current(msg.type, msg.payload);
           }
         } catch {
           // Ignore malformed messages
@@ -75,7 +87,7 @@ export function useRealtimeDashboard(
         if (event.code === 1000) return;
         
         const delay = backoff(attemptRef.current++);
-        setTimeout(() => {
+        reconnectTimeoutRef.current = setTimeout(() => {
           if (mountedRef.current) connect();
         }, delay);
       };
@@ -85,10 +97,32 @@ export function useRealtimeDashboard(
 
     connect();
 
+    const handleOnline = () => {
+      if (mountedRef.current && wsRef.current?.readyState !== WebSocket.OPEN && wsRef.current?.readyState !== WebSocket.CONNECTING) {
+        attemptRef.current = 0;
+        connect();
+      }
+    };
+    window.addEventListener('online', handleOnline);
+
     return () => {
       mountedRef.current = false;
+      window.removeEventListener('online', handleOnline);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       if (wsRef.current) {
-        wsRef.current.close(1000, 'unmount');
+        const ws = wsRef.current;
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+        if (ws.readyState === WebSocket.CONNECTING) {
+          ws.onopen = () => ws.close(1000, 'unmount');
+        } else {
+          ws.onopen = null;
+          ws.close(1000, 'unmount');
+        }
         wsRef.current = null;
       }
     };

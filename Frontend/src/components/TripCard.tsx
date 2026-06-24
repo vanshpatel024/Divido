@@ -25,7 +25,7 @@ const categoryMeta: Record<string, { icon: any; label: string }> = {
 };
 
 function BalancePill({ balance }: { balance: Balance }) {
-  if (balance.kind === "settled") {
+  if (balance.kind === "settled" || balance.amount === 0) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8E8E8] px-3 py-1 text-xs font-medium text-[#555555]">
         Settled ✓
@@ -96,12 +96,13 @@ export default function TripCard({ trip, index, onDelete }: TripCardProps) {
     navigate(`/trip/${trip.id}`);
   };
 
+  const isSettled = trip.balance.kind === "settled" || trip.balance.amount === 0;
   const leftBorderColor =
-    trip.balance.kind === "owed"
+    isSettled
+      ? "border-l-[#E8E8E8]"
+      : trip.balance.kind === "owed"
       ? "border-l-[#AAD9BB]"
-      : trip.balance.kind === "owe"
-      ? "border-l-[#F7DCB9]"
-      : "border-l-[#E8E8E8]";
+      : "border-l-[#F7DCB9]";
 
   return (
     <motion.article

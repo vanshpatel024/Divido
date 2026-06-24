@@ -126,22 +126,11 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
   }, []);
 
   const handleAddInvitee = (selectedUser: SearchedUser) => {
-    // Don't add if it's the current user
-    if (selectedUser.id === user?.id) {
-      showToast("You are already in the trip", "error");
-      return;
-    }
-    // Don't add if they are already an existing participant
-    if (isUserParticipant(selectedUser.id)) {
-      showToast(`${selectedUser.display_name || selectedUser.username} is already a participant of this trip`, "error");
-      return;
-    }
-    // Don't add if already invited
-    if (isUserInvited(selectedUser.id)) {
-      showToast(`${selectedUser.display_name || selectedUser.username} has already been invited to this trip`, "error");
-      return;
-    }
-    // Don't add if already selected in the modal
+    // These are defensive guards — the UI already blocks disabled rows from reaching here
+    if (selectedUser.id === user?.id) return;
+    if (isUserParticipant(selectedUser.id)) return;
+    if (isUserInvited(selectedUser.id)) return;
+    // Don't add if already queued in this send batch
     if (selectedInvitees.some(p => p.id === selectedUser.id)) {
       showToast("User already added", "error");
       return;
@@ -286,16 +275,18 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
                   className="absolute left-0 right-0 top-full mt-2 bg-white border border-[#EFECE6] rounded-xl shadow-lg overflow-hidden z-50 max-h-48 overflow-y-auto"
                 >
                   {searchResults.map((u, idx) => {
-                    const isJoined = isUserParticipant(u.id);
-                    const isInvited = isUserInvited(u.id);
+                    const isJoined = u.isParticipant || isUserParticipant(u.id);
+                    const isInvited = u.isInvited || isUserInvited(u.id);
                     const isDisabled = isJoined || isInvited;
 
                     return (
                       <div 
                         key={u.id ? `${u.id}-${idx}` : idx}
-                        onClick={() => handleAddInvitee(u)}
-                        className={`flex items-center gap-3 px-4 py-2.5 hover:bg-[#F5F0E8] cursor-pointer transition-colors ${
-                          isDisabled ? "opacity-60 cursor-not-allowed" : ""
+                        onClick={() => { if (!isDisabled) handleAddInvitee(u); }}
+                        className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+                          isDisabled
+                            ? "opacity-60 cursor-not-allowed"
+                            : "hover:bg-[#F5F0E8] cursor-pointer"
                         }`}
                       >
                         {u.avatar_url ? (

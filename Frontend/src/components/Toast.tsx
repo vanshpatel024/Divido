@@ -28,11 +28,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((message: string, type: ToastType = "success") => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 2500);
+    setToasts((prev) => {
+      // Deduplicate: skip if an identical message is already visible
+      if (prev.some((t) => t.message === message)) return prev;
+      const id = Math.random().toString(36).substring(2, 9);
+      setTimeout(() => {
+        setToasts((current) => current.filter((t) => t.id !== id));
+      }, 2500);
+      return [...prev, { id, message, type }];
+    });
   }, []);
 
   return (
