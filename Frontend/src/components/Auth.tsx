@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import Logo from "./Logo";
+import Button from "./Button";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -298,38 +299,24 @@ export default function Auth() {
   };
 
   return (
-    <div className={`h-screen w-screen flex flex-col md:flex-row overflow-hidden font-sans ${isDark ? 'bg-[#13161D]' : 'bg-[#FAF6F1]'}`}>
+    <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden font-sans bg-background text-foreground">
       {/* Noise Overlay */}
       <div className="pointer-events-none absolute inset-0 z-[100] opacity-[0.03] mix-blend-overlay bg-[url('data:image/svg+xml;utf8,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')]"></div>
       
       {/* MOBILE HEADER STRIP */}
-      <div className={`md:hidden w-full h-3 ${isDark ? 'bg-gradient-to-r from-[#58A6FF] to-[#FF6B6B] opacity-50' : 'bg-gradient-to-r from-[#58A6FF] via-[#FF6B6B] to-[#FFEDD5]'}`}></div>
+      <div className="md:hidden w-full h-3 bg-gradient-to-r from-primary via-accent to-secondary opacity-60"></div>
 
       {/* LEFT COLUMN: Desktop Only (40% width) */}
       <div className="hidden md:flex md:w-[40%] relative flex-col justify-between h-full p-12 overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
         {/* Dynamic Background */}
-        <div className="absolute inset-0 z-0 transition-colors duration-700">
-          {isDark ? (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#0B0E14] via-[#151926] to-[#1C1420]">
-              <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[#58A6FF] opacity-[0.04] blur-[80px] mix-blend-screen"></div>
-              <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#FF6B6B] opacity-[0.03] blur-[80px] mix-blend-screen"></div>
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
-                {randomLines.map((path, idx) => (
-                  <path key={idx} d={path} fill="none" stroke={idx % 2 === 0 ? "#58A6FF" : "#FF6B6B"} strokeWidth="0.15" opacity="0.08" />
-                ))}
-              </svg>
-            </div>
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#71B2FF] via-[#FF8080] to-[#FFE2C2]">
-              <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-white opacity-20 blur-3xl mix-blend-overlay"></div>
-              <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-white opacity-20 blur-3xl mix-blend-overlay"></div>
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
-                {randomLines.map((path, idx) => (
-                  <path key={idx} d={path} fill="none" stroke="#FFFFFF" strokeWidth="0.15" opacity="0.25" />
-                ))}
-              </svg>
-            </div>
-          )}
+        <div className="absolute inset-0 z-0 transition-all duration-700 bg-gradient-to-br from-sidebar-start via-sidebar-middle to-sidebar-end">
+          <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary opacity-[0.05] blur-[80px] pointer-events-none"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent opacity-[0.05] blur-[80px] pointer-events-none"></div>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
+            {randomLines.map((path, idx) => (
+              <path key={idx} d={path} fill="none" stroke={idx % 2 === 0 ? "var(--wave-stroke-even)" : "var(--wave-stroke-odd)"} strokeWidth="0.15" />
+            ))}
+          </svg>
         </div>
 
         {/* Content */}
@@ -390,15 +377,15 @@ export default function Auth() {
       </div>
 
       {/* RIGHT COLUMN: Auth Form (60% width) */}
-      <div className={`w-full md:w-[60%] h-full flex flex-col items-center justify-start md:justify-center p-6 md:p-12 overflow-y-auto relative z-0 transition-colors duration-700 ${isDark ? "bg-gradient-to-br from-[#101217] via-[#161921] to-[#1C1618]" : "bg-gradient-to-br from-[#FAF6F1] via-[#FFFFFF] to-[#FFF0ED]"}`}>
+      <div className="w-full md:w-[60%] h-full flex flex-col items-center justify-start md:justify-center p-6 md:p-12 overflow-y-auto relative z-0 transition-colors duration-700 bg-background">
         
         {/* Top-Right Theme Toggle */}
         <div className="w-full flex justify-end mb-6 md:mb-0 md:absolute md:top-8 md:right-8 z-20">
            <button
-              type="button"
-              onClick={toggleTheme}
-              className={`relative flex items-center justify-center w-10 h-10 rounded-full border shadow-sm transition-all duration-300 cursor-pointer overflow-hidden ${isDark ? 'bg-[#1C2030] hover:bg-[#252A3A] border-[#2A2F42] text-[#58A6FF] hover:shadow-white/5' : 'bg-[#FFFFFF] hover:bg-[#FAF6F1] border-[#E8DDD3] text-[#FF6B6B] hover:shadow-black/5'}`}
-            >
+             type="button"
+             onClick={toggleTheme}
+             className="relative flex items-center justify-center w-10 h-10 rounded-full border border-border shadow-sm bg-card hover:bg-muted/30 text-accent dark:bg-secondary dark:hover:bg-muted dark:text-primary transition-all duration-300 cursor-pointer overflow-hidden"
+           >
               <AnimatePresence mode="wait">
                 {isDark ? (
                   <motion.div
@@ -428,19 +415,19 @@ export default function Auth() {
         </div>
         
         {/* Form Container Card */}
-        <div className={`w-full max-w-[380px] flex flex-col items-center p-0 md:p-10 md:rounded-2xl transition-all duration-700 ${isDark ? "md:bg-[#1A1E2E]/80 md:backdrop-blur-xl md:border md:border-white/5 md:shadow-[0_8px_32px_rgba(0,0,0,0.4)]" : "md:bg-[#FFFFFF]/90 md:backdrop-blur-xl md:border md:border-black/5 md:shadow-[0_4px_24px_rgba(255,107,107,0.06),0_2px_8px_rgba(0,0,0,0.02)]"}`}>
+        <div className="w-full max-w-[380px] flex flex-col items-center p-0 md:p-10 md:rounded-2xl transition-all duration-700 md:bg-card/85 md:backdrop-blur-xl md:border md:border-border/20 md:shadow-xl dark:md:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           
           {/* Logo & Brand name */}
-          <Logo variant="card" isDark={isDark} />
+          <Logo variant="card" />
 
           {/* Toggle switcher pill */}
           {!isForgotPassword && (
-            <div className={`relative flex rounded-full p-1 w-full mb-6 border transition-colors duration-700 ${isDark ? 'bg-[#13161D] border-[#2A2F42]' : 'bg-[#FAF6F1] border-[#E8DDD3]'}`}>
+            <div className="relative flex rounded-full p-1 w-full mb-6 border border-border bg-background transition-colors duration-700">
               <button
                 type="button"
                 onClick={() => handleTabToggle(true)}
                 className={`relative z-10 w-1/2 rounded-full py-2 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
-                  isLogin ? "text-white" : isDark ? "text-[#8B93A8] hover:text-white" : "text-[#8B93A8] hover:text-[#13161D]"
+                  isLogin ? "text-white" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Login
@@ -449,7 +436,7 @@ export default function Auth() {
                 type="button"
                 onClick={() => handleTabToggle(false)}
                 className={`relative z-10 w-1/2 rounded-full py-2 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
-                  !isLogin ? "text-white" : isDark ? "text-[#8B93A8] hover:text-white" : "text-[#8B93A8] hover:text-[#13161D]"
+                  !isLogin ? "text-white" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Sign Up
@@ -459,7 +446,7 @@ export default function Auth() {
               <motion.div
                 animate={{ x: isLogin ? "0%" : "100%" }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="absolute top-1 bottom-1 left-1 bg-gradient-to-br from-[#FF6B6B] to-[#FF4D4D] rounded-full shadow-sm"
+                className="absolute top-1 bottom-1 left-1 bg-gradient-to-br from-accent to-destructive rounded-full shadow-sm"
                 style={{ width: "calc(50% - 4px)" }}
               />
             </div>
@@ -479,8 +466,8 @@ export default function Auth() {
                   className="flex flex-col gap-3 w-full"
                 >
                   <motion.div variants={itemVariants} className="w-full text-center mb-1">
-                    <h2 className={`font-display text-lg font-bold transition-colors duration-700 ${isDark ? 'text-white' : 'text-[#13161D]'}`}>Reset Password</h2>
-                    <p className={`text-xs mt-1 transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                    <h2 className="font-display text-lg font-bold text-foreground transition-colors duration-700">Reset Password</h2>
+                    <p className="text-xs mt-1 text-muted-foreground transition-colors duration-700">
                       We'll send a password recovery link to your inbox.
                     </p>
                   </motion.div>
@@ -492,8 +479,8 @@ export default function Auth() {
                   )}
 
                   {isResetSuccess ? (
-                    <motion.div variants={itemVariants} className={`p-4 border rounded-xl text-center space-y-3 transition-colors duration-700 ${isDark ? 'bg-[#13161D]/50 border-[#10B981]/20' : 'bg-[#D1FAE5]/30 border-[#10B981]/30'}`}>
-                      <p className={`text-xs font-medium leading-relaxed ${isDark ? 'text-[#10B981]' : 'text-[#10B981]'}`}>
+                    <motion.div variants={itemVariants} className={`p-4 border rounded-xl text-center space-y-3 transition-colors duration-700 bg-background/50 border-border`}>
+                      <p className="text-xs font-medium leading-relaxed text-foreground">
                         A password recovery link has been sent to <strong>{email}</strong>. Please check your inbox.
                       </p>
                       <button
@@ -503,7 +490,7 @@ export default function Auth() {
                           setIsResetSuccess(false);
                           setEmail("");
                         }}
-                        className={`text-xs font-semibold underline cursor-pointer bg-transparent border-none p-0 transition-colors duration-700 ${isDark ? 'text-white hover:text-[#58A6FF]' : 'text-[#13161D] hover:text-[#58A6FF]'}`}
+                        className="text-xs font-semibold underline cursor-pointer bg-transparent border-none p-0 transition-colors duration-700 text-foreground hover:text-primary"
                       >
                         Back to Login
                       </button>
@@ -511,11 +498,11 @@ export default function Auth() {
                   ) : (
                     <>
                       <motion.div variants={itemVariants} className="flex flex-col">
-                        <label className={`text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                        <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 text-muted-foreground">
                           EMAIL
                         </label>
                         <div className="relative group">
-                          <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                             <Mail size={16} />
                           </span>
                           <input
@@ -523,33 +510,29 @@ export default function Auth() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="you@example.com"
-                            className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                              isDark 
-                                ? `bg-[#13161D] text-white ${emailError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                                : `bg-white/80 text-[#13161D] ${emailError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                            className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                              emailError 
+                                ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                                : "border-border focus:border-primary"
                             }`}
                           />
                         </div>
                         {emailError && (
-                          <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                          <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                             {emailError}
                           </p>
                         )}
                       </motion.div>
 
-                      <motion.button
-                        variants={itemVariants}
-                        type="submit"
-                        disabled={isLoading}
-                        whileTap={{ scale: 0.98 }}
-                        className="btn-premium w-full text-white h-[44px] rounded-full font-semibold text-[13px] cursor-pointer flex items-center justify-center disabled:opacity-80 mt-1"
-                      >
-                        {isLoading ? (
-                          <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <span className="flex items-center gap-1.5">Send Reset Link <ArrowRight size={14} /></span>
-                        )}
-                      </motion.button>
+                       <Button
+                          variants={itemVariants}
+                          type="submit"
+                          isLoading={isLoading}
+                          icon={<ArrowRight size={14} />}
+                          className="mt-1"
+                        >
+                          Send Reset Link
+                        </Button>
 
                       <motion.button
                         variants={itemVariants}
@@ -559,7 +542,7 @@ export default function Auth() {
                           setGeneralError("");
                           setEmailError("");
                         }}
-                        className={`text-[13px] font-medium transition-colors duration-200 bg-transparent border-none cursor-pointer self-center mt-2 ${isDark ? 'text-[#8B93A8] hover:text-white' : 'text-[#8B93A8] hover:text-[#13161D]'}`}
+                        className="text-[13px] font-medium transition-colors duration-200 bg-transparent border-none cursor-pointer self-center mt-2 text-muted-foreground hover:text-foreground"
                       >
                         <u>Back to Login</u>
                       </motion.button>
@@ -577,17 +560,17 @@ export default function Auth() {
                   className="flex flex-col gap-3 w-full"
                 >
                   {generalError && (
-                    <motion.div variants={itemVariants} className="p-2.5 text-xs font-semibold text-[#FFFFFF] bg-[#FF4D4D] rounded-lg text-center">
+                    <motion.div variants={itemVariants} className="p-2.5 text-xs font-semibold text-white bg-destructive rounded-lg text-center">
                       {generalError}
                     </motion.div>
                   )}
                   
                   <motion.div variants={itemVariants} className="flex flex-col">
-                    <label className={`text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                    <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 text-muted-foreground">
                       EMAIL
                     </label>
                     <div className="relative group">
-                      <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                         <Mail size={16} />
                       </span>
                       <input
@@ -595,15 +578,15 @@ export default function Auth() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                          isDark 
-                            ? `bg-[#13161D] text-white ${emailError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                            : `bg-white/80 text-[#13161D] ${emailError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                        className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                          emailError 
+                            ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                            : "border-border focus:border-primary"
                         }`}
                       />
                     </div>
                     {emailError && (
-                      <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                      <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                         {emailError}
                       </p>
                     )}
@@ -611,12 +594,12 @@ export default function Auth() {
 
                   <motion.div variants={itemVariants} className="flex flex-col">
                     <div className="flex items-center justify-between mb-1">
-                      <label className={`text-[10px] font-bold uppercase tracking-widest select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                      <label className="text-[10px] font-bold uppercase tracking-widest select-none transition-colors duration-700 text-muted-foreground">
                         PASSWORD
                       </label>
                     </div>
                     <div className="relative group">
-                      <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                         <Lock size={16} />
                       </span>
                       <input
@@ -624,22 +607,22 @@ export default function Auth() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className={`w-full rounded-lg border py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                          isDark 
-                            ? `bg-[#13161D] text-white ${passwordError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                            : `bg-white/80 text-[#13161D] ${passwordError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                        className={`w-full rounded-lg border py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                          passwordError 
+                            ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                            : "border-border focus:border-primary"
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className={`absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer transition-colors duration-700 z-10 ${isDark ? 'text-[#8B93A8] hover:text-white' : 'text-[#8B93A8] hover:text-[#13161D]'}`}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer transition-colors duration-700 z-10 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                     {passwordError && (
-                      <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                      <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                         {passwordError}
                       </p>
                     )}
@@ -653,43 +636,43 @@ export default function Auth() {
                           setGeneralError("");
                           setEmailError("");
                         }}
-                        className="text-[12px] font-medium text-[#FF6B6B] hover:text-[#FF4D4D] hover:underline transition-colors duration-200 bg-transparent border-none cursor-pointer p-0 font-sans"
+                        className="text-[12px] font-medium text-accent hover:text-destructive hover:underline transition-colors duration-200 bg-transparent border-none cursor-pointer p-0 font-sans"
                       >
                         Forgot password?
                       </button>
                   </motion.div>
 
-                  <motion.button
+                  <Button
                     variants={itemVariants}
-                    whileTap={{ scale: 0.98 }}
                     type="submit"
-                    disabled={isLoading}
-                    className="btn-premium w-full text-white h-[44px] rounded-full font-semibold text-[13px] cursor-pointer flex items-center justify-center disabled:opacity-80 mt-1"
+                    isLoading={isLoading}
+                    icon={<ArrowRight size={14} />}
+                    className="mt-1"
                   >
-                    {isLoading ? (
-                      <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <span className="flex items-center gap-1.5">Log In <ArrowRight size={14} /></span>
-                    )}
-                  </motion.button>
+                    Log In
+                  </Button>
                   
                   <motion.div variants={itemVariants} className="mt-4 flex flex-col items-center">
                     <div className="flex items-center w-full mb-4 opacity-60">
-                       <div className={`flex-1 h-[1px] transition-colors duration-700 ${isDark ? 'bg-[#2A2F42]' : 'bg-[#E8DDD3]'}`}></div>
-                       <span className={`px-3 text-[10px] uppercase tracking-wider font-semibold transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>or continue with</span>
-                       <div className={`flex-1 h-[1px] transition-colors duration-700 ${isDark ? 'bg-[#2A2F42]' : 'bg-[#E8DDD3]'}`}></div>
+                       <div className="flex-1 h-[1px] transition-colors duration-700 bg-border"></div>
+                       <span className="px-3 text-[10px] uppercase tracking-wider font-semibold transition-colors duration-700 text-muted-foreground">or continue with</span>
+                       <div className="flex-1 h-[1px] transition-colors duration-700 bg-border"></div>
                     </div>
                     
                     <div className="w-full">
-                       <button type="button" className={`btn-secondary-premium w-full h-[40px] rounded-lg border flex items-center justify-center gap-2 cursor-pointer ${isDark ? 'bg-[#13161D] border-[#2A2F42] text-white' : 'bg-white/80 border-[#E8DDD3] text-[#13161D]'}`}>
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                          <span className="text-[13px] font-semibold">Google</span>
-                       </button>
+                       <Button
+                         type="button"
+                         variant="secondary"
+                         icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>}
+                         iconPosition="left"
+                       >
+                         Google
+                       </Button>
                     </div>
                   </motion.div>
                   
-                  <motion.p variants={itemVariants} className={`text-center text-[10px] mt-4 leading-relaxed transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
-                    By continuing, you agree to our <span className="text-[#FF6B6B] cursor-pointer hover:underline transition-colors">Terms</span> and <span className="text-[#FF6B6B] cursor-pointer hover:underline transition-colors">Privacy Policy</span>.
+                  <motion.p variants={itemVariants} className="text-center text-[10px] mt-4 leading-relaxed transition-colors duration-700 text-muted-foreground">
+                    By continuing, you agree to our <span className="text-accent cursor-pointer hover:underline transition-colors">Terms</span> and <span className="text-accent cursor-pointer hover:underline transition-colors">Privacy Policy</span>.
                   </motion.p>
                 </motion.form>
               ) : (
@@ -703,17 +686,17 @@ export default function Auth() {
                   className="flex flex-col gap-3 w-full"
                 >
                   {generalError && (
-                    <motion.div variants={itemVariants} className="p-2.5 text-xs font-semibold text-[#FFFFFF] bg-[#FF4D4D] rounded-lg text-center">
+                    <motion.div variants={itemVariants} className="p-2.5 text-xs font-semibold text-white bg-destructive rounded-lg text-center">
                       {generalError}
                     </motion.div>
                   )}
                   <div className="flex gap-3">
                     <motion.div variants={itemVariants} className="flex flex-col flex-1">
-                      <label className={`text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                      <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 text-muted-foreground">
                         FIRST NAME
                       </label>
                       <div className="relative group">
-                        <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                           <User size={16} />
                         </span>
                         <input
@@ -721,26 +704,26 @@ export default function Auth() {
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
                           placeholder="Aarav"
-                          className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                            isDark 
-                              ? `bg-[#13161D] text-white ${firstNameError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                              : `bg-white/80 text-[#13161D] ${firstNameError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                          className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                            firstNameError 
+                              ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                              : "border-border focus:border-primary"
                           }`}
                         />
                       </div>
                       {firstNameError && (
-                        <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                        <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                           {firstNameError}
                         </p>
                       )}
                     </motion.div>
 
                     <motion.div variants={itemVariants} className="flex flex-col flex-1">
-                      <label className={`text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                      <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 text-muted-foreground">
                         LAST NAME
                       </label>
                       <div className="relative group">
-                        <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                           <User size={16} />
                         </span>
                         <input
@@ -748,15 +731,15 @@ export default function Auth() {
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
                           placeholder="Shah"
-                          className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                            isDark 
-                              ? `bg-[#13161D] text-white ${lastNameError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                              : `bg-white/80 text-[#13161D] ${lastNameError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                          className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                            lastNameError 
+                              ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                              : "border-border focus:border-primary"
                           }`}
                         />
                       </div>
                       {lastNameError && (
-                        <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                        <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                           {lastNameError}
                         </p>
                       )}
@@ -764,11 +747,11 @@ export default function Auth() {
                   </div>
 
                   <motion.div variants={itemVariants} className="flex flex-col">
-                    <label className={`text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                    <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 text-muted-foreground">
                       USERNAME
                     </label>
                     <div className="relative group">
-                      <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                         <User size={16} />
                       </span>
                       <input
@@ -776,26 +759,26 @@ export default function Auth() {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="cool_panda"
-                        className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                          isDark 
-                            ? `bg-[#13161D] text-white ${usernameError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                            : `bg-white/80 text-[#13161D] ${usernameError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                        className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                          usernameError 
+                            ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                            : "border-border focus:border-primary"
                         }`}
                       />
                     </div>
                     {usernameError && (
-                      <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                      <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                         {usernameError}
                       </p>
                     )}
                   </motion.div>
 
                   <motion.div variants={itemVariants} className="flex flex-col">
-                    <label className={`text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                    <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 text-muted-foreground">
                       EMAIL
                     </label>
                     <div className="relative group">
-                      <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                         <Mail size={16} />
                       </span>
                       <input
@@ -803,15 +786,15 @@ export default function Auth() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                          isDark 
-                            ? `bg-[#13161D] text-white ${emailError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                            : `bg-white/80 text-[#13161D] ${emailError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                        className={`w-full rounded-lg border py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                          emailError 
+                            ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                            : "border-border focus:border-primary"
                         }`}
                       />
                     </div>
                     {emailError && (
-                      <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                      <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                         {emailError}
                       </p>
                     )}
@@ -819,11 +802,11 @@ export default function Auth() {
 
                   <div className="flex gap-3">
                     <motion.div variants={itemVariants} className="flex flex-col flex-1">
-                      <label className={`text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                      <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 text-muted-foreground">
                         PASSWORD
                       </label>
                       <div className="relative group">
-                        <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                           <Lock size={16} />
                         </span>
                         <input
@@ -831,33 +814,33 @@ export default function Auth() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="••••••••"
-                          className={`w-full rounded-lg border py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                            isDark 
-                              ? `bg-[#13161D] text-white ${passwordError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                              : `bg-white/80 text-[#13161D] ${passwordError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                          className={`w-full rounded-lg border py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                            passwordError 
+                              ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                              : "border-border focus:border-primary"
                           }`}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className={`absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer transition-colors duration-700 z-10 ${isDark ? 'text-[#8B93A8] hover:text-white' : 'text-[#8B93A8] hover:text-[#13161D]'}`}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer transition-colors duration-700 z-10 text-muted-foreground hover:text-foreground"
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                       {passwordError && (
-                        <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                        <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                           {passwordError}
                         </p>
                       )}
                     </motion.div>
                     
                     <motion.div variants={itemVariants} className="flex flex-col flex-1">
-                      <label className={`text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 ${isDark ? 'text-[#8B93A8]' : 'text-[#8B93A8]'}`}>
+                      <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none transition-colors duration-700 text-muted-foreground">
                         CONFIRM
                       </label>
                       <div className="relative group">
-                        <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-[#58A6FF] ${isDark ? 'text-[#FF6B6B]' : 'text-[#FFB3A7]'}`}>
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 z-10 pointer-events-none transition-colors duration-700 group-focus-within:text-primary text-secondary dark:text-accent">
                           <Lock size={16} />
                         </span>
                         <input
@@ -865,41 +848,37 @@ export default function Auth() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="••••••••"
-                          className={`w-full rounded-lg border py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:border-[#58A6FF] focus:shadow-[0_0_0_3px_rgba(88,166,255,0.15)] ${
-                            isDark 
-                              ? `bg-[#13161D] text-white ${confirmPasswordError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#2A2F42]"}`
-                              : `bg-white/80 text-[#13161D] ${confirmPasswordError ? "border-[#FF4D4D] focus:shadow-[0_0_0_3px_rgba(255,77,77,0.15)]" : "border-[#E8DDD3]"}`
+                          className={`w-full rounded-lg border py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
+                            confirmPasswordError 
+                              ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                              : "border-border focus:border-primary"
                           }`}
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className={`absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer transition-colors duration-700 z-10 ${isDark ? 'text-[#8B93A8] hover:text-white' : 'text-[#8B93A8] hover:text-[#13161D]'}`}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer transition-colors duration-700 z-10 text-muted-foreground hover:text-foreground"
                         >
                           {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                       {confirmPasswordError && (
-                        <p className="mt-1 text-[11px] font-medium text-[#FF4D4D] leading-none">
+                        <p className="mt-1 text-[11px] font-medium text-destructive leading-none">
                           {confirmPasswordError}
                         </p>
                       )}
                     </motion.div>
                   </div>
 
-                  <motion.button
+                  <Button
                     variants={itemVariants}
-                    whileTap={{ scale: 0.98 }}
                     type="submit"
-                    disabled={isLoading}
-                    className="btn-premium w-full text-white h-[44px] rounded-full font-semibold text-[13px] cursor-pointer flex items-center justify-center disabled:opacity-80 mt-4"
+                    isLoading={isLoading}
+                    icon={<ArrowRight size={14} />}
+                    className="mt-4"
                   >
-                    {isLoading ? (
-                      <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <span className="flex items-center gap-1.5">Create Account <ArrowRight size={14} /></span>
-                    )}
-                  </motion.button>
+                    Create Account
+                  </Button>
                 </motion.form>
               )}
             </AnimatePresence>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import Logo from "./Logo";
 import { useToast } from "./Toast";
+import Button from "./Button";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -123,39 +124,39 @@ export default function ResetPassword() {
 
   if (isInvalid) {
     return (
-      <div className="h-screen w-screen bg-[#F5F0E8] flex flex-col items-center justify-center p-6 font-sans select-none">
-        <div className="bg-white border border-[#E8E2D9] rounded-3xl p-8 max-w-sm w-full text-center shadow-lg">
-          <div className="w-[100px] h-[100px] bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center p-6 font-sans select-none text-foreground">
+        <div className="bg-card border border-border rounded-3xl p-8 max-w-sm w-full text-center shadow-lg">
+          <div className="w-[100px] h-[100px] bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-4">
             <Lock size={40} />
           </div>
-          <h3 className="font-display text-xl font-bold text-[#2B2A4C]">Invalid Reset Link</h3>
-          <p className="text-xs text-[#8B8A9B] mt-2 leading-relaxed">
+          <h3 className="font-display text-xl font-bold text-foreground">Invalid Reset Link</h3>
+          <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
             This password reset link is invalid, incomplete, or has expired. Please request a new link from the login page.
           </p>
-          <button
+          <Button
             onClick={() => navigate("/auth")}
-            className="w-full bg-[#2B2A4C] text-white py-3 rounded-full font-semibold text-sm mt-6 hover:bg-[#1f1e36] transition-colors cursor-pointer"
+            className="mt-6"
           >
             Go to Login
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen bg-white flex flex-col md:flex-row overflow-hidden font-sans">
+    <div className="h-screen w-screen bg-background flex flex-col md:flex-row overflow-hidden font-sans text-foreground">
       
       {/* LEFT COLUMN: Desktop Only (40% width) */}
-      <div className="hidden md:flex md:w-[40%] bg-[#F5F0E8] flex-col items-center justify-center h-full p-8 border-r border-[#EFECE6]">
+      <div className="hidden md:flex md:w-[40%] bg-muted/20 flex-col items-center justify-center h-full p-8 border-r border-border">
         {/* Panda placeholder box */}
-        <div className="w-[160px] h-[190px] bg-white border border-dashed border-[#D4CFC8] rounded-2xl flex flex-col items-center justify-center shadow-sm relative overflow-hidden mb-4">
+        <div className="w-[160px] h-[190px] bg-card border border-dashed border-border rounded-2xl flex flex-col items-center justify-center shadow-sm relative overflow-hidden mb-4">
           {pandaMascotSvg}
-          <span className="text-[11px] text-[#8B8A9B] font-semibold mt-3 tracking-wide uppercase select-none">
+          <span className="text-[11px] text-muted-foreground font-semibold mt-3 tracking-wide uppercase select-none">
             New Credentials
           </span>
         </div>
-        <p className="font-display italic text-[#8B8A9B] text-sm text-center select-none">
+        <p className="font-display italic text-muted-foreground text-sm text-center select-none">
           Securing your split transactions.
         </p>
       </div>
@@ -168,8 +169,8 @@ export default function ResetPassword() {
           <Logo className="mb-6" />
 
           <div className="w-full text-center mb-6">
-            <h2 className="font-display text-2xl font-bold text-[#2B2A4C]">Update Password</h2>
-            <p className="text-xs text-[#8B8A9B] mt-1.5 leading-normal">
+            <h2 className="font-display text-2xl font-bold text-foreground">Update Password</h2>
+            <p className="text-xs text-muted-foreground mt-1.5 leading-normal">
               Enter your new secure password below to regain access.
             </p>
           </div>
@@ -184,11 +185,11 @@ export default function ResetPassword() {
 
             {/* Password Field */}
             <div className="flex flex-col">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground select-none">
                 New Password
               </label>
               <div className="relative mt-1">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground z-10 pointer-events-none">
                   <Lock size={16} />
                 </span>
                 <input
@@ -196,14 +197,14 @@ export default function ResetPassword() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
-                    passwordError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
+                  className={`w-full rounded-xl border bg-background/50 py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 focus:ring-2 focus:ring-primary/20 text-foreground ${
+                    passwordError ? "border-destructive focus:ring-destructive/20" : "border-border focus:border-primary"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B8A9B] hover:text-[#2B2A4C] cursor-pointer transition-colors duration-200 z-10"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-200 z-10"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -217,11 +218,11 @@ export default function ResetPassword() {
 
             {/* Confirm Password Field */}
             <div className="flex flex-col">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] select-none">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground select-none">
                 Confirm Password
               </label>
               <div className="relative mt-1">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#8B8A9B] z-10 pointer-events-none">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground z-10 pointer-events-none">
                   <Lock size={16} />
                 </span>
                 <input
@@ -229,14 +230,14 @@ export default function ResetPassword() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className={`w-full rounded-xl border bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] focus:shadow-[0_0_0_3px_rgba(170,217,187,0.25)] ${
-                    confirmPasswordError ? "border-destructive focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]" : "border-[#EFECE6]"
+                  className={`w-full rounded-xl border bg-background/50 py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 focus:ring-2 focus:ring-primary/20 text-foreground ${
+                    confirmPasswordError ? "border-destructive focus:ring-destructive/20" : "border-border focus:border-primary"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B8A9B] hover:text-[#2B2A4C] cursor-pointer transition-colors duration-200 z-10"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-200 z-10"
                 >
                   {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -248,18 +249,13 @@ export default function ResetPassword() {
               )}
             </div>
 
-            {/* Submit Button */}
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#2B2A4C] text-white py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-[#1f1e36] cursor-pointer shadow-sm flex items-center justify-center disabled:opacity-80 mt-2"
+              isLoading={isLoading}
+              className="mt-2"
             >
-              {isLoading ? (
-                <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                "Update Password"
-              )}
-            </button>
+              Update Password
+            </Button>
           </form>
 
         </div>

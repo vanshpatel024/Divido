@@ -237,9 +237,9 @@ export default function NotificationsMenu() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -4 }}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-[#E8E3D9] bg-white shadow-xl overflow-hidden flex flex-col z-20"
           >

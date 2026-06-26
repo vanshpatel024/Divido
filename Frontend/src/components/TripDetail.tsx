@@ -9,6 +9,7 @@ import {
   UserPlus
 } from "lucide-react";
 import Navbar from "./Navbar";
+import Button from "./Button";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import type { Trip } from "../types";
 import NewStopModal from "./NewStopModal";
@@ -432,27 +433,33 @@ export default function TripDetail() {
 
             <div className="flex items-center gap-2 select-none shrink-0">
               {(!trip.end_date) && (
-                <button
+                <Button
                   disabled={isEndingTrip || isAddingStop || settlingDebtId !== null}
                   onClick={handleEndTrip}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-red-500 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-all duration-200 cursor-pointer shadow-xs hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  isLoading={isEndingTrip}
+                  variant="danger-outline"
+                  shape="pill"
+                  size="sm"
+                  icon={<Flag size={13} />}
+                  iconPosition="left"
+                  className="w-auto"
                 >
-                  {isEndingTrip ? (
-                    <span className="h-3.5 w-3.5 border-2 border-red-600/20 border-t-red-600 rounded-full animate-spin" />
-                  ) : (
-                    <Flag size={13} />
-                  )}
-                  {isEndingTrip ? "Ending..." : "End Trip"}
-                </button>
+                  End Trip
+                </Button>
               )}
               {(!trip.end_date) && (
-                <button
+                <Button
                   disabled={isEndingTrip || isAddingStop || settlingDebtId !== null}
                   onClick={() => setIsAddStopOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-4 py-2 text-xs font-bold text-white transition-all duration-200 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  variant="dark"
+                  shape="pill"
+                  size="sm"
+                  icon={<Plus size={13} />}
+                  iconPosition="left"
+                  className="w-auto"
                 >
-                  <Plus size={13} /> Add Stop
-                </button>
+                  Add Stop
+                </Button>
               )}
             </div>
           </div>
@@ -470,13 +477,15 @@ export default function TripDetail() {
               ))}
             </div>
             {!trip.end_date && (
-              <button
+              <Button
                 onClick={() => setIsInviteOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EFECE6] bg-white text-foreground/60 transition-all duration-200 hover:bg-[#EFECE6] hover:text-foreground cursor-pointer shadow-xs hover:border-[#AAD9BB]"
+                variant="secondary"
+                shape="pill"
+                className="h-9 w-9 p-0 flex items-center justify-center hover:border-[#AAD9BB] text-foreground/60 hover:text-foreground"
                 title="Invite Friends"
               >
                 <UserPlus size={16} />
-              </button>
+              </Button>
             )}
           </div>
 
@@ -522,7 +531,7 @@ export default function TripDetail() {
                         <span className={`font-bold ${isCreditor ? "text-[#1A5C3A]" : ""}`}>{toLabel}</span>
                       </span>
                       <span className={`text-xl font-extrabold tracking-tight ${
-                        isCreditor ? "text-[#1A5C3A]" : isDebtor ? "text-[#7A4A00]" : "text-[#2B2A4C]"
+                        isCreditor ? "text-[#1A5C3A]" : isDebtor ? "text-[#7A4A00]" : "text-brand-navy-text"
                       }`}>
                         {formatInr(debt.amount)}
                       </span>
@@ -539,23 +548,20 @@ export default function TripDetail() {
                     </div>
 
                     {isCreditor && (
-                      <button
+                      <Button
                         disabled={settlingDebtId !== null}
                         onClick={() => handleSettleDebt(debt)}
-                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-200 shrink-0 ml-3 ${
-                          settlingDebtId === `${debt.fromId}-${debt.toId}`
-                            ? "bg-[#EFECE6] text-[#8B8A9B] cursor-not-allowed"
-                            : "bg-[#2B2A4C] hover:bg-[#1f1e36] text-white cursor-pointer"
-                        }`}
+                        isLoading={settlingDebtId === `${debt.fromId}-${debt.toId}`}
+                        variant="dark"
+                        shape="pill"
+                        size="sm"
+                        className="w-auto px-3 py-1.5 shrink-0 ml-3"
                         title="Mark as Paid"
+                        icon={<Check size={13} strokeWidth={2.5} />}
+                        iconPosition="left"
                       >
-                        {settlingDebtId === `${debt.fromId}-${debt.toId}` ? (
-                          <span className="h-3.5 w-3.5 border-2 border-[#8B8A9B]/20 border-t-[#8B8A9B] rounded-full animate-spin" />
-                        ) : (
-                          <Check size={13} strokeWidth={2.5} />
-                        )}
-                        <span className="hidden sm:inline">{settlingDebtId === `${debt.fromId}-${debt.toId}` ? "Settling..." : "Mark Paid"}</span>
-                      </button>
+                        Paid
+                      </Button>
                     )}
                   </div>
                 );
@@ -612,12 +618,17 @@ export default function TripDetail() {
             <div className="text-center py-12 bg-white rounded-2xl border border-[#EFECE6] border-dashed">
               <p className="text-[#8B8A9B] font-medium text-sm">No stops added yet.</p>
               {!trip.end_date && (
-                <button
+                <Button
                   onClick={() => setIsAddStopOpen(true)}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#2B2A4C] px-4 py-2 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs hover:bg-[#1f1e36]"
+                  variant="dark"
+                  shape="pill"
+                  size="sm"
+                  icon={<Plus size={13} />}
+                  iconPosition="left"
+                  className="mt-3 w-auto"
                 >
-                  <Plus size={13} /> Add First Stop
-                </button>
+                  Add First Stop
+                </Button>
               )}
             </div>
           ) : (
@@ -633,7 +644,7 @@ export default function TripDetail() {
                     <div className="flex items-center justify-between gap-4 pb-3.5 border-b border-[#EFECE6]">
                       <div className="flex items-center gap-2.5">
                         <div>
-                          <h3 className="font-semibold text-[#2B2A4C] leading-snug">{stop.name}</h3>
+                          <h3 className="font-semibold text-brand-navy-text leading-snug">{stop.name}</h3>
                           <span className="text-[11px] text-[#8B8A9B] block mt-0.5 select-none">{new Date(stop.date).toLocaleDateString()}</span>
                         </div>
                       </div>
@@ -648,10 +659,10 @@ export default function TripDetail() {
                         {stop.transactions.map((tx, idx) => (
                           <div key={idx} className="flex items-center justify-between text-xs">
                             <span className="text-[#8B8A9B]">
-                              Paid by <span className="font-semibold text-[#2B2A4C]">{tx.paidBy}</span>
+                              Paid by <span className="font-semibold text-brand-navy-text">{tx.paidBy}</span>
                             </span>
                             <div className="flex items-center gap-3">
-                              <span className="font-semibold text-[#2B2A4C]">{formatInr(tx.amount)}</span>
+                              <span className="font-semibold text-brand-navy-text">{formatInr(tx.amount)}</span>
                               <span className="text-[10px] text-[#8B8A9B] bg-[#F5F0E8] px-2 py-0.5 rounded border border-[#EFECE6]">
                                 split with {tx.splitCount}
                               </span>

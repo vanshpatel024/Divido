@@ -1,45 +1,273 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus } from "lucide-react";
+import { Plus, Search, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import Navbar from "./Navbar";
+import Button from "./Button";
 import TripCard from "./TripCard";
 import NewTripModal from "./NewTripModal";
-import DeleteTripConfirmModal from "./DeleteTripConfirmModal";
+import ConfirmDialog from "./ConfirmDialog";
 import type { Trip } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-function EmptyState({ onAddClick }: { onAddClick: () => void }) {
+// ─── Hero Header ──────────────────────────────────────────────────────────────
+function HeroHeader({ onNewTrip }: { onNewTrip: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[#D4CFC8] bg-white px-8 py-16 text-center select-none shadow-xs">
-      
-      {/* Mascot Placeholder */}
-      <div className="w-[140px] h-[160px] bg-[#F5F0E8] rounded-2xl border border-dashed border-[#D4CFC8] flex flex-col items-center justify-center p-3 mb-6">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8B8A9B] text-center leading-normal">
-          Panda mascot here
+    <div className="mx-auto max-w-5xl px-6 sm:px-8 pt-10 pb-6 flex items-end justify-between select-none">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-none">
+          Your Trips
+        </h1>
+        <p className="mt-2 text-sm font-sans text-muted-foreground">
+          Track spending, balances, and who owes whom.
+        </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+      >
+        <Button
+          onClick={onNewTrip}
+          variant="premium"
+          shape="pill"
+          size="md"
+          icon={<Plus size={14} />}
+          iconPosition="left"
+          className="w-auto shadow-md"
+        >
+          New Trip
+        </Button>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Filter Dropdown ───────────────────────────────────────────────────────────
+type FilterValue = "all" | "owe" | "owed" | "settled";
+
+const FILTER_OPTIONS: { label: string; value: FilterValue }[] = [
+  { label: "All Trips", value: "all" },
+  { label: "You Owe", value: "owe" },
+  { label: "You Get Back", value: "owed" },
+  { label: "Settled", value: "settled" },
+];
+
+function FilterDropdown({
+  value,
+  onChange,
+}: {
+  value: FilterValue;
+  onChange: (v: FilterValue) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const selected = FILTER_OPTIONS.find((o) => o.value === value)!;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/40 transition-all duration-200 cursor-pointer whitespace-nowrap select-none"
+      >
+        {selected.label}
+        <ChevronDown
+          size={13}
+          className={`transition-transform duration-200 text-muted-foreground ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute right-0 top-full mt-2 z-30 min-w-[160px] rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
+          >
+            <div className="p-1.5">
+              {FILTER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className="flex items-center justify-between w-full gap-3 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                >
+                  {opt.label}
+                  {opt.value === value && (
+                    <Check size={12} className="text-accent shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Search & Filter Bar ───────────────────────────────────────────────────────
+function SearchFilterBar({
+  query,
+  onQueryChange,
+  filter,
+  onFilterChange,
+  resultCount,
+  totalCount,
+}: {
+  query: string;
+  onQueryChange: (v: string) => void;
+  filter: FilterValue;
+  onFilterChange: (v: FilterValue) => void;
+  resultCount: number;
+  totalCount: number;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 py-6">
+      {/* Search input */}
+      <div className="relative flex-1 max-w-full sm:max-w-[360px]">
+        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+          <Search size={15} className="text-accent opacity-60" />
         </span>
-        <span className="text-[9px] text-[#8B8A9B]/70 mt-1 italic">
-          — confused mood
-        </span>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Search trips..."
+          className="w-full rounded-xl border border-border bg-card py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        />
+        {query && (
+          <button
+            onClick={() => onQueryChange("")}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <span className="text-xs">✕</span>
+          </button>
+        )}
       </div>
 
-      <h3 className="font-display text-2xl font-bold text-[#2B2A4C]">
-        No trips yet.
-      </h3>
-      <p className="mt-1.5 text-xs text-[#8B8A9B] max-w-xs font-sans">
-        Create your first trip and start splitting.
+      {/* Spacer on desktop pushes filter to right */}
+      <div className="hidden sm:flex flex-1" />
+
+      {/* Result count + Filter */}
+      <div className="flex items-center gap-3">
+        {(query || filter !== "all") && (
+          <span className="text-xs text-muted-foreground font-medium">
+            {resultCount} of {totalCount}
+          </span>
+        )}
+        <FilterDropdown value={filter} onChange={onFilterChange} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty State ───────────────────────────────────────────────────────────────
+function EmptyState({ onAddClick }: { onAddClick: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card px-8 py-16 text-center select-none">
+      <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-5">
+        <span className="text-2xl">✈️</span>
+      </div>
+      <h3 className="font-display text-xl font-bold text-foreground">No trips yet.</h3>
+      <p className="mt-1.5 text-sm text-muted-foreground max-w-xs font-sans">
+        Create your first trip and start splitting expenses with your crew.
       </p>
-      
-      <button
+      <Button
         onClick={onAddClick}
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-6 py-2.5 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs"
+        variant="premium"
+        shape="pill"
+        size="md"
+        icon={<Plus size={14} />}
+        iconPosition="left"
+        className="mt-6 w-auto"
       >
-        <Plus size={14} /> Create Trip
+        Create Trip
+      </Button>
+    </div>
+  );
+}
+
+// ─── No Results State ──────────────────────────────────────────────────────────
+function NoResults({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-14 text-center select-none col-span-full">
+      <Search size={28} className="text-muted-foreground/50 mb-3" />
+      <h3 className="font-display text-base font-semibold text-foreground">No matching trips</h3>
+      <p className="mt-1 text-sm text-muted-foreground">Try a different search or filter.</p>
+      <button
+        onClick={onReset}
+        className="mt-4 text-xs font-semibold text-accent hover:text-accent-hover underline underline-offset-2 cursor-pointer transition-colors"
+      >
+        Clear filters
       </button>
     </div>
   );
 }
 
+// ─── Loading Skeleton ──────────────────────────────────────────────────────────
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-background text-foreground font-sans select-none">
+      <Navbar />
+      {/* Hero skeleton */}
+      <div className="w-full bg-muted" style={{ height: "clamp(140px, 22vw, 200px)" }} />
+      <main className="mx-auto max-w-5xl px-8 pb-20">
+        {/* Search bar skeleton */}
+        <div className="flex items-center gap-3 py-6">
+          <div className="h-10 w-80 rounded-xl bg-muted animate-pulse" />
+          <div className="flex-1" />
+          <div className="h-9 w-28 rounded-full bg-muted animate-pulse" />
+        </div>
+        {/* Cards skeleton */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm border-l-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-2 flex-1">
+                  <div className="h-5 w-36 rounded-md bg-muted animate-pulse" />
+                  <div className="h-3 w-24 rounded-md bg-muted animate-pulse" />
+                </div>
+                <div className="h-6 w-20 rounded-full bg-muted animate-pulse" />
+              </div>
+              <div className="mt-5 flex items-center justify-between">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3].map((a) => (
+                    <div key={a} className="h-8 w-8 rounded-full border-2 border-card bg-muted animate-pulse" />
+                  ))}
+                </div>
+                <div className="text-right flex flex-col items-end gap-1.5">
+                  <div className="h-3 w-16 rounded bg-muted animate-pulse" />
+                  <div className="h-6 w-20 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// ─── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
@@ -53,25 +281,25 @@ export default function Dashboard() {
 
   // Active Trip for Editing/Deleting
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
-
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const [isDeletingTrip, setIsDeletingTrip] = useState(false);
+
+  // ── Client-side search & filter ──
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<FilterValue>("all");
 
   const fetchDashboardData = async () => {
     if (!token) return;
     try {
       const tripsRes = await fetch("http://localhost:3000/trips", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (tripsRes.status === 401) {
         logout();
         navigate("/auth");
         return;
       }
-
       const tripsData = await tripsRes.json();
-
       if (tripsData.success) {
         setTripsList(tripsData.data || []);
       } else {
@@ -90,16 +318,25 @@ export default function Dashboard() {
   }, [token, logout, navigate]);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      fetchDashboardData();
-    };
-    window.addEventListener('divido_dashboard_update', handleUpdate);
-    return () => window.removeEventListener('divido_dashboard_update', handleUpdate);
+    const handleUpdate = () => fetchDashboardData();
+    window.addEventListener("divido_dashboard_update", handleUpdate);
+    return () => window.removeEventListener("divido_dashboard_update", handleUpdate);
   }, [token]);
 
-  const hasTrips = tripsList.length > 0;
+  // ── Derived filtered list ──
+  const filteredTrips = tripsList
+    .filter((t) => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((t) => {
+      if (filterStatus === "all") return true;
+      if (filterStatus === "settled")
+        return t.balance.kind === "settled" || (t.balance as any).amount === 0;
+      return t.balance.kind === filterStatus;
+    });
 
-  // Handlers
+  const hasTrips = tripsList.length > 0;
+  const hasResults = filteredTrips.length > 0;
+
+  // ── Handlers (all untouched logic) ──
   const handleCreateTrip = async (newTripData: any) => {
     if (!token) return;
     setIsCreatingTrip(true);
@@ -108,7 +345,7 @@ export default function Dashboard() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: newTripData.name,
@@ -116,13 +353,11 @@ export default function Dashboard() {
           invitees: newTripData.invitees,
         }),
       });
-
       if (res.status === 401) {
         logout();
         navigate("/auth");
         return;
       }
-
       const responseData = await res.json();
       if (responseData.success) {
         setTripsList((prev) => [responseData.data, ...prev]);
@@ -149,7 +384,7 @@ export default function Dashboard() {
     try {
       const res = await fetch(`http://localhost:3000/trips/${tripId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -167,72 +402,32 @@ export default function Dashboard() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background text-foreground font-sans pb-20 select-none">
-        <Navbar />
-        <main className="mx-auto max-w-5xl px-8 py-10 sm:py-14">
-          {/* Header Skeleton */}
-          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#EFECE6] pb-6">
-            <div>
-              <div className="h-10 w-48 bg-[#EFECE6] rounded-xl skeleton-shimmer" />
-              <div className="h-4 w-72 bg-[#EFECE6] rounded-lg mt-3 skeleton-shimmer" />
-            </div>
-            <div className="h-9 w-28 bg-[#EFECE6] rounded-full skeleton-shimmer" />
-          </div>
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setFilterStatus("all");
+  };
 
-          {/* Cards Grid Skeleton */}
-          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex flex-col rounded-2xl border border-[#E8E2D9] bg-white p-6 shadow-sm border-l-4 border-l-[#E8E8E8] relative select-none">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <div className="h-6 w-36 rounded-md bg-[#EFECE6] skeleton-shimmer" />
-                    <div className="h-4 w-24 rounded-md bg-[#EFECE6] skeleton-shimmer" />
-                  </div>
-                  <div className="h-6 w-20 rounded-full bg-[#EFECE6] skeleton-shimmer" />
-                </div>
-                <div className="mt-5 flex items-center justify-between">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3].map((a) => (
-                      <div key={a} className="h-8 w-8 rounded-full border-2 border-white bg-[#EFECE6] skeleton-shimmer" />
-                    ))}
-                  </div>
-                  <div className="text-right flex flex-col items-end">
-                    <div className="h-3 w-16 rounded bg-[#EFECE6] skeleton-shimmer" />
-                    <div className="h-6 w-20 rounded bg-[#EFECE6] mt-1.5 skeleton-shimmer" />
-                  </div>
-                </div>
-                <div className="mt-5 flex gap-1.5">
-                  <div className="inline-flex items-center gap-1 rounded-full bg-[#F5F0E8] px-2.5 py-1 text-xs">
-                    <div className="h-3 w-10 rounded bg-[#EFECE6] skeleton-shimmer" />
-                  </div>
-                  <div className="inline-flex items-center gap-1 rounded-full bg-[#F5F0E8] px-2.5 py-1 text-xs">
-                    <div className="h-3 w-12 rounded bg-[#EFECE6] skeleton-shimmer" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </main>
-      </div>
-    );
-  }
+  // ── Loading state ──
+  if (isLoading) return <DashboardSkeleton />;
 
+  // ── Error state ──
   if (error) {
     return (
-      <div className="min-h-screen bg-background text-foreground font-sans pb-20">
+      <div className="min-h-screen bg-background text-foreground font-sans">
         <Navbar />
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-          <div className="p-6 bg-white border border-[#EFECE6] rounded-2xl max-w-md shadow-xs hover:border-[#AAD9BB] transition-colors">
+          <div className="p-6 bg-card border border-border rounded-2xl max-w-md shadow-sm">
             <h3 className="font-display text-xl font-bold text-destructive">Failed to Load Trips</h3>
-            <p className="mt-2 text-xs text-[#8B8A9B] leading-relaxed">{error}</p>
-            <button
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{error}</p>
+            <Button
               onClick={() => window.location.reload()}
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-5 py-2 text-xs font-bold text-white cursor-pointer transition-colors shadow-xs select-none"
+              variant="dark"
+              shape="pill"
+              size="md"
+              className="mt-5 w-auto"
             >
               Retry
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -240,54 +435,77 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans pb-20">
+    <div className="min-h-screen text-foreground font-sans pb-20 relative bg-background">
+      {/* Subtle page-wide gradient — uses inline style so CSS vars resolve correctly in both themes */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 20% -10%, var(--sidebar-gradient-start), transparent 60%), " +
+            "radial-gradient(ellipse 60% 50% at 80% 110%, var(--sidebar-gradient-end), transparent 60%)",
+          opacity: "var(--page-gradient-opacity, 0.12)",
+        }}
+      />
       <Navbar />
 
-      <main className="mx-auto max-w-5xl px-8 py-10 sm:py-14">
+      {/* ── Hero Banner ── */}
+      <HeroHeader onNewTrip={() => setIsNewOpen(true)} />
 
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="flex flex-wrap items-end justify-between gap-4 border-b border-[#EFECE6] pb-6"
-        >
-          <div>
-            <h1 className="font-display text-5xl font-bold tracking-tight text-[#2B2A4C]">
-              Your Trips
-            </h1>
-            <p className="mt-2 text-sm text-[#8B8A9B] font-sans">
-              Track spending, balances, and who owes whom.
-            </p>
-          </div>
-          <button
-            onClick={() => setIsNewOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#2B2A4C] hover:bg-[#1f1e36] px-5 py-2.5 text-xs font-bold text-white transition-colors duration-200 cursor-pointer shadow-xs select-none"
-          >
-            <Plus size={14} /> New Trip
-          </button>
-        </motion.div>
+      {/* ── Content Area ── */}
+      <main className="mx-auto max-w-5xl px-6 sm:px-8">
 
-        {/* Trips Grid / Empty State */}
         {hasTrips ? (
-          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-            {tripsList.map((trip, i) => (
-              <TripCard
-                key={trip.id}
-                trip={trip}
-                index={i}
-                onDelete={handleDeleteClick}
-              />
-            ))}
-          </div>
+          <>
+            {/* Search + Filter bar */}
+            <SearchFilterBar
+              query={searchQuery}
+              onQueryChange={setSearchQuery}
+              filter={filterStatus}
+              onFilterChange={setFilterStatus}
+              resultCount={filteredTrips.length}
+              totalCount={tripsList.length}
+            />
+
+            {/* Trip cards grid */}
+            {hasResults ? (
+              <motion.div
+                layout
+                className="grid grid-cols-1 gap-6 md:grid-cols-2 pb-12"
+              >
+                <AnimatePresence mode="popLayout">
+                  {filteredTrips.map((trip, i) => (
+                    <motion.div
+                      key={trip.id}
+                      layout
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.25, delay: i * 0.04, ease: "easeOut" }}
+                    >
+                      <TripCard
+                        trip={trip}
+                        index={i}
+                        onDelete={handleDeleteClick}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            ) : (
+              <div className="py-4 pb-12">
+                <NoResults onReset={handleResetFilters} />
+              </div>
+            )}
+          </>
         ) : (
-          <div className="mt-10 max-w-xl mx-auto">
+          /* Truly empty — no trips at all */
+          <div className="pt-10 pb-12 max-w-xl mx-auto">
             <EmptyState onAddClick={() => setIsNewOpen(true)} />
           </div>
         )}
       </main>
 
-      {/* Modals Section */}
+      {/* ── Modals ── */}
       <AnimatePresence>
         {isNewOpen && (
           <NewTripModal
@@ -297,21 +515,42 @@ export default function Dashboard() {
             isSubmitting={isCreatingTrip}
           />
         )}
-        {isDeleteOpen && activeTrip && (
-          <DeleteTripConfirmModal
-            isOpen={isDeleteOpen}
-            onClose={() => {
-              if (!isDeletingTrip) {
-                setIsDeleteOpen(false);
-                setActiveTrip(null);
-              }
-            }}
-            trip={activeTrip}
-            onConfirm={handleConfirmDelete}
-            isDeleting={isDeletingTrip}
-          />
-        )}
       </AnimatePresence>
+
+      {/* Leave / delete trip confirm */}
+      <ConfirmDialog
+        isOpen={isDeleteOpen && !!activeTrip}
+        title="Leave Trip?"
+        message={
+          <>
+            This will permanently remove you from{" "}
+            <strong className="text-foreground">{activeTrip?.name}</strong>. If you are the last participant, the trip will be completely deleted.
+          </>
+        }
+        extraContent={
+          activeTrip && !(activeTrip.end_date && activeTrip.balance.kind === "settled") ? (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive font-medium">
+              {!activeTrip.end_date
+                ? "You cannot leave this trip because it hasn't ended yet."
+                : "You cannot leave this trip because your balance is not settled."}
+            </div>
+          ) : undefined
+        }
+        iconNode={<AlertTriangle size={20} />}
+        iconVariant="danger"
+        confirmLabel="Leave"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={isDeletingTrip}
+        confirmDisabled={!activeTrip || !(activeTrip.end_date && activeTrip.balance.kind === "settled")}
+        onConfirm={() => activeTrip && handleConfirmDelete(activeTrip.id)}
+        onCancel={() => {
+          if (!isDeletingTrip) {
+            setIsDeleteOpen(false);
+            setActiveTrip(null);
+          }
+        }}
+      />
     </div>
   );
 }

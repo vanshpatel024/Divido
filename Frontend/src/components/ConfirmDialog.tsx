@@ -1,15 +1,24 @@
 import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import Button from "./Button";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
   title: string;
   message: React.ReactNode;
+  /** Optional block rendered between the message and the buttons (e.g. a warning notice) */
+  extraContent?: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "danger" | "primary";
+  /** Icon element rendered in a coloured circle above the title */
+  iconNode?: React.ReactNode;
+  iconVariant?: "danger" | "warning" | "info";
   isLoading?: boolean;
+  /** Disables the confirm button independently of loading state */
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -18,21 +27,26 @@ export default function ConfirmDialog({
   isOpen,
   title,
   message,
+  extraContent,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   variant = "primary",
+  iconNode,
+  iconVariant = "danger",
   isLoading = false,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  // Keyboard: Escape → cancel, Enter → confirm
+  useBodyScrollLock(isOpen);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!isOpen) return;
-      if (e.key === "Escape") onCancel();
-      if (e.key === "Enter" && !isLoading) onConfirm();
+      if (e.key === "Escape" && !isLoading) onCancel();
+      if (e.key === "Enter" && !isLoading && !confirmDisabled) onConfirm();
     },
-    [isOpen, isLoading, onConfirm, onCancel]
+    [isOpen, isLoading, confirmDisabled, onConfirm, onCancel]
   );
 
   useEffect(() => {
@@ -40,38 +54,30 @@ export default function ConfirmDialog({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  // Lock body scroll while open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [isOpen]);
-
-  const confirmBtnClass =
-    variant === "danger"
-      ? "bg-red-500 hover:bg-red-600 text-white"
-      : "bg-[#2B2A4C] hover:bg-[#1f1e36] text-white";
+  const iconBgClass =
+    iconVariant === "danger"
+      ? "bg-destructive/10 text-destructive"
+      : iconVariant === "warning"
+      ? "bg-amber-500/10 text-amber-500"
+      : "bg-primary/10 text-primary";
 
   return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* ── Backdrop ── */}
           <motion.div
             key="backdrop"
-            className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={isLoading ? undefined : onCancel}
             aria-hidden="true"
           />
 
-          {/* Dialog */}
+          {/* ── Dialog card ── */}
           <motion.div
             key="dialog"
             role="alertdialog"
@@ -79,70 +85,68 @@ export default function ConfirmDialog({
             aria-labelledby="confirm-dialog-title"
             aria-describedby="confirm-dialog-message"
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
-            initial={{ opacity: 0, scale: 0.94, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 8 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="pointer-events-auto w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-[#E8E3D9] p-6 flex flex-col gap-4">
-              {/* Icon + Title */}
-              <div className="flex flex-col gap-1.5">
-                {variant === "danger" && (
-                  <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-1">
-                    <svg
-                      className="w-5 h-5 text-red-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-                      />
-                    </svg>
+            <div
+              className="pointer-events-auto w-full max-w-sm bg-card/95 backdrop-blur-xl border border-border/40 p-6 flex flex-col gap-5 rounded-2xl shadow-2xl text-foreground font-sans"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Icon + Title + Message */}
+              <div className="flex flex-col gap-2">
+                {iconNode && (
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 shrink-0 ${iconBgClass}`}
+                  >
+                    {iconNode}
                   </div>
                 )}
                 <h2
                   id="confirm-dialog-title"
-                  className="font-display text-lg font-bold text-[#2B2A4C] leading-snug"
+                  className="font-display text-xl font-bold text-foreground leading-snug"
                 >
                   {title}
                 </h2>
                 <p
                   id="confirm-dialog-message"
-                  className="text-sm text-[#6B6A7E] leading-relaxed font-sans"
+                  className="text-sm text-muted-foreground leading-relaxed"
                 >
                   {message}
                 </p>
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-2.5 pt-1">
-                <button
+              {/* Optional extra block */}
+              {extraContent}
+
+              {/* Actions — right-aligned pill buttons */}
+              <div className="flex items-center justify-end gap-2.5">
+                <Button
                   id="confirm-dialog-cancel"
+                  type="button"
                   onClick={onCancel}
                   disabled={isLoading}
-                  className="flex-1 rounded-xl border border-[#E8E3D9] bg-white text-sm font-semibold text-[#2B2A4C] py-2.5 px-4 hover:bg-[#F5F0E8] transition-colors disabled:opacity-50 cursor-pointer"
+                  variant="dark-outline"
+                  shape="pill"
+                  size="sm"
+                  className="w-auto"
                 >
                   {cancelLabel}
-                </button>
-                <button
+                </Button>
+                <Button
                   id="confirm-dialog-confirm"
+                  type="button"
                   onClick={onConfirm}
-                  disabled={isLoading}
-                  className={`flex-1 rounded-xl text-sm font-semibold py-2.5 px-4 transition-colors disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2 ${confirmBtnClass}`}
+                  disabled={isLoading || confirmDisabled}
+                  isLoading={isLoading}
+                  variant={variant === "danger" ? "danger" : "dark"}
+                  shape="pill"
+                  size="sm"
+                  className="w-auto min-w-[5rem]"
                 >
-                  {isLoading ? (
-                    <>
-                      <span className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      Processing…
-                    </>
-                  ) : (
-                    confirmLabel
-                  )}
-                </button>
+                  {confirmLabel}
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -152,3 +156,4 @@ export default function ConfirmDialog({
     document.body
   );
 }
+

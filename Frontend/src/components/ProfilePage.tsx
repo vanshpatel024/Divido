@@ -6,6 +6,7 @@ import Navbar from "./Navbar";
 import { useToast } from "./Toast";
 import { useAuth } from "../context/AuthContext";
 import ConfirmDialog from "./ConfirmDialog";
+import Button from "./Button";
 
 export default function ProfilePage() {
   const { showToast } = useToast();
@@ -83,7 +84,7 @@ export default function ProfilePage() {
         <div className="flex items-center select-none">
           <Link
             to="/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B8A9B] hover:text-[#2B2A4C] transition-colors decoration-none"
+            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B8A9B] hover:text-brand-navy-text transition-colors decoration-none"
           >
             <ChevronLeft size={14} strokeWidth={2.5} />
             <span>Back to Trips</span>
@@ -100,7 +101,7 @@ export default function ProfilePage() {
                 className="w-20 h-20 rounded-full border-2 border-white shadow-sm object-cover bg-[#F5F0E8]"
               />
               <div className="text-center sm:text-left flex-1">
-                <h2 className="font-display text-2xl font-bold text-[#2B2A4C] leading-snug">
+                <h2 className="font-display text-2xl font-bold text-brand-navy-text leading-snug">
                   {user?.display_name || "Guest User"}
                 </h2>
                 <p className="text-sm text-[#8B8A9B] mt-1 flex items-center justify-center sm:justify-start gap-1 select-none">
@@ -131,7 +132,7 @@ export default function ProfilePage() {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <KeyRound size={16} />
             </div>
-            <h3 className="font-display text-xl font-bold text-[#2B2A4C]">
+            <h3 className="font-display text-xl font-bold text-brand-navy-text">
               Reset Password
             </h3>
           </div>
@@ -140,12 +141,15 @@ export default function ProfilePage() {
           </p>
 
           <div className="pl-11">
-            <button
+            <Button
               onClick={() => setIsResetConfirmOpen(true)}
-              className="px-5 py-2.5 bg-[#2B2A4C] hover:bg-[#1f1e36] text-white rounded-full text-xs font-bold transition-colors duration-200 cursor-pointer shadow-xs select-none"
+              variant="dark"
+              shape="pill"
+              size="md"
+              className="w-auto"
             >
               Reset Password
-            </button>
+            </Button>
           </div>
         </section>
 
@@ -164,12 +168,15 @@ export default function ProfilePage() {
           </p>
 
           <div className="pl-11">
-            <button
+            <Button
               onClick={() => setIsDeleteModalOpen(true)}
-              className="px-5 py-2.5 border border-red-500 hover:bg-red-50 text-red-500 rounded-full text-xs font-bold transition-colors duration-200 cursor-pointer"
+              variant="danger-outline"
+              shape="pill"
+              size="md"
+              className="w-auto"
             >
               Delete Account
-            </button>
+            </Button>
           </div>
         </section>
       </main>

@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
 import type { Trip } from "../types";
+import Button from "./Button";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 
 interface DeleteTripConfirmModalProps {
   isOpen: boolean;
@@ -18,6 +20,16 @@ export default function DeleteTripConfirmModal({
   onConfirm,
   isDeleting = false,
 }: DeleteTripConfirmModalProps) {
+  const [cachedTrip, setCachedTrip] = useState<Trip | null>(trip);
+
+  useEffect(() => {
+    if (trip) {
+      setCachedTrip(trip);
+    }
+  }, [trip]);
+
+  // Apply scroll lock hook
+  useBodyScrollLock(isOpen);
 
   // ESC key to close
   useEffect(() => {
@@ -30,14 +42,14 @@ export default function DeleteTripConfirmModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose, isDeleting]);
 
-  if (!isOpen || !trip) return null;
+  if (!cachedTrip) return null;
 
-  const isDeletable = trip.end_date && trip.balance.kind === 'settled';
+  const isDeletable = cachedTrip.end_date && cachedTrip.balance.kind === 'settled';
 
   const handleDelete = () => {
     if (!isDeletable || isDeleting) return;
     if (onConfirm) {
-      onConfirm(trip.id);
+      onConfirm(cachedTrip.id);
     }
   };
 
@@ -48,72 +60,69 @@ export default function DeleteTripConfirmModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
         onClick={() => {
           if (!isDeleting) onClose();
         }}
-        className="absolute inset-0 bg-black/30 backdrop-blur-xs cursor-pointer"
+        className="absolute inset-0 bg-black/40 backdrop-blur-xs cursor-pointer"
       />
 
       {/* Modal Card */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 4 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white border border-[#EFECE6] rounded-2xl w-full max-w-sm p-6 shadow-xl relative z-10 font-sans"
+        className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative z-10 font-sans text-foreground"
       >
         <div className="flex items-center gap-3 mb-4 select-none">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
             <AlertTriangle size={20} />
           </div>
-          <h3 className="font-display text-xl font-bold text-[#2B2A4C]">
+          <h3 className="font-display text-xl font-bold text-foreground">
             Leave Trip?
           </h3>
         </div>
 
-        <p className="text-sm text-[#8B8A9B] leading-relaxed mb-6">
-          This will permanently remove you from <span className="font-semibold text-[#2B2A4C]">{trip.name}</span>. If you are the last participant, the trip will be completely deleted.
+        <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+          This will permanently remove you from <span className="font-semibold text-foreground">{cachedTrip.name}</span>. If you are the last participant, the trip will be completely deleted.
         </p>
 
         {!isDeletable && (
-          <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-medium">
-            {!trip.end_date ? (
+          <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive font-medium">
+            {!cachedTrip.end_date ? (
               <p>You cannot leave this trip because it hasn't ended yet.</p>
-            ) : trip.balance.kind !== 'settled' ? (
+            ) : cachedTrip.balance.kind !== 'settled' ? (
               <p>You cannot leave this trip because your balance is not settled.</p>
             ) : null}
           </div>
         )}
 
         <div className="flex items-center justify-end gap-2.5 select-none">
-          <button
+          <Button
             type="button"
             disabled={isDeleting}
             onClick={onClose}
-            className={`rounded-full border border-[#2B2A4C] px-5 py-2 text-xs font-bold text-[#2B2A4C] transition-colors duration-200 bg-white ${
-              isDeleting ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F5F0E8] cursor-pointer"
-            }`}
+            variant="dark-outline"
+            shape="pill"
+            size="sm"
+            className="w-auto"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleDelete}
             disabled={!isDeletable || isDeleting}
-            className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-bold transition-colors duration-200 min-w-20 ${
-              isDeleting
-                ? "bg-red-300 text-white cursor-not-allowed"
-                : isDeletable 
-                ? "bg-red-500 hover:bg-red-600 text-white cursor-pointer" 
-                : "bg-red-200 text-white cursor-not-allowed"
-            }`}
+            isLoading={isDeleting}
+            variant="danger"
+            shape="pill"
+            size="sm"
+            className="w-auto min-w-20"
           >
-            {isDeleting ? (
-              <span className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-            ) : (
-              "Leave"
-            )}
-          </button>
+            Leave
+          </Button>
         </div>
       </motion.div>
     </div>
