@@ -113,10 +113,10 @@ export default function Navbar() {
                 <img
                   src={avatarUrl}
                   alt={displayName}
-                  className="h-8 w-8 rounded-full object-cover shadow-sm border border-border"
+                  className="h-8 w-8 rounded-full object-cover border border-border"
                 />
               ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-brand-navy-text border border-primary/20 bg-primary">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-brand-navy-text border border-border bg-primary">
                   {initials}
                 </div>
               )}
@@ -183,7 +183,7 @@ export default function Navbar() {
                       id="navbar-logout-btn"
                       onClick={handleLogout}
                       role="menuitem"
-                      className="flex items-center gap-2.5 w-full rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer mt-0.5"
+                      className="flex items-center gap-2.5 w-full rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer mt-0.5"
                     >
                       <LogOut size={15} />
                       Log out

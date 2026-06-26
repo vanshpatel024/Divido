@@ -62,6 +62,10 @@ html {
   --color-status-owe-bg: var(--status-owe-bg);
   --color-status-getback-bg: var(--status-getback-bg);
   --color-status-getback-text: var(--status-getback-text);
+  --color-status-settled-bg: var(--status-settled-bg);
+  --color-status-settled-text: var(--status-settled-text);
+  --color-status-settled-border: var(--status-settled-border);
+  --color-status-settled-hover-border: var(--status-settled-hover-border);
   /* Dashboard specific tokens */
   --color-hero-overlay: var(--hero-overlay);
   --color-hero-blob-1: var(--hero-blob-1);
@@ -123,6 +127,10 @@ html {
   --status-owe-bg: #FFF0ED;
   --status-getback-bg: #D1FAE5;
   --status-getback-text: #059669;
+  --status-settled-bg: #8b93a8d2;
+  --status-settled-text: #FFFFFF;
+  --status-settled-border: #d8dbe0;
+  --status-settled-hover-border: #70788C;
   /* Dashboard specific tokens - Light */
   --hero-overlay: rgba(0, 0, 0, 0);
   --hero-blob-1: rgba(255, 255, 255, 0.06);
@@ -184,6 +192,10 @@ html {
   --status-owe-bg: rgba(255, 107, 107, 0.12);
   --status-getback-bg: rgba(16, 185, 129, 0.12);
   --status-getback-text: #10B981;
+  --status-settled-bg: #2D313F;
+  --status-settled-text: #FFFFFF;
+  --status-settled-border: #3D4457;
+  --status-settled-hover-border: #8B93A8;
   /* Dashboard specific tokens - Dark */
   --hero-overlay: rgba(0, 0, 0, 0.3);
   --hero-blob-1: rgba(255, 255, 255, 0.06);

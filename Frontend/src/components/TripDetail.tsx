@@ -477,15 +477,13 @@ export default function TripDetail() {
               ))}
             </div>
             {!trip.end_date && (
-              <Button
+              <button
                 onClick={() => setIsInviteOpen(true)}
-                variant="secondary"
-                shape="pill"
-                className="h-9 w-9 p-0 flex items-center justify-center hover:border-[#AAD9BB] text-foreground/60 hover:text-foreground"
+                className="h-9 w-9 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-sm shrink-0 ml-1.5"
                 title="Invite Friends"
               >
-                <UserPlus size={16} />
-              </Button>
+                <UserPlus size={15} />
+              </button>
             )}
           </div>
 
@@ -618,17 +616,19 @@ export default function TripDetail() {
             <div className="text-center py-12 bg-white rounded-2xl border border-[#EFECE6] border-dashed">
               <p className="text-[#8B8A9B] font-medium text-sm">No stops added yet.</p>
               {!trip.end_date && (
-                <Button
-                  onClick={() => setIsAddStopOpen(true)}
-                  variant="dark"
-                  shape="pill"
-                  size="sm"
-                  icon={<Plus size={13} />}
-                  iconPosition="left"
-                  className="mt-3 w-auto"
-                >
-                  Add First Stop
-                </Button>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => setIsAddStopOpen(true)}
+                    variant="dark"
+                    shape="pill"
+                    size="sm"
+                    icon={<Plus size={13} />}
+                    iconPosition="left"
+                    className="mt-3 w-auto"
+                  >
+                    Add First Stop
+                  </Button>
+                </div>
               )}
             </div>
           ) : (

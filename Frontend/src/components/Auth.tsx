@@ -15,6 +15,8 @@ import { useAuth } from "../context/AuthContext";
 import Logo from "./Logo";
 import Button from "./Button";
 
+const CAROUSEL_INTERVAL_MS = 5000;
+
 export default function Auth() {
   const navigate = useNavigate();
   const { login, signup } = useAuth();
@@ -29,6 +31,15 @@ export default function Auth() {
   ];
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideDirection, setSlideDirection] = useState(1);
+
+  // Auto-rotate slides every 5s (resets to 5s if user manually changes slide)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSlideDirection(1);
+      setCurrentSlide((prev) => (prev + 1) % carouselTexts.length);
+    }, CAROUSEL_INTERVAL_MS);
+    return () => clearTimeout(timer);
+  }, [currentSlide]);
 
   const handleNextSlide = () => {
     setSlideDirection(1);
