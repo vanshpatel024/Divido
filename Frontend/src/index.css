@@ -12,7 +12,7 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
   --font-sans: "Inter", sans-serif;
-  --font-display: "Playfair Display", serif;
+  --font-display: "Plus Jakarta Sans", sans-serif;
   --font-body: "Inter", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -51,74 +51,75 @@
 
 :root {
   --radius: 0.875rem;
-  /* Matcha & Mochi theme */
-  --background: #F5F0E8;                        /* Warm Mochi Cream */
-  --foreground: oklch(0.27 0.07 285);           /* #2B2A4C Deep Nori */
-  --card: oklch(1 0 0);                          /* #FFFFFF */
-  --card-foreground: oklch(0.27 0.07 285);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.27 0.07 285);
-  --primary: oklch(0.85 0.08 150);              /* #AAD9BB Soft Matcha */
-  --primary-foreground: oklch(0.27 0.07 285);
-  --secondary: oklch(0.9 0.06 75);              /* #F7DCB9 Miso Sand */
-  --secondary-foreground: oklch(0.27 0.07 285);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  /* Coral Horizon theme - Light */
+  --background: #FAF6F1;
+  --foreground: #13161D;
+  --card: #FFFFFF;
+  --card-foreground: #13161D;
+  --popover: #FFFFFF;
+  --popover-foreground: #13161D;
+  --primary: #58A6FF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFB3A7;
+  --secondary-foreground: #13161D;
+  --muted: #F5EDE0;
+  --muted-foreground: #8B93A8;
+  --accent: #FF6B6B;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF4D4D;
+  --destructive-foreground: #FFFFFF;
+  --border: #E8DDD3;
+  --input: #E8DDD3;
+  --ring: #58A6FF;
+  --chart-1: #58A6FF;
+  --chart-2: #FF6B6B;
+  --chart-3: #10B981;
+  --chart-4: #A78BFA;
+  --chart-5: #C4A882;
+  --sidebar: #FAF6F1;
+  --sidebar-foreground: #13161D;
+  --sidebar-primary: #58A6FF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFEDD5;
+  --sidebar-accent-foreground: #13161D;
+  --sidebar-border: #E8DDD3;
+  --sidebar-ring: #58A6FF;
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Coral Horizon theme - Dark */
+  --background: #13161D;
+  --foreground: #C2C9D6;
+  --card: #1A1E2E;
+  --card-foreground: #FFFFFF;
+  --popover: #1A1E2E;
+  --popover-foreground: #FFFFFF;
+  --primary: #58A6FF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1C2030;
+  --secondary-foreground: #C2C9D6;
+  --muted: #252A3A;
+  --muted-foreground: #8B93A8;
+  --accent: #FF6B6B;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF4D4D;
+  --destructive-foreground: #FFFFFF;
+  --border: #2A2F42;
+  --input: #2A2F42;
+  --ring: #58A6FF;
+  --chart-1: #58A6FF;
+  --chart-2: #FF6B6B;
+  --chart-3: #10B981;
+  --chart-4: #A78BFA;
+  --chart-5: #C4A882;
+  --sidebar: #1A1E2E;
+  --sidebar-foreground: #C2C9D6;
+  --sidebar-primary: #58A6FF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #252A3A;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #2A2F42;
+  --sidebar-ring: #58A6FF;
 }
 
 @layer base {
@@ -234,4 +235,90 @@
   border: 2.5px solid transparent;
   background-clip: padding-box;
 }
+
+/* Premium Button Styles with Grain Texture and Hover Gradient Shift */
+.btn-premium {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(to right, #FF6B6B, #FF4D4D) !important;
+  border: none !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Darker gradient pseudo-element for hover transition */
+.btn-premium::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #F05E5E, #E44040);
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+  border-radius: inherit;
+}
+
+.btn-premium:hover::after {
+  opacity: 1;
+}
+
+/* Ensure contents stay on top of background layers */
+.btn-premium > * {
+  position: relative;
+  z-index: 10;
+}
+
+/* Grain texture overlay layered above backgrounds but below text */
+.btn-premium::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.12; /* Subtle but visible grain */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+  z-index: 3;
+  transition: opacity 0.3s ease;
+}
+
+/* Secondary Button (e.g. Google auth) with subtle grain and hover color transition */
+.btn-secondary-premium {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease !important;
+}
+
+.btn-secondary-premium::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.08; /* slightly lighter grain */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+  z-index: 3;
+  transition: opacity 0.3s ease;
+}
+
+/* Ensure contents stay on top */
+.btn-secondary-premium > * {
+  position: relative;
+  z-index: 10;
+}
+
+/* Hover background adjustments */
+.btn-secondary-premium:hover {
+  background-color: rgba(245, 237, 224, 0.65) !important;
+}
+
+.dark .btn-secondary-premium:hover {
+  background-color: #1C2030 !important;
+}
+
+
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Leaf, Eye, EyeOff, Lock } from "lucide-react";
+import { Eye, EyeOff, Lock } from "lucide-react";
+import Logo from "./Logo";
 import { useToast } from "./Toast";
 
 export default function ResetPassword() {
@@ -164,14 +165,7 @@ export default function ResetPassword() {
         <div className="w-full max-w-sm flex flex-col items-center">
           
           {/* Logo & Brand name */}
-          <div className="flex items-center gap-2 mb-6 select-none">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary shadow-sm">
-              <Leaf size={16} className="text-foreground" />
-            </div>
-            <span className="font-display text-2xl font-bold tracking-tight text-foreground">
-              Divido
-            </span>
-          </div>
+          <Logo className="mb-6" />
 
           <div className="w-full text-center mb-6">
             <h2 className="font-display text-2xl font-bold text-[#2B2A4C]">Update Password</h2>

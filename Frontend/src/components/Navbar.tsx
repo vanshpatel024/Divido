@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Leaf, User, LogOut, ChevronDown } from "lucide-react";
+import { User, LogOut, ChevronDown } from "lucide-react";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import Logo from "./Logo";
 import ConfirmDialog from "./ConfirmDialog";
 import NotificationsMenu from "./NotificationsMenu";
 import InvitationsMenu from "./InvitationsMenu";
@@ -74,14 +75,9 @@ export default function Navbar() {
         {/* Logo */}
         <Link
           to="/dashboard"
-          className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 hover:bg-[#F5F0E8] transition-colors decoration-none"
+          className="rounded-full hover:bg-[#F5F0E8] transition-colors decoration-none"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
-            <Leaf size={16} className="text-foreground" />
-          </div>
-          <span className="font-display text-base font-bold tracking-tight text-foreground">
-            Divido
-          </span>
+          <Logo variant="navbar" className="py-1 pl-1 pr-3" />
         </Link>
 
         {/* Actions & Profile dropdown */}
