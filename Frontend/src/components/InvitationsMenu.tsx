@@ -133,7 +133,7 @@ export default function InvitationsMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={handleOpen}
-        className="relative flex items-center justify-center p-2 rounded-full hover:bg-[#F5F0E8] transition-colors cursor-pointer"
+        className="relative flex items-center justify-center p-2 rounded-full hover:bg-muted transition-colors cursor-pointer"
         title="Trip Invitations"
       >
         <Bell size={20} className="text-[#8B8A9B]" />
@@ -152,53 +152,53 @@ export default function InvitationsMenu() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-[#E8E3D9] bg-white shadow-xl overflow-hidden flex flex-col z-20"
+            className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden flex flex-col z-20"
           >
-            <div className="p-4 border-b border-[#F0ECE5] shrink-0 flex items-center justify-between">
-              <h3 className="font-semibold text-[#2B2A4C]">Trip Invitations</h3>
+            <div className="p-4 border-b border-border shrink-0 flex items-center justify-between">
+              <h3 className="font-semibold text-[#2B2A4C] dark:text-foreground">Trip Invitations</h3>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-bold text-[#1A5C3A] bg-[#eef7f1] border border-[#AAD9BB]/60 px-2 py-0.5 rounded-full select-none">
+                <span className="text-[10px] font-bold text-status-getback-text bg-status-getback-bg border border-status-getback-text/20 px-2 py-0.5 rounded-full select-none">
                   {unreadCount} new
                 </span>
               )}
             </div>
             <div className="overflow-y-auto max-h-[340px] flex flex-col custom-scrollbar">
               {invitations.length === 0 ? (
-                <div className="p-6 text-center text-sm text-[#8B8A9B]">No pending invitations</div>
+                <div className="p-6 text-center text-sm text-muted-foreground">No pending invitations</div>
               ) : (
                 invitations.map((inv) => {
                   const isUnread = unreadIds.has(inv.id);
                   return (
                     <div
                       key={inv.id}
-                      className={`relative p-4 border-b border-[#F0ECE5] transition-colors ${
-                        isUnread ? "bg-[#f5fbf7]" : ""
+                      className={`relative p-4 border-b border-border transition-colors ${
+                        isUnread ? "bg-[#f5fbf7] dark:bg-status-getback-bg/20" : ""
                       }`}
                     >
                       {/* Unread left-border accent */}
                       {isUnread && (
-                        <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#AAD9BB] rounded-r-full" />
+                        <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#AAD9BB] dark:bg-status-getback-text rounded-r-full" />
                       )}
                       <div className="flex flex-col gap-2 pl-1">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <p className="text-sm text-[#2B2A4C]">
+                            <p className="text-sm text-[#2B2A4C] dark:text-foreground">
                               <strong>{inv.sender.display_name}</strong> invited you to join{" "}
                               <strong>{inv.trip.name}</strong>
                             </p>
-                            <p className="text-xs text-[#8B8A9B] mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {new Date(inv.created_at).toLocaleDateString()} at {new Date(inv.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                           {isUnread && (
-                            <span className="mt-1 h-2 w-2 rounded-full bg-[#AAD9BB] shrink-0" />
+                            <span className="mt-1 h-2 w-2 rounded-full bg-[#AAD9BB] dark:bg-status-getback-text shrink-0" />
                           )}
                         </div>
                         <div className="flex gap-2 select-none">
                           <button
                             onClick={() => respondToInvite(inv.id, true)}
                             disabled={loadingAction?.id === inv.id}
-                            className="flex-1 rounded-lg bg-[#AAD9BB] py-1.5 text-xs font-semibold text-[#1A5C3A] hover:bg-[#8bc79f] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 rounded-lg bg-status-getback-bg py-1.5 text-xs font-semibold text-status-getback-text hover:bg-status-getback-text hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {loadingAction?.id === inv.id && loadingAction?.action === "accept"
                               ? "Accepting..."
@@ -207,7 +207,7 @@ export default function InvitationsMenu() {
                           <button
                             onClick={() => respondToInvite(inv.id, false)}
                             disabled={loadingAction?.id === inv.id}
-                            className="flex-1 rounded-lg bg-red-50 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 rounded-lg bg-destructive/10 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {loadingAction?.id === inv.id && loadingAction?.action === "reject"
                               ? "Declining..."

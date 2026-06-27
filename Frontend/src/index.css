@@ -92,18 +92,18 @@ html {
   --primary-foreground: #FFFFFF;
   --secondary: #FFB3A7;
   --secondary-foreground: #13161D;
-  --muted: #F5EDE0;
+  --muted: rgba(255, 107, 107, 0.15);
   --muted-foreground: #8B93A8;
   --accent: #FF6B6B;
   --accent-foreground: #FFFFFF;
-  --destructive: #FF4D4D;
+  --destructive: #D9534F;
   --destructive-foreground: #FFFFFF;
   --border: #E8DDD3;
   --input: #E8DDD3;
   --ring: #58A6FF;
   --chart-1: #58A6FF;
-  --chart-2: #FF6B6B;
-  --chart-3: #10B981;
+  --chart-2: #D9534F;
+  --chart-3: #5CB85C;
   --chart-4: #A78BFA;
   --chart-5: #C4A882;
   --sidebar: #FAF6F1;
@@ -115,7 +115,7 @@ html {
   --sidebar-border: #E8DDD3;
   --sidebar-ring: #58A6FF;
   --accent-hover: #F05E5E;
-  --destructive-hover: #E44040;
+  --destructive-hover: #C9302C;
   --sidebar-gradient-start: #71B2FF;
   --sidebar-gradient-middle: #FF8080;
   --sidebar-gradient-end: #FFE2C2;
@@ -124,9 +124,9 @@ html {
   --brand-navy: #2B2A4C;
   --brand-navy-hover: #1f1e36;
   --brand-navy-text: #2B2A4C;
-  --status-owe-bg: #FFF0ED;
-  --status-getback-bg: #D1FAE5;
-  --status-getback-text: #059669;
+  --status-owe-bg: rgba(217, 83, 79, 0.1);
+  --status-getback-bg: rgba(92, 184, 92, 0.15);
+  --status-getback-text: #5CB85C;
   --status-settled-bg: #8b93a8d2;
   --status-settled-text: #FFFFFF;
   --status-settled-border: #d8dbe0;
@@ -157,18 +157,18 @@ html {
   --primary-foreground: #FFFFFF;
   --secondary: #1C2030;
   --secondary-foreground: #C2C9D6;
-  --muted: #252A3A;
+  --muted: rgba(255, 107, 107, 0.12);
   --muted-foreground: #8B93A8;
   --accent: #FF6B6B;
   --accent-foreground: #FFFFFF;
-  --destructive: #FF4D4D;
+  --destructive: #D9534F;
   --destructive-foreground: #FFFFFF;
   --border: #2A2F42;
   --input: #2A2F42;
   --ring: #58A6FF;
   --chart-1: #58A6FF;
-  --chart-2: #FF6B6B;
-  --chart-3: #10B981;
+  --chart-2: #D9534F;
+  --chart-3: #5CB85C;
   --chart-4: #A78BFA;
   --chart-5: #C4A882;
   --sidebar: #1A1E2E;
@@ -180,7 +180,7 @@ html {
   --sidebar-border: #2A2F42;
   --sidebar-ring: #58A6FF;
   --accent-hover: #F05E5E;
-  --destructive-hover: #E44040;
+  --destructive-hover: #C9302C;
   --sidebar-gradient-start: #0B0E14;
   --sidebar-gradient-middle: #151926;
   --sidebar-gradient-end: #1C1420;
@@ -189,9 +189,9 @@ html {
   --brand-navy: #312E5C;
   --brand-navy-hover: #3C3A6E;
   --brand-navy-text: #FFFFFF;
-  --status-owe-bg: rgba(255, 107, 107, 0.12);
-  --status-getback-bg: rgba(16, 185, 129, 0.12);
-  --status-getback-text: #10B981;
+  --status-owe-bg: rgba(217, 83, 79, 0.15);
+  --status-getback-bg: rgba(92, 184, 92, 0.15);
+  --status-getback-text: #5CB85C;
   --status-settled-bg: #2D313F;
   --status-settled-text: #FFFFFF;
   --status-settled-border: #3D4457;
@@ -242,20 +242,18 @@ html {
   opacity: 1;
 }
 
-/* Right-to-Left Shimmer Animation */
-@keyframes shimmer-rtl {
-  0% {
-    background-position: 200% 0;
+/* Smooth Minimal Skeleton Pulse */
+@keyframes smooth-pulse {
+  0%, 100% {
+    opacity: 1;
   }
-  100% {
-    background-position: -200% 0;
+  50% {
+    opacity: 0.6;
   }
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(90deg, #EFECE6 15%, #F5F2EC 50%, #EFECE6 80%);
-  background-size: 200% 100%;
-  animation: shimmer-rtl 1.5s infinite linear;
+  animation: smooth-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Global Custom Scrollbars */
@@ -275,23 +273,21 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(43, 42, 76, 0.22);
+  background: color-mix(in srgb, var(--foreground) 16%, transparent);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: padding-box;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(43, 42, 76, 0.38);
-  border-radius: 9999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: color-mix(in srgb, var(--foreground) 28%, transparent);
 }
 
 /* Firefox scrollbar styles */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(43, 42, 76, 0.22) transparent;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 16%, transparent) transparent;
 }
 
 /* Custom Scrollbar Utility */
@@ -311,18 +307,17 @@ html {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(43, 42, 76, 0.16);
+  background: color-mix(in srgb, var(--foreground) 12%, transparent);
   border-radius: 9999px;
   border: 2.5px solid transparent; /* Offset scrollbar from container edges */
   background-clip: padding-box;
+  transition: background-color 0.2s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(43, 42, 76, 0.28);
-  border-radius: 9999px;
-  border: 2.5px solid transparent;
-  background-clip: padding-box;
+  background: color-mix(in srgb, var(--foreground) 24%, transparent);
 }
+
 
 /* Premium Button Styles with Grain Texture and Hover Gradient Shift */
 .btn-premium {
@@ -403,7 +398,7 @@ html {
 
 /* Hover background adjustments */
 .btn-secondary-premium:hover {
-  background-color: rgba(245, 237, 224, 0.65) !important;
+  background-color: var(--color-muted) !important;
 }
 
 .dark .btn-secondary-premium:hover {

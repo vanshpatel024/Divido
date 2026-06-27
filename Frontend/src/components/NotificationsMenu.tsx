@@ -222,7 +222,7 @@ export default function NotificationsMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={handleOpen}
-        className="relative flex items-center justify-center p-2 rounded-full hover:bg-[#F5F0E8] transition-colors cursor-pointer"
+        className="relative flex items-center justify-center p-2 rounded-full hover:bg-muted transition-colors cursor-pointer"
         title="Activity Feed"
       >
         <Mail size={20} className="text-[#8B8A9B]" />
@@ -241,23 +241,23 @@ export default function NotificationsMenu() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-[#E8E3D9] bg-white shadow-xl overflow-hidden flex flex-col z-20"
+            className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden flex flex-col z-20"
           >
-            <div className="p-4 border-b border-[#F0ECE5] shrink-0 flex items-center justify-between select-none">
-              <h3 className="font-semibold text-[#2B2A4C]">Activity Feed</h3>
+            <div className="p-4 border-b border-border shrink-0 flex items-center justify-between select-none">
+              <h3 className="font-semibold text-[#2B2A4C] dark:text-foreground">Activity Feed</h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
-                  <span className="text-[10px] font-bold text-[#1A5C3A] bg-[#eef7f1] border border-[#AAD9BB]/60 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-status-getback-text bg-status-getback-bg border border-status-getback-text/20 px-2 py-0.5 rounded-full">
                     {unreadCount} new
                   </span>
                 )}
                 {unreadCount > 0 && visibleActivities.length > 0 && (
-                  <span className="text-[#E8E3D9] text-xs">|</span>
+                  <span className="text-[#E8E3D9] dark:text-border text-xs">|</span>
                 )}
                 {visibleActivities.length > 0 && (
                   <button
                     onClick={handleClearAllClick}
-                    className="text-xs font-semibold text-[#8B8A9B] hover:text-red-500 transition-colors cursor-pointer border-none bg-transparent p-0"
+                    className="text-xs font-semibold text-muted-foreground hover:text-red-500 transition-colors cursor-pointer border-none bg-transparent p-0"
                   >
                     Clear All
                   </button>
@@ -266,7 +266,7 @@ export default function NotificationsMenu() {
             </div>
             <div className="overflow-y-auto max-h-[340px] flex flex-col custom-scrollbar">
               {visibleActivities.length === 0 ? (
-                <div className="p-6 text-center text-sm text-[#8B8A9B]">No recent activities</div>
+                <div className="p-6 text-center text-sm text-muted-foreground">No recent activities</div>
               ) : (
                 visibleActivities.map((act) => {
                   const isUnread = unreadIds.has(act.id);
@@ -275,23 +275,23 @@ export default function NotificationsMenu() {
                       key={act.id}
                       to={act.tripId ? `/trip/${act.tripId}` : '#'}
                       onClick={() => setIsOpen(false)}
-                      className={`relative p-3 border-b border-[#F0ECE5] hover:bg-[#F5F0E8] transition-colors decoration-none block ${
-                        isUnread ? "bg-[#f5fbf7]" : ""
+                      className={`relative p-3 border-b border-border hover:bg-muted transition-colors decoration-none block ${
+                        isUnread ? "bg-[#f5fbf7] dark:bg-status-getback-bg/20" : ""
                       }`}
                     >
                       {/* Unread left-border accent */}
                       {isUnread && (
-                        <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#AAD9BB] rounded-r-full" />
+                        <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#AAD9BB] dark:bg-status-getback-text rounded-r-full" />
                       )}
                       <div className="flex items-start gap-3 pl-1">
-                        <div className="flex-1 text-sm text-[#2B2A4C]">
+                        <div className="flex-1 text-sm text-[#2B2A4C] dark:text-foreground">
                           {renderActivityText(act)}
-                          <p className="text-xs text-[#8B8A9B] mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {new Date(act.date).toLocaleDateString()} at {new Date(act.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                         {isUnread && (
-                          <span className="mt-1 h-2 w-2 rounded-full bg-[#AAD9BB] shrink-0" />
+                          <span className="mt-1 h-2 w-2 rounded-full bg-[#AAD9BB] dark:bg-status-getback-text shrink-0" />
                         )}
                       </div>
                     </Link>

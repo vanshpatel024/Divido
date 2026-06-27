@@ -62,7 +62,7 @@ export default function CustomDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between rounded-xl border border-[#EFECE6] bg-white py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-[#AAD9BB] focus:border-[#AAD9BB] text-foreground select-none cursor-pointer ${
+        className={`w-full flex items-center justify-between rounded-xl border border-[#EFECE6] bg-white py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary/50 text-foreground select-none cursor-pointer ${
           disabled ? "opacity-50 cursor-not-allowed" : ""
         } ${isOpen ? "border-[#AAD9BB] shadow-[0_0_0_3px_rgba(170,217,187,0.25)]" : ""}`}
       >
@@ -122,7 +122,7 @@ export default function CustomDropdown({
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm transition-colors text-left select-none cursor-pointer first:rounded-t-xl last:rounded-b-xl ${
                       isSelected
                         ? "bg-[#eef7f1] text-[#1A5C3A]"
-                        : "hover:bg-[#F5F0E8] text-[#2B2A4C]"
+                        : "hover:bg-muted text-[#2B2A4C]"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">

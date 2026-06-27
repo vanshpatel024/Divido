@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, LogOut, ChevronDown, Moon, Sun } from "lucide-react";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "./Logo";
 import ConfirmDialog from "./ConfirmDialog";
@@ -16,19 +17,9 @@ export default function Navbar() {
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Theme toggle (shared across pages via documentElement class)
-  const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains("dark")
-  );
-  const toggleTheme = () => {
-    if (isDark) {
-      document.documentElement.classList.remove("dark");
-      setIsDark(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      setIsDark(true);
-    }
-  };
+  // Theme state
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   // Single shared WebSocket connection for all navbar subcomponents
   useRealtimeDashboard(token, user?.id, (type, payload) => {

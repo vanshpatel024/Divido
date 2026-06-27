@@ -1,12 +1,25 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
+import { motion } from "framer-motion";
 import { ShieldAlert, Mail, AtSign, ChevronLeft, KeyRound } from "lucide-react";
 import Navbar from "./Navbar";
 import { useToast } from "./Toast";
 import { useAuth } from "../context/AuthContext";
 import ConfirmDialog from "./ConfirmDialog";
 import Button from "./Button";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 30 } },
+};
 
 export default function ProfilePage() {
   const { showToast } = useToast();
@@ -75,37 +88,43 @@ export default function ProfilePage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background text-foreground font-sans pb-20">
-      <Navbar />
+  if (!user) return <ProfileSkeleton />;
 
-      <main className="mx-auto max-w-2xl px-6 py-10 space-y-6">
+  return (
+    <div className="w-full font-sans transition-colors duration-300">
+
+      <motion.main
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="mx-auto max-w-2xl px-6 py-10 space-y-6"
+      >
         {/* Back Button */}
-        <div className="flex items-center select-none">
+        <motion.div variants={itemVariants} className="flex items-center select-none">
           <Link
             to="/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B8A9B] hover:text-brand-navy-text transition-colors decoration-none"
+            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors decoration-none"
           >
             <ChevronLeft size={14} strokeWidth={2.5} />
             <span>Back to Trips</span>
           </Link>
-        </div>
+        </motion.div>
         
         {/* Profile Card */}
-        <section className="bg-white border border-[#EFECE6] rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-[#AAD9BB] transition-all duration-200">
+        <motion.section variants={itemVariants} className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-border transition-all duration-300">
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-[#F5F0E8]">
+            <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-border/50">
               <img
                 src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.display_name || "")}&background=AAD9BB&color=000`}
                 alt=""
-                className="w-20 h-20 rounded-full border-2 border-white shadow-sm object-cover bg-[#F5F0E8]"
+                className="w-20 h-20 rounded-full border border-border shadow-sm object-cover bg-muted"
               />
               <div className="text-center sm:text-left flex-1">
-                <h2 className="font-display text-2xl font-bold text-brand-navy-text leading-snug">
+                <h2 className="font-display text-2xl font-bold text-foreground leading-snug">
                   {user?.display_name || "Guest User"}
                 </h2>
-                <p className="text-sm text-[#8B8A9B] mt-1 flex items-center justify-center sm:justify-start gap-1 select-none">
-                  <AtSign size={14} className="text-[#8bc79f]" />
+                <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center sm:justify-start gap-1 select-none">
+                  <AtSign size={14} className="text-muted-foreground" />
                   <span>{user?.username || "username"}</span>
                 </p>
               </div>
@@ -113,57 +132,57 @@ export default function ProfilePage() {
 
             <div className="space-y-5">
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8B8A9B] mb-2 select-none">
-                  <Mail size={13} className="text-[#8B8A9B]" />
+                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 select-none">
+                  <Mail size={13} className="text-muted-foreground" />
                   Email Address
                 </label>
-                <div className="w-full rounded-xl border border-[#EFECE6] bg-[#F9F7F4]/40 py-2.5 px-3.5 text-sm text-foreground/50 font-semibold select-none flex items-center">
+                <div className="w-full rounded-xl border border-border bg-muted/20 py-2.5 px-3.5 text-sm text-foreground/70 font-medium select-none flex items-center">
                   <span>{user?.email || "—"}</span>
-                  <span className="ml-auto text-[10px] uppercase font-bold text-[#8B8A9B]/60 tracking-wider">Account email</span>
+                  <span className="ml-auto text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Account email</span>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Reset Password Card */}
-        <section className="bg-white border border-[#EFECE6] rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-[#AAD9BB] transition-all duration-200">
+        <motion.section variants={itemVariants} className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-border transition-all duration-300">
           <div className="flex items-center gap-3 mb-2 select-none">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
               <KeyRound size={16} />
             </div>
-            <h3 className="font-display text-xl font-bold text-brand-navy-text">
+            <h3 className="font-display text-xl font-bold text-foreground">
               Reset Password
             </h3>
           </div>
-          <p className="text-xs text-[#8B8A9B] mb-5 select-none pl-11">
+          <p className="text-xs text-muted-foreground mb-5 select-none pl-11">
             Request a secure link to reset your account password.
           </p>
 
           <div className="pl-11">
             <Button
               onClick={() => setIsResetConfirmOpen(true)}
-              variant="dark"
+              variant="premium"
               shape="pill"
               size="md"
-              className="w-auto"
+              className="w-auto px-6"
             >
               Reset Password
             </Button>
           </div>
-        </section>
+        </motion.section>
 
         {/* Danger Zone Card */}
-        <section className="bg-white border border-red-100 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-red-200 transition-all duration-200">
+        <motion.section variants={itemVariants} className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-destructive/40 transition-all duration-300">
           <div className="flex items-center gap-3 mb-2 select-none">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
               <ShieldAlert size={16} />
             </div>
-            <h3 className="font-display text-xl font-bold text-red-500">
+            <h3 className="font-display text-xl font-bold text-destructive">
               Danger Zone
             </h3>
           </div>
-          <p className="text-xs text-[#8B8A9B] mb-5 select-none pl-11">
+          <p className="text-xs text-muted-foreground mb-5 select-none pl-11">
             Take caution with these irreversible actions.
           </p>
 
@@ -178,8 +197,8 @@ export default function ProfilePage() {
               Delete Account
             </Button>
           </div>
-        </section>
-      </main>
+        </motion.section>
+      </motion.main>
 
       <ConfirmDialog
         isOpen={isResetConfirmOpen}
@@ -212,6 +231,64 @@ export default function ProfilePage() {
         onConfirm={handleDeleteAccount}
         onCancel={() => setIsDeleteModalOpen(false)}
       />
+    </div>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="w-full font-sans relative">
+      <div className="fixed inset-0 backdrop-blur-md bg-background/50 z-[-5] pointer-events-none transition-all duration-500" />
+      <div className="mx-auto max-w-2xl px-6 py-10 space-y-6 select-none">
+        {/* Back Button Skeleton */}
+        <div className="h-4 w-32 bg-muted rounded-md skeleton-shimmer mb-6" />
+
+        {/* Profile Card Skeleton */}
+        <section className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-border/50">
+              <div className="h-24 w-24 rounded-full bg-muted skeleton-shimmer shrink-0" />
+              <div className="flex flex-col items-center sm:items-start text-center sm:text-left space-y-3 w-full">
+                <div className="h-8 w-48 bg-muted rounded-xl skeleton-shimmer" />
+                <div className="h-4 w-32 bg-muted rounded-md skeleton-shimmer" />
+              </div>
+            </div>
+            <div className="space-y-4 pt-2">
+              <div>
+                <div className="h-3 w-16 bg-muted rounded-md mb-2 skeleton-shimmer" />
+                <div className="h-10 w-full max-w-sm bg-muted rounded-lg skeleton-shimmer" />
+              </div>
+            </div>
+            <div className="pt-4 flex justify-end">
+              <div className="h-9 w-28 bg-muted rounded-full skeleton-shimmer" />
+            </div>
+          </div>
+        </section>
+
+        {/* Reset Password Card Skeleton */}
+        <section className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-8 w-8 rounded-full bg-muted skeleton-shimmer shrink-0" />
+            <div className="h-6 w-40 bg-muted rounded-xl skeleton-shimmer" />
+          </div>
+          <div className="h-3 w-64 bg-muted rounded-md mb-6 ml-11 skeleton-shimmer" />
+          <div className="pl-11">
+            <div className="h-9 w-36 bg-muted rounded-full skeleton-shimmer" />
+          </div>
+        </section>
+
+        {/* Danger Zone Card Skeleton */}
+        <section className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-8 w-8 rounded-full bg-muted skeleton-shimmer shrink-0" />
+            <div className="h-6 w-32 bg-muted rounded-xl skeleton-shimmer" />
+          </div>
+          <div className="h-3 w-56 bg-muted rounded-md mb-6 ml-11 skeleton-shimmer" />
+          <div className="pl-11">
+            <div className="h-9 w-36 bg-muted rounded-full skeleton-shimmer" />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

@@ -34,8 +34,8 @@ export default function Button({
     secondary: "btn-secondary-premium border border-border bg-card text-foreground hover:bg-muted/10",
     dark: "bg-brand-navy hover:bg-brand-navy-hover text-white",
     "dark-outline": "border border-border text-foreground bg-transparent hover:border-primary/50 hover:bg-primary/5 transition-colors duration-200",
-    danger: "bg-red-500 hover:bg-red-600 text-white",
-    "danger-outline": "border border-red-500 text-red-500 bg-transparent hover:bg-red-500/10"
+    danger: "bg-destructive hover:bg-destructive-hover text-destructive-foreground",
+    "danger-outline": "border border-destructive text-destructive bg-transparent hover:bg-destructive/10"
   };
 
   // Size mappings

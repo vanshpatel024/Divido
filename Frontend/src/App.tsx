@@ -6,13 +6,16 @@ import ProfilePage from "./components/ProfilePage";
 import NotFound from "./components/NotFound";
 import { ToastProvider } from "./components/Toast";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import ResetPassword from "./components/ResetPassword";
+import MainLayout from "./components/MainLayout";
 
 export default function App() {
   return (
-    <ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
       <AuthProvider>
         <BrowserRouter>
           <Routes>
@@ -21,29 +24,16 @@ export default function App() {
               element={<Navigate to="/dashboard" replace />}
             />
             <Route
-              path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <MainLayout />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/trip/:id"
-              element={
-                <ProtectedRoute>
-                  <TripDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/trip/:id" element={<TripDetail />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
             <Route
               path="/auth"
               element={
@@ -61,5 +51,6 @@ export default function App() {
         </BrowserRouter>
       </AuthProvider>
     </ToastProvider>
+  </ThemeProvider>
   );
 }

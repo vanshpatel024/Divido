@@ -12,6 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import Logo from "./Logo";
 import Button from "./Button";
 
@@ -89,17 +90,8 @@ export default function Auth() {
   }, []);
 
   // Theme State
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
-
-  const toggleTheme = () => {
-    if (isDark) {
-      document.documentElement.classList.remove("dark");
-      setIsDark(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      setIsDark(true);
-    }
-  };
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   // Form Fields
   const [email, setEmail] = useState("");
