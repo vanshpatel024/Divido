@@ -152,7 +152,7 @@ export default function InvitationsMenu() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden flex flex-col z-20"
+            className="fixed left-4 right-4 top-[72px] sm:absolute sm:top-auto sm:left-auto sm:right-0 mt-2 sm:w-80 origin-top-right rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden flex flex-col z-50 sm:z-20"
           >
             <div className="p-4 border-b border-border shrink-0 flex items-center justify-between">
               <h3 className="font-semibold text-[#2B2A4C] dark:text-foreground">Trip Invitations</h3>

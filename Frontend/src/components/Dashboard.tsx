@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, ChevronDown, Check, AlertTriangle } from "lucide-react";
+import { Plus, Search, ChevronDown, Check, AlertTriangle, Filter } from "lucide-react";
 import Navbar from "./Navbar";
 import Button from "./Button";
 import TripCard from "./TripCard";
@@ -13,16 +13,17 @@ import { useNavigate } from "react-router-dom";
 // ─── Hero Header ──────────────────────────────────────────────────────────────
 function HeroHeader({ onNewTrip }: { onNewTrip: () => void }) {
     return (
-        <div className="mx-auto max-w-5xl px-6 sm:px-8 pt-10 pb-6 flex items-end justify-between select-none">
+        <div className="mx-auto max-w-5xl px-4 sm:px-8 pt-10 pb-0 flex flex-row items-center sm:items-end justify-between select-none gap-4">
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
+                className="min-w-0 flex-1"
             >
-                <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-none">
+                <h1 className="font-display text-2xl sm:text-4xl font-bold text-foreground tracking-tight leading-none truncate">
                     Your Trips
                 </h1>
-                <p className="mt-2 text-sm font-sans text-muted-foreground">
+                <p className="mt-1 sm:mt-2 text-xs sm:text-sm font-sans text-muted-foreground">
                     Track spending, balances, and who owes whom.
                 </p>
             </motion.div>
@@ -39,7 +40,7 @@ function HeroHeader({ onNewTrip }: { onNewTrip: () => void }) {
                     size="md"
                     icon={<Plus size={14} />}
                     iconPosition="left"
-                    className="w-auto shadow-md"
+                    className="w-auto shadow-md shrink-0 whitespace-nowrap"
                 >
                     New Trip
                 </Button>
@@ -61,9 +62,11 @@ const FILTER_OPTIONS: { label: string; value: FilterValue }[] = [
 function FilterDropdown({
     value,
     onChange,
+    mobileIconOnly = false,
 }: {
     value: FilterValue;
     onChange: (v: FilterValue) => void;
+    mobileIconOnly?: boolean;
 }) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -82,13 +85,21 @@ function FilterDropdown({
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen((p) => !p)}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/40 transition-all duration-200 cursor-pointer whitespace-nowrap select-none"
+                className={`inline-flex items-center justify-center border border-border bg-card text-foreground hover:bg-muted/40 transition-all duration-200 cursor-pointer select-none ${
+                    mobileIconOnly ? "w-[42px] h-[42px] rounded-xl" : "gap-2 rounded-full px-4 py-2 text-xs font-medium whitespace-nowrap"
+                }`}
             >
-                {selected.label}
-                <ChevronDown
-                    size={13}
-                    className={`transition-transform duration-200 text-muted-foreground ${open ? "rotate-180" : ""}`}
-                />
+                {mobileIconOnly ? (
+                    <Filter size={16} className="text-muted-foreground" />
+                ) : (
+                    <>
+                        {selected.label}
+                        <ChevronDown
+                            size={13}
+                            className={`transition-transform duration-200 text-muted-foreground ${open ? "rotate-180" : ""}`}
+                        />
+                    </>
+                )}
             </button>
 
             <AnimatePresence>
@@ -142,39 +153,47 @@ function SearchFilterBar({
 }) {
     return (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 py-6">
-            {/* Search input */}
-            <div className="relative flex-1 max-w-full sm:max-w-[360px]">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <Search size={15} className="text-accent opacity-60" />
-                </span>
-                <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => onQueryChange(e.target.value)}
-                    placeholder="Search trips..."
-                    className="w-full rounded-xl border border-border bg-card py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-                {query && (
-                    <button
-                        onClick={() => onQueryChange("")}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    >
-                        <span className="text-xs">✕</span>
-                    </button>
-                )}
+            {/* Search input + Mobile Filter */}
+            <div className="flex items-center gap-2 flex-1 max-w-full sm:max-w-[360px]">
+                <div className="relative flex-1 min-w-0">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                        <Search size={15} className="text-accent opacity-60" />
+                    </span>
+                    <input
+                        type="text"
+                        value={query}
+                        onChange={(e) => onQueryChange(e.target.value)}
+                        placeholder="Search trips..."
+                        className="w-full h-[42px] rounded-xl border border-border bg-card py-2 pl-9 pr-4 text-base sm:text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    />
+                    {query && (
+                        <button
+                            onClick={() => onQueryChange("")}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        >
+                            <span className="text-xs">✕</span>
+                        </button>
+                    )}
+                </div>
+
+                <div className="sm:hidden shrink-0">
+                    <FilterDropdown value={filter} onChange={onFilterChange} mobileIconOnly />
+                </div>
             </div>
 
             {/* Spacer on desktop pushes filter to right */}
             <div className="hidden sm:flex flex-1" />
 
-            {/* Result count + Filter */}
-            <div className="flex items-center gap-3">
+            {/* Result count + Desktop Filter */}
+            <div className="flex items-center justify-between sm:justify-end gap-3">
                 {(query || filter !== "all") && (
                     <span className="text-xs text-muted-foreground font-medium">
                         {resultCount} of {totalCount}
                     </span>
                 )}
-                <FilterDropdown value={filter} onChange={onFilterChange} />
+                <div className="hidden sm:block shrink-0">
+                    <FilterDropdown value={filter} onChange={onFilterChange} />
+                </div>
             </div>
         </div>
     );
@@ -229,22 +248,27 @@ function DashboardSkeleton() {
         <div className="w-full select-none relative">
             <div className="fixed inset-0 backdrop-blur-md bg-background/50 z-[-5] pointer-events-none transition-all duration-500" />
             {/* Hero skeleton */}
-            <div className="mx-auto max-w-5xl px-6 sm:px-8 pt-10 pb-6 flex items-end justify-between select-none">
-                <div className="space-y-3">
-                    <div className="h-10 w-48 bg-muted rounded-xl skeleton-shimmer" />
-                    <div className="h-4 w-64 bg-muted rounded-md skeleton-shimmer" />
+            <div className="mx-auto max-w-5xl px-4 sm:px-8 pt-10 pb-0 flex flex-row items-center sm:items-end justify-between gap-4 select-none">
+                <div className="space-y-1.5 sm:space-y-3 min-w-0 flex-1">
+                    <div className="h-7 sm:h-10 w-32 sm:w-48 bg-muted rounded-xl skeleton-shimmer" />
+                    <div className="h-3 sm:h-4 w-40 sm:w-64 bg-muted rounded-md skeleton-shimmer" />
                 </div>
-                <div className="h-10 w-28 bg-muted rounded-full skeleton-shimmer mb-1" />
+                <div className="h-9 sm:h-10 w-24 sm:w-28 bg-muted rounded-full skeleton-shimmer mb-1 shrink-0" />
             </div>
-            <main className="mx-auto max-w-5xl px-8 pb-20 mt-2">
+            <main className="mx-auto max-w-5xl px-4 sm:px-8 pb-20 mt-2">
                 {/* Search bar skeleton */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-8 mb-2">
-                    <div className="h-[42px] w-full sm:w-[340px] rounded-xl bg-muted skeleton-shimmer" />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 py-6">
+                    <div className="flex items-center gap-2 flex-1 max-w-full sm:max-w-[360px]">
+                        <div className="h-[42px] flex-1 min-w-0 rounded-xl bg-muted skeleton-shimmer" />
+                        <div className="h-[42px] w-[42px] rounded-xl bg-muted skeleton-shimmer shrink-0 sm:hidden" />
+                    </div>
                     <div className="hidden sm:flex flex-1" />
-                    <div className="h-9 w-32 rounded-full bg-muted skeleton-shimmer self-end sm:self-auto" />
+                    <div className="hidden sm:block shrink-0">
+                        <div className="h-[34px] w-28 rounded-full bg-muted skeleton-shimmer" />
+                    </div>
                 </div>
                 {/* Cards skeleton */}
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 pb-12">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 pb-12">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="flex flex-col rounded-3xl border border-border bg-card p-6 shadow-sm border-l-4">
                             <div className="flex items-start justify-between gap-4">
@@ -457,7 +481,7 @@ export default function Dashboard() {
             <HeroHeader onNewTrip={() => setIsNewOpen(true)} />
 
             {/* ── Content Area ── */}
-            <main className="mx-auto max-w-5xl px-6 sm:px-8">
+            <main className="mx-auto max-w-5xl px-4 sm:px-8">
 
                 {hasTrips ? (
                     <>
@@ -475,7 +499,7 @@ export default function Dashboard() {
                         {hasResults ? (
                             <motion.div
                                 layout
-                                className="grid grid-cols-1 gap-6 md:grid-cols-2 pb-12"
+                                className="grid grid-cols-1 gap-4 md:grid-cols-2 pb-12"
                             >
                                 {filteredTrips.map((trip, i) => (
                                     <motion.div

@@ -76,11 +76,11 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4 gap-2">
         {/* Logo */}
         <Link
           to="/dashboard"
-          className="rounded-full hover:bg-muted transition-colors decoration-none"
+          className="rounded-full hover:bg-muted transition-colors decoration-none shrink-0"
         >
           <Logo variant="navbar" className="py-1 pl-1 pr-3" />
         </Link>
@@ -129,7 +129,7 @@ export default function Navbar() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute right-0 mt-2 w-48 origin-top-right rounded-2xl border border-border bg-card shadow-xl overflow-hidden z-20"
+                  className="absolute right-0 mt-2 w-48 max-w-[calc(100vw-2rem)] origin-top-right rounded-2xl border border-border bg-card shadow-xl overflow-hidden z-20"
                   role="menu"
                 >
                   {/* User info header */}

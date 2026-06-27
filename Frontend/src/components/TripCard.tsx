@@ -157,7 +157,7 @@ export default function TripCard({ trip, index: _index, onDelete }: TripCardProp
             </div>
 
             {/* Middle row: avatars + total */}
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <AvatarStack participants={trip.participants} />
                 <div className="text-right">
                     <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-medium">

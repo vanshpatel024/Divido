@@ -143,7 +143,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
         exit={{ opacity: 0, y: 4 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative z-10 font-sans max-h-[90vh] overflow-visible flex flex-col text-foreground"
+        className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-2xl relative z-10 font-sans max-h-[85vh] overflow-y-auto flex flex-col text-foreground"
       >
         <h3 className="font-display text-2xl font-bold text-foreground mb-5 select-none shrink-0">
           Create New Trip
@@ -162,7 +162,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Goa Vacation"
-              className="w-full rounded-lg border border-border bg-background/50 py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg border border-border bg-background/50 py-2.5 px-3.5 text-base sm:text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -181,7 +181,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
                 value={participantInput}
                 onChange={(e) => setParticipantInput(e.target.value)}
                 placeholder="Search by username or name..."
-                className="w-full rounded-lg border border-border bg-background/50 py-2.5 pl-9 pr-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg border border-border bg-background/50 py-2.5 pl-9 pr-3.5 text-base sm:text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               {isSearching && (
                 <span className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -253,7 +253,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
           </div>
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/40 select-none mt-2 shrink-0">
+          <div className="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-border/40 select-none mt-2 shrink-0">
             <Button
               disabled={isSubmitting}
               type="button"
