@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { User as UserIcon } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { User as UserIcon, X, MapPin, Calendar, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { useToast } from "./Toast";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import CustomDropdown from "./CustomDropdown";
@@ -14,6 +14,19 @@ interface Participant {
   username?: string;
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.18, ease: "easeOut" as const } },
+};
+
 interface NewStopModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -22,7 +35,166 @@ interface NewStopModalProps {
   isSubmitting?: boolean;
 }
 
+interface CustomDatePickerProps {
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+}
 
+function CustomDatePicker({ value, onChange, disabled }: CustomDatePickerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const dateObj = value ? new Date(value) : new Date();
+  const [currentYear, setCurrentYear] = useState(dateObj.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(dateObj.getMonth());
+
+  useEffect(() => {
+    if (value) {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        setCurrentYear(d.getFullYear());
+        setCurrentMonth(d.getMonth());
+      }
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [isOpen]);
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(prev => prev - 1);
+    } else {
+      setCurrentMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(prev => prev + 1);
+    } else {
+      setCurrentMonth(prev => prev + 1);
+    }
+  };
+
+  const handleSelectDay = (day: number) => {
+    const yyyy = currentYear;
+    const mm = String(currentMonth + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    onChange(`${yyyy}-${mm}-${dd}`);
+    setIsOpen(false);
+  };
+
+  const blanks = Array(firstDayIndex).fill(null);
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const allDays = [...blanks, ...days];
+
+  const formatDateForDisplay = (val: string) => {
+    if (!val) return "";
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <div className="relative group p-[1px]">
+        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-secondary dark:text-accent pointer-events-none transition-colors duration-700 group-focus-within:text-primary">
+          <Calendar size={15} />
+        </span>
+        <input
+          type="text"
+          readOnly
+          disabled={disabled}
+          value={formatDateForDisplay(value)}
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          placeholder="Select date"
+          className="w-full rounded-lg border border-border bg-background/50 py-2.5 pl-9 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/50 focus:border-primary cursor-pointer select-none"
+        />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 sm:right-auto sm:left-0 top-full mt-2 w-64 bg-card border border-border rounded-xl shadow-xl z-50 p-3 select-none"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="p-1 rounded-lg hover:bg-muted text-foreground transition-colors cursor-pointer"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-xs font-bold text-foreground">
+                {months[currentMonth]} {currentYear}
+              </span>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="p-1 rounded-lg hover:bg-muted text-foreground transition-colors cursor-pointer"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center mb-1 text-[10px] font-bold text-muted-foreground">
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
+                <div key={d} className="py-0.5">{d}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {allDays.map((day, idx) => {
+                if (day === null) {
+                  return <div key={`blank-${idx}`} className="py-1" />;
+                }
+                const formattedDayStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isSelected = value === formattedDayStr;
+                return (
+                  <button
+                    key={`day-${day}`}
+                    type="button"
+                    onClick={() => handleSelectDay(day)}
+                    className={`py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-primary text-white"
+                        : "text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function NewStopModal({ isOpen, onClose, onCreate, participants, isSubmitting = false }: NewStopModalProps) {
   const { showToast } = useToast();
@@ -203,216 +375,276 @@ export default function NewStopModal({ isOpen, onClose, onCreate, participants, 
         exit={{ opacity: 0, y: 4 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative z-10 font-sans max-h-[90vh] flex flex-col text-foreground"
+        className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-2xl relative z-10 font-sans max-h-[90vh] flex flex-col text-foreground"
       >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors duration-200 p-1.5 rounded-full hover:bg-muted/50 cursor-pointer z-20"
+          aria-label="Close modal"
+        >
+          <X size={16} />
+        </button>
+
         <h3 className="font-display text-2xl font-bold text-foreground mb-5 select-none shrink-0">
           Add Stop
         </h3>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
-          {/* Name & Amount */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 select-none text-muted-foreground transition-colors duration-200">
-                Stop Name
-              </label>
-              <input
-                disabled={isSubmitting}
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Dinner at Mario's"
-                className="w-full rounded-lg border border-border bg-background/50 py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-            <div className="w-1/3">
-              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 select-none text-muted-foreground transition-colors duration-200">
-                Amount
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-secondary dark:text-accent font-semibold">
-                  ₹
-                </span>
-                <input
+        <motion.form
+          onSubmit={handleSubmit}
+          className="flex-1 min-h-0 flex flex-col overflow-visible"
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+        >
+          {/* Static Top Fields (Name, Amount, Date) */}
+          <div className="flex flex-col gap-4 shrink-0 overflow-visible mb-2 p-[1px]">
+            <motion.div variants={itemVariants} className="grid grid-cols-5 sm:grid-cols-3 gap-4">
+              {/* Stop Name */}
+              <div className="col-span-5 sm:col-span-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none text-muted-foreground transition-colors duration-700">
+                  Stop Name
+                </label>
+                <div className="relative group p-[1px]">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-secondary dark:text-accent pointer-events-none transition-colors duration-700 group-focus-within:text-primary">
+                    <MapPin size={15} />
+                  </span>
+                  <input
+                    disabled={isSubmitting}
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Dinner at Mario's"
+                    className="w-full rounded-lg border border-border bg-background/50 py-2.5 pl-9 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/50 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none text-muted-foreground transition-colors duration-700">
+                  Amount
+                </label>
+                <div className="relative group p-[1px]">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-secondary dark:text-accent font-semibold pointer-events-none transition-colors duration-700 group-focus-within:text-primary">
+                    ₹
+                  </span>
+                  <input
+                    disabled={isSubmitting}
+                    type="number"
+                    required
+                    min="0"
+                    step="0.01"
+                    value={amountInput}
+                    onChange={(e) => setAmountInput(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-border bg-background/50 py-2.5 pl-7 pr-3 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/50 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="col-span-3 sm:col-span-3">
+                <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none text-muted-foreground transition-colors duration-700">
+                  Date
+                </label>
+                <CustomDatePicker
                   disabled={isSubmitting}
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={amountInput}
-                  onChange={(e) => setAmountInput(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full rounded-lg border border-border bg-background/50 py-2.5 pl-8 pr-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  value={date}
+                  onChange={setDate}
                 />
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 select-none text-muted-foreground transition-colors duration-200">
-                Date
-              </label>
-              <input
-                disabled={isSubmitting}
-                type="date"
-                required
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background/50 py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-          </div>
+          {/* Scrollable Middle Content */}
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4 my-2 p-[1px]">
+            <hr className="border-border/40" />
 
-          <hr className="border-border/40 my-2" />
+            {/* Paid By */}
+            <motion.div variants={itemVariants}>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest select-none text-muted-foreground transition-colors duration-200">
+                  Paid By
+                </label>
+                <div className="relative flex bg-muted border border-border/60 rounded-lg p-0.5 w-40 overflow-hidden select-none">
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => setPayerType("single")}
+                    className={`relative z-10 w-1/2 py-1 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
+                      isSubmitting
+                        ? "opacity-50 cursor-not-allowed"
+                        : payerType === "single"
+                        ? "text-foreground font-bold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Single
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => setPayerType("multiple")}
+                    className={`relative z-10 w-1/2 py-1 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
+                      isSubmitting
+                        ? "opacity-50 cursor-not-allowed"
+                        : payerType === "multiple"
+                        ? "text-foreground font-bold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Multiple
+                  </button>
 
-          {/* Paid By */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest select-none text-muted-foreground transition-colors duration-200">
-                Paid By
-              </label>
-              <div className="flex bg-muted border border-border/60 rounded-lg p-0.5">
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => setPayerType("single")}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                    isSubmitting
-                      ? "opacity-50 cursor-not-allowed"
-                      : payerType === "single"
-                      ? "bg-card text-foreground shadow-sm cursor-pointer"
-                      : "text-muted-foreground cursor-pointer hover:text-foreground"
-                  }`}
-                >
-                  Single
-                </button>
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => setPayerType("multiple")}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                    isSubmitting
-                      ? "opacity-50 cursor-not-allowed"
-                      : payerType === "multiple"
-                      ? "bg-card text-foreground shadow-sm cursor-pointer"
-                      : "text-muted-foreground cursor-pointer hover:text-foreground"
-                  }`}
-                >
-                  Multiple
-                </button>
+                  {/* Sliding Pill Background */}
+                  {!isSubmitting && (
+                    <motion.div
+                      animate={{ x: payerType === "single" ? "0%" : "100%" }}
+                      transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                      className="absolute top-0.5 bottom-0.5 left-0.5 bg-card rounded-md shadow-xs border border-border/40"
+                      style={{ width: "calc(50% - 4px)" }}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
 
-            {payerType === "single" ? (
-              <CustomDropdown
-                disabled={isSubmitting}
-                value={singlePayerId}
-                onChange={setSinglePayerId}
-                options={participants.map((p) => ({
-                  value: p.id,
-                  label: p.name,
-                  avatarUrl: p.avatar_url,
-                  subtitle: p.username ? `@${p.username}` : undefined
-                }))}
-              />
-            ) : (
-              <div className="space-y-2 border border-border/80 rounded-xl p-3 bg-background/30">
-                {participants.filter(p => splits.includes(p.id)).map((p, idx) => {
-                  const paymentVal = multiplePayments.find(m => m.userId === p.id)?.amount || "";
-                  const isAutoFillTarget = autoFillPayer && autoFillPayer.userId === p.id;
-                  
+              {splits.length === 0 ? (
+                <div className="flex items-center gap-3 p-3.5 border border-dashed border-border rounded-xl bg-background/20 text-left select-none">
+                  <AlertCircle size={16} className="text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">No participants selected</p>
+                    <p className="text-[10px] text-muted-foreground">Select split participants in the list below.</p>
+                  </div>
+                </div>
+              ) : (
+                <AnimatePresence mode="wait">
+                  {payerType === "single" ? (
+                    <motion.div
+                      key="single"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.12 }}
+                    >
+                      <CustomDropdown
+                        disabled={isSubmitting}
+                        value={singlePayerId}
+                        onChange={setSinglePayerId}
+                        options={participants.map((p) => ({
+                          value: p.id,
+                          label: p.name,
+                          avatarUrl: p.avatar_url,
+                          subtitle: p.username ? `@${p.username}` : undefined
+                        }))}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="multiple"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.12 }}
+                      className="space-y-2 border border-border/80 rounded-xl p-3 bg-background/30"
+                    >
+                      {participants.filter(p => splits.includes(p.id)).map((p, idx) => {
+                        const paymentVal = multiplePayments.find(m => m.userId === p.id)?.amount || "";
+                        const isAutoFillTarget = autoFillPayer && autoFillPayer.userId === p.id;
+                        
+                        return (
+                          <div key={p.id ? `${p.id}-${idx}` : idx} className="flex items-center justify-between gap-3">
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-sm font-semibold text-foreground truncate">{p.name}</span>
+                              {isAutoFillTarget && (
+                                <span className="text-[10px] text-accent font-semibold mt-0.5 select-none animate-pulse">
+                                  Leftover: {autoFillPayer.amount.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-2 select-none">
+                              {isAutoFillTarget && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMultiplePayments(prev => prev.map(m => m.userId === autoFillPayer.userId ? { ...m, amount: autoFillPayer.amount.toString() } : m));
+                                  }}
+                                  className="text-[10px] bg-accent/10 hover:bg-accent/20 border border-accent/40 text-accent font-extrabold px-2.5 py-1 rounded-lg cursor-pointer transition-colors shadow-xs"
+                                >
+                                  Fill ₹{autoFillPayer.amount}
+                                </button>
+                              )}
+                              <div className="relative w-24">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-2 text-secondary dark:text-accent text-xs font-semibold">₹</span>
+                                <input
+                                  type="number"
+                                  disabled={isSubmitting}
+                                  min="0"
+                                  step="0.01"
+                                  placeholder={isAutoFillTarget ? autoFillPayer.amount.toString() : "0.00"}
+                                  value={paymentVal}
+                                  onChange={(e) => handleMultiplePaymentChange(p.id, e.target.value)}
+                                  className="w-full rounded-md border border-border bg-background/50 py-1.5 pl-6 pr-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
+            </motion.div>
+
+            <hr className="border-border/40" />
+
+            {/* Split Among */}
+            <motion.div variants={itemVariants}>
+              <label className="text-[10px] font-bold uppercase tracking-widest mb-2 select-none flex justify-between text-muted-foreground transition-colors duration-200">
+                <span>Split Among</span>
+                <span className="normal-case font-semibold text-foreground">
+                  ({splits.length}/{participants.length} selected)
+                </span>
+              </label>
+              <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2">
+                {participants.map((p, idx) => {
+                  const isSelected = splits.includes(p.id);
                   return (
-                    <div key={p.id ? `${p.id}-${idx}` : idx} className="flex items-center justify-between gap-3">
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-sm font-semibold text-foreground truncate">{p.name}</span>
-                        {isAutoFillTarget && (
-                          <span className="text-[10px] text-accent font-semibold mt-0.5 select-none animate-pulse">
-                            Leftover: {autoFillPayer.amount.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 select-none">
-                        {isAutoFillTarget && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMultiplePayments(prev => prev.map(m => m.userId === autoFillPayer.userId ? { ...m, amount: autoFillPayer.amount.toString() } : m));
-                            }}
-                            className="text-[10px] bg-accent/10 hover:bg-accent/20 border border-accent/40 text-accent font-extrabold px-2.5 py-1 rounded-lg cursor-pointer transition-colors shadow-xs"
-                          >
-                            Fill ₹{autoFillPayer.amount}
-                          </button>
-                        )}
-                        <div className="relative w-24">
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-2 text-secondary dark:text-accent text-xs font-semibold">₹</span>
-                          <input
-                            type="number"
-                            disabled={isSubmitting}
-                            min="0"
-                            step="0.01"
-                            placeholder={isAutoFillTarget ? autoFillPayer.amount.toString() : "0.00"}
-                            value={paymentVal}
-                            onChange={(e) => handleMultiplePaymentChange(p.id, e.target.value)}
-                            className="w-full rounded-md border border-border bg-background/50 py-1.5 pl-6 pr-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
+                    <div
+                      key={p.id ? `${p.id}-${idx}` : idx}
+                      onClick={() => !isSubmitting && handleToggleSplit(p.id)}
+                      className={`flex items-center gap-2 p-2 rounded-xl border transition-colors ${
+                        isSubmitting
+                          ? "opacity-60 cursor-not-allowed border-border"
+                          : isSelected
+                          ? "border-accent/25 bg-accent/4 cursor-pointer"
+                          : "border-border/60 hover:bg-muted cursor-pointer"
+                      }`}
+                    >
+                      {p.avatar_url ? (
+                        <img src={resolveAvatarUrl(p.avatar_url, p.id || p.username || '')} alt="" className="w-6 h-6 rounded-full object-cover border border-border" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground">
+                          <UserIcon size={12} />
                         </div>
+                      )}
+                      <span className={`text-sm flex-1 truncate ${isSelected ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>
+                        {p.name}
+                      </span>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? "border-accent bg-accent text-white" : "border-muted-foreground"}`}>
+                        {isSelected && <svg viewBox="0 0 14 14" fill="none" className="w-3 h-3 text-white"><path d="M3 7.5L6 10.5L11 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            </motion.div>
           </div>
 
-          <hr className="border-border/40 my-2" />
-
-          {/* Split Among */}
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-widest mb-2 select-none flex justify-between text-muted-foreground transition-colors duration-200">
-              <span>Split Among</span>
-              <span className="normal-case font-semibold text-foreground">
-                ({splits.length}/{participants.length} selected)
-              </span>
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {participants.map((p, idx) => {
-                const isSelected = splits.includes(p.id);
-                return (
-                  <div
-                    key={p.id ? `${p.id}-${idx}` : idx}
-                    onClick={() => !isSubmitting && handleToggleSplit(p.id)}
-                    className={`flex items-center gap-2 p-2 rounded-xl border transition-colors ${
-                      isSubmitting
-                        ? "opacity-60 cursor-not-allowed border-border"
-                        : isSelected
-                        ? "border-accent/40 bg-accent/5 cursor-pointer"
-                        : "border-border/60 hover:bg-muted cursor-pointer"
-                    }`}
-                  >
-                    {p.avatar_url ? (
-                      <img src={resolveAvatarUrl(p.avatar_url, p.id || p.username || '')} alt="" className="w-6 h-6 rounded-full object-cover border border-border" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground">
-                        <UserIcon size={12} />
-                      </div>
-                    )}
-                    <span className={`text-sm flex-1 truncate ${isSelected ? "font-bold text-accent" : "font-semibold text-foreground"}`}>
-                      {p.name}
-                    </span>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? "border-accent bg-accent" : "border-muted-foreground"}`}>
-                      {isSelected && <svg viewBox="0 0 14 14" fill="none" className="w-3 h-3 text-white"><path d="M3 7.5L6 10.5L11 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Form Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/40 select-none mt-2 shrink-0">
+          {/* Form Actions (Sticky Footer) */}
+          <motion.div variants={itemVariants} className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/40 select-none mt-2 shrink-0 p-[1px]">
             <Button
               type="button"
               disabled={isSubmitting}
@@ -428,15 +660,15 @@ export default function NewStopModal({ isOpen, onClose, onCreate, participants, 
               type="submit"
               disabled={isSubmitting}
               isLoading={isSubmitting}
-              variant="dark"
+              variant="premium"
               shape="pill"
               size="md"
               className="w-auto min-w-32"
             >
               Add Stop
             </Button>
-          </div>
-        </form>
+          </motion.div>
+        </motion.form>
       </motion.div>
     </div>
   );

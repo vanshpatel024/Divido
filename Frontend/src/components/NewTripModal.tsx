@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Search, User as UserIcon } from "lucide-react";
+import { X, Search, User as UserIcon, Compass } from "lucide-react";
 import { useToast } from "./Toast";
 import Button from "./Button";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
@@ -145,6 +145,14 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
         onClick={(e) => e.stopPropagation()}
         className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-2xl relative z-10 font-sans max-h-[85vh] overflow-y-auto flex flex-col text-foreground"
       >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors duration-200 p-1.5 rounded-full hover:bg-muted/50 cursor-pointer z-20"
+          aria-label="Close modal"
+        >
+          <X size={16} />
+        </button>
+
         <h3 className="font-display text-2xl font-bold text-foreground mb-5 select-none shrink-0">
           Create New Trip
         </h3>
@@ -152,28 +160,33 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-visible">
           {/* Trip Name */}
           <div className="flex flex-col">
-            <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 select-none text-muted-foreground transition-colors duration-200">
+            <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none text-muted-foreground transition-colors duration-700">
               Trip Name
             </label>
-            <input
-              disabled={isSubmitting}
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Goa Vacation"
-              className="w-full rounded-lg border border-border bg-background/50 py-2.5 px-3.5 text-base sm:text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
-            />
+            <div className="relative group">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-secondary dark:text-accent pointer-events-none transition-colors duration-700 group-focus-within:text-primary">
+                <Compass size={16} />
+              </span>
+              <input
+                disabled={isSubmitting}
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Goa Vacation"
+                className="w-full rounded-lg border border-border bg-background/50 py-3 pl-10 pr-4 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/50 focus:border-primary"
+              />
+            </div>
           </div>
 
           {/* Participants */}
           <div className="relative overflow-visible flex flex-col" ref={searchRef}>
-            <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 select-none text-muted-foreground transition-colors duration-200">
+            <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none text-muted-foreground transition-colors duration-700">
               Invite Friends
             </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-secondary dark:text-accent pointer-events-none">
-                <Search size={14} />
+            <div className="relative group">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-secondary dark:text-accent pointer-events-none transition-colors duration-700 group-focus-within:text-primary">
+                <Search size={16} />
               </span>
               <input
                 disabled={isSubmitting}
@@ -181,10 +194,10 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
                 value={participantInput}
                 onChange={(e) => setParticipantInput(e.target.value)}
                 placeholder="Search by username or name..."
-                className="w-full rounded-lg border border-border bg-background/50 py-2.5 pl-9 pr-3.5 text-base sm:text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg border border-border bg-background/50 py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/50 focus:border-primary"
               />
               {isSearching && (
-                <span className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <span className="absolute inset-y-0 right-3.5 flex items-center">
                   <span className="h-3.5 w-3.5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
                 </span>
               )}
@@ -203,7 +216,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
                     <div 
                       key={u.id ? `${u.id}-${idx}` : idx}
                       onClick={() => handleAddParticipant(u)}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted cursor-pointer transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/65 cursor-pointer transition-colors"
                     >
                       {u.avatar_url ? (
                         <img src={resolveAvatarUrl(u.avatar_url, u.id || u.username)} alt="" className="w-6 h-6 rounded-full object-cover border border-border" />
@@ -242,7 +255,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
                       disabled={isSubmitting}
                       type="button"
                       onClick={() => handleRemoveParticipant(p.id)}
-                      className="flex h-4.5 w-4.5 items-center justify-center rounded-full hover:bg-foreground/10 transition-colors text-foreground/60 cursor-pointer ml-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-foreground/15 transition-colors text-foreground/50 hover:text-foreground cursor-pointer ml-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <X size={10} />
                     </button>
@@ -269,7 +282,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
               disabled={isSubmitting}
               type="submit"
               isLoading={isSubmitting}
-              variant="dark"
+              variant="premium"
               shape="pill"
               size="md"
               className="w-auto min-w-32"

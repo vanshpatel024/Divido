@@ -10,6 +10,7 @@ import {
   Sun,
   Moon,
   ArrowRight,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -476,8 +477,12 @@ export default function Auth() {
                   </motion.div>
 
                   {generalError && (
-                    <motion.div variants={itemVariants} className="p-2.5 text-xs font-semibold text-[#FFFFFF] bg-[#FF4D4D] rounded-lg text-center">
-                      {generalError}
+                    <motion.div
+                      variants={itemVariants}
+                      className="flex items-center gap-2.5 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-medium text-destructive transition-colors duration-300"
+                    >
+                      <AlertCircle size={15} className="shrink-0" />
+                      <span className="flex-1 leading-normal">{generalError}</span>
                     </motion.div>
                   )}
 
@@ -527,15 +532,16 @@ export default function Auth() {
                         )}
                       </motion.div>
 
-                       <Button
-                          variants={itemVariants}
-                          type="submit"
-                          isLoading={isLoading}
-                          icon={<ArrowRight size={14} />}
-                          className="mt-1"
-                        >
-                          Send Reset Link
-                        </Button>
+                       <motion.div variants={itemVariants}>
+                         <Button
+                            type="submit"
+                            isLoading={isLoading}
+                            icon={<ArrowRight size={14} />}
+                            className="mt-1"
+                          >
+                            Send Reset Link
+                          </Button>
+                       </motion.div>
 
                       <motion.button
                         variants={itemVariants}
@@ -563,8 +569,12 @@ export default function Auth() {
                   className="flex flex-col gap-3 w-full"
                 >
                   {generalError && (
-                    <motion.div variants={itemVariants} className="p-2.5 text-xs font-semibold text-white bg-destructive rounded-lg text-center">
-                      {generalError}
+                    <motion.div
+                      variants={itemVariants}
+                      className="flex items-center gap-2.5 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-medium text-destructive transition-colors duration-300"
+                    >
+                      <AlertCircle size={15} className="shrink-0" />
+                      <span className="flex-1 leading-normal">{generalError}</span>
                     </motion.div>
                   )}
                   
@@ -645,15 +655,16 @@ export default function Auth() {
                       </button>
                   </motion.div>
 
-                  <Button
-                    variants={itemVariants}
-                    type="submit"
-                    isLoading={isLoading}
-                    icon={<ArrowRight size={14} />}
-                    className="mt-1"
-                  >
-                    Log In
-                  </Button>
+                  <motion.div variants={itemVariants}>
+                    <Button
+                      type="submit"
+                      isLoading={isLoading}
+                      icon={<ArrowRight size={14} />}
+                      className="mt-1"
+                    >
+                      Log In
+                    </Button>
+                  </motion.div>
                   
                   <motion.div variants={itemVariants} className="mt-4 flex flex-col items-center">
                     <div className="flex items-center w-full mb-4 opacity-60">
@@ -689,8 +700,12 @@ export default function Auth() {
                   className="flex flex-col gap-3 w-full"
                 >
                   {generalError && (
-                    <motion.div variants={itemVariants} className="p-2.5 text-xs font-semibold text-white bg-destructive rounded-lg text-center">
-                      {generalError}
+                    <motion.div
+                      variants={itemVariants}
+                      className="flex items-center gap-2.5 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs font-medium text-destructive transition-colors duration-300"
+                    >
+                      <AlertCircle size={15} className="shrink-0" />
+                      <span className="flex-1 leading-normal">{generalError}</span>
                     </motion.div>
                   )}
                   <div className="flex gap-3">
@@ -873,15 +888,16 @@ export default function Auth() {
                     </motion.div>
                   </div>
 
-                  <Button
-                    variants={itemVariants}
-                    type="submit"
-                    isLoading={isLoading}
-                    icon={<ArrowRight size={14} />}
-                    className="mt-4"
-                  >
-                    Create Account
-                  </Button>
+                   <motion.div variants={itemVariants}>
+                    <Button
+                      type="submit"
+                      isLoading={isLoading}
+                      icon={<ArrowRight size={14} />}
+                      className="mt-4"
+                    >
+                      Create Account
+                    </Button>
+                  </motion.div>
                 </motion.form>
               )}
             </AnimatePresence>

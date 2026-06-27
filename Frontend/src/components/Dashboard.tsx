@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, ChevronDown, Check, AlertTriangle, Filter } from "lucide-react";
-import Navbar from "./Navbar";
 import Button from "./Button";
 import TripCard from "./TripCard";
 import NewTripModal from "./NewTripModal";

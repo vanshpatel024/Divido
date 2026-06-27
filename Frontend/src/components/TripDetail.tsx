@@ -8,7 +8,6 @@ import {
     Check,
     UserPlus
 } from "lucide-react";
-import Navbar from "./Navbar";
 import Button from "./Button";
 import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
 import type { Trip } from "../types";
