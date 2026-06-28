@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../../config/supabase';
 import { z } from 'zod';
+import { UserService } from '../users/user.service';
 
 const categoryEnum = z.enum(["food", "hotel", "transport", "flight", "entertainment", "shopping"]);
 
@@ -346,6 +347,37 @@ export class TripService {
   }
 
   static async createTrip(userId: string, input: TripCreateInput) {
+    if (input.invitees.length > 0) {
+      const { data: counts, error: countError } = await supabaseAdmin
+        .from('trip_invitations')
+        .select('receiver_id')
+        .eq('status', 'pending')
+        .in('receiver_id', input.invitees);
+        
+      if (countError) throw countError;
+      
+      const pendingCounts = new Map<string, number>();
+      counts?.forEach((inv: any) => {
+        pendingCounts.set(inv.receiver_id, (pendingCounts.get(inv.receiver_id) || 0) + 1);
+      });
+      
+      const cappedIds = input.invitees.filter(id => (pendingCounts.get(id) || 0) >= 10);
+      
+      if (cappedIds.length > 0) {
+        const { data: profiles } = await supabaseAdmin
+          .from('profiles')
+          .select('display_name, username')
+          .in('id', cappedIds);
+          
+        const cappedNames = profiles?.map(p => p.display_name || p.username || 'Unknown') || [];
+        if (cappedNames.length === 1) {
+          throw new Error(`${cappedNames[0]} has reached the maximum number of pending invitations (10).`);
+        } else {
+          throw new Error(`The following users have reached the maximum number of pending invitations (10): ${cappedNames.join(', ')}.`);
+        }
+      }
+    }
+
     const { data: trip, error: tripError } = await supabaseAdmin
       .from('trips')
       .insert({
@@ -387,6 +419,18 @@ export class TripService {
       .single();
 
     if (error) throw error;
+
+    const participantIds = await this.getTripParticipantIds(tripId);
+    for (const pId of participantIds) {
+      await UserService.createActivity(pId, {
+        type: 'trip_ended',
+        tripId: tripId,
+        tripName: data.name,
+        actorId: userId,
+        date: data.end_date
+      });
+    }
+
     return await this.getSingleTrip(tripId, userId);
   }
 
@@ -462,6 +506,18 @@ export class TripService {
         stop_id: newStop.id,
         user_id: userId
       });
+
+      for (const pId of participantIds) {
+        if (pId !== userId) {
+          await UserService.createActivity(pId, {
+            type: 'member_left',
+            tripId: tripId,
+            name: `Activity: ${userDisplayName} left the ${trip.name} trip`,
+            actorId: userId,
+            date: newStop.date || newStop.created_at
+          });
+        }
+      }
     }
 
     // 6. Check remaining participants
@@ -596,6 +652,31 @@ export class TripService {
       throw splitsError;
     }
 
+    if (stop.name && stop.name.startsWith('Settlement:')) {
+      const payerId = input.payments[0]?.userId;
+      const receiverId = input.splits[0];
+      if (payerId && receiverId) {
+        await UserService.createActivity(payerId, {
+          type: 'settlement',
+          tripId: tripId,
+          amount: input.totalAmount,
+          role: 'payer',
+          name: stop.name,
+          actorId: creatorId,
+          date: stop.created_at || stop.date
+        });
+        await UserService.createActivity(receiverId, {
+          type: 'settlement',
+          tripId: tripId,
+          amount: input.totalAmount,
+          role: 'receiver',
+          name: stop.name,
+          actorId: creatorId,
+          date: stop.created_at || stop.date
+        });
+      }
+    }
+
     return stop;
   }
 
@@ -692,12 +773,47 @@ export class TripService {
       }
     }
 
-    // Get joined user's name
+    // Get joined user's name and avatar
     const { data: userProfile } = await supabaseAdmin
       .from('profiles')
-      .select('display_name')
+      .select('display_name, avatar_url')
       .eq('id', userId)
       .single();
+
+    const { data: tripData } = await supabaseAdmin
+      .from('trips')
+      .select('name')
+      .eq('id', inv.trip_id)
+      .single();
+    const tripName = tripData?.name || 'A trip';
+
+    // Log invitation_response activity for the sender of the invitation
+    await UserService.createActivity(inv.sender_id, {
+      type: 'invitation_response',
+      tripId: inv.trip_id,
+      tripName: tripName,
+      userName: userProfile?.display_name || 'A user',
+      userAvatar: userProfile?.avatar_url || '',
+      actorId: userId,
+      status: status
+    });
+
+    // Log member_joined activity for all other trip participants
+    if (accept && !alreadyParticipant) {
+      const participantIds = await this.getTripParticipantIds(inv.trip_id);
+      for (const pId of participantIds) {
+        if (pId !== userId && pId !== inv.sender_id) {
+          await UserService.createActivity(pId, {
+            type: 'member_joined',
+            tripId: inv.trip_id,
+            tripName: tripName,
+            userName: userProfile?.display_name || 'A user',
+            userAvatar: userProfile?.avatar_url || '',
+            actorId: userId
+          });
+        }
+      }
+    }
 
     return { 
       success: true, 
@@ -807,6 +923,38 @@ export class TripService {
             alreadyJoinedNames.push(name);
           }
         });
+      }
+    }
+
+    const targetInviteeIds = [...insertList, ...updateList.map(item => item.receiver_id)];
+    if (targetInviteeIds.length > 0) {
+      const { data: counts, error: countError } = await supabaseAdmin
+        .from('trip_invitations')
+        .select('receiver_id')
+        .eq('status', 'pending')
+        .in('receiver_id', targetInviteeIds);
+        
+      if (countError) throw countError;
+      
+      const pendingCounts = new Map<string, number>();
+      counts?.forEach((inv: any) => {
+        pendingCounts.set(inv.receiver_id, (pendingCounts.get(inv.receiver_id) || 0) + 1);
+      });
+      
+      const cappedIds = targetInviteeIds.filter(id => (pendingCounts.get(id) || 0) >= 10);
+      
+      if (cappedIds.length > 0) {
+        const { data: profiles } = await supabaseAdmin
+          .from('profiles')
+          .select('display_name, username')
+          .in('id', cappedIds);
+          
+        const cappedNames = profiles?.map(p => p.display_name || p.username || 'Unknown') || [];
+        if (cappedNames.length === 1) {
+          throw new Error(`${cappedNames[0]} has reached the maximum number of pending invitations (10).`);
+        } else {
+          throw new Error(`The following users have reached the maximum number of pending invitations (10): ${cappedNames.join(', ')}.`);
+        }
       }
     }
 

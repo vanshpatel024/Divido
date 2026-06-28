@@ -26,4 +26,17 @@ export class UserController {
       next(error);
     }
   }
+
+  static async clearActivities(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+      await UserService.clearActivities(req.user.id);
+      res.status(200).json(createResponse(true, 'Activities cleared successfully'));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -9,5 +9,6 @@ router.use(authMiddleware);
 
 router.get('/search', UserController.search);
 router.get('/me/activities', UserController.getActivities);
+router.delete('/me/activities', UserController.clearActivities);
 
 export default router;
