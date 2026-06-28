@@ -376,7 +376,7 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
               variant="dark"
               shape="pill"
               size="md"
-              className="w-auto min-w-32"
+              className="w-auto"
             >
               Send Invites
             </Button>

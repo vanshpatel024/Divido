@@ -3,25 +3,21 @@ import { Bell } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 
-const SEEN_KEY = "divido_seen_invite_ids";
+const SEEN_KEY = "divido_invite_last_opened";
 
-function getSeenIds(): Set<string> {
+function getLastOpened(): number {
   try {
     const raw = localStorage.getItem(SEEN_KEY);
-    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+    return raw ? parseInt(raw, 10) : 0;
   } catch {
-    return new Set();
+    return 0;
   }
 }
 
-function persistSeenIds(ids: Set<string>): void {
+function updateLastOpened(): void {
   try {
-    // Cap to the most recent 500 IDs to prevent unbounded localStorage growth
-    const arr = Array.from(ids).slice(-500);
-    localStorage.setItem(SEEN_KEY, JSON.stringify(arr));
-  } catch {
-    // Silently ignore storage errors
-  }
+    localStorage.setItem(SEEN_KEY, Date.now().toString());
+  } catch {}
 }
 
 export default function InvitationsMenu() {
@@ -33,9 +29,9 @@ export default function InvitationsMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const computeUnread = useCallback((items: any[]) => {
-    const seen = getSeenIds();
+    const lastOpened = getLastOpened();
     const fresh = new Set<string>(
-      items.map((inv: any) => inv.id).filter((id: string) => !seen.has(id))
+      items.filter((inv: any) => new Date(inv.created_at).getTime() > lastOpened).map(inv => inv.id)
     );
     setUnreadIds(fresh);
   }, []);
@@ -81,6 +77,7 @@ export default function InvitationsMenu() {
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsOpen(false);
+        setUnreadIds(new Set());
       }
     };
     if (isOpen) document.addEventListener("mousedown", handleClick);
@@ -91,10 +88,8 @@ export default function InvitationsMenu() {
     const opening = !isOpen;
     setIsOpen(opening);
     if (opening) {
-      // Mark all currently visible invitations as seen
-      const seen = getSeenIds();
-      invitations.forEach((inv) => seen.add(inv.id));
-      persistSeenIds(seen);
+      updateLastOpened();
+    } else {
       setUnreadIds(new Set());
     }
   };

@@ -285,7 +285,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
               variant="premium"
               shape="pill"
               size="md"
-              className="w-auto min-w-32"
+              className="w-auto"
             >
               Create Trip
             </Button>

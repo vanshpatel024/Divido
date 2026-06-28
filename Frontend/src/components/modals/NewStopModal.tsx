@@ -663,7 +663,7 @@ export default function NewStopModal({ isOpen, onClose, onCreate, participants, 
               variant="premium"
               shape="pill"
               size="md"
-              className="w-auto min-w-32"
+              className="w-auto"
             >
               Add Stop
             </Button>

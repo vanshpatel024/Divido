@@ -8,6 +8,7 @@ import ConfirmDialog from "../components/ui/ConfirmDialog";
 import type { Trip } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../components/ui/Toast";
 
 // ─── Hero Header ──────────────────────────────────────────────────────────────
 function HeroHeader({ onNewTrip }: { onNewTrip: () => void }) {
@@ -300,6 +301,7 @@ function DashboardSkeleton() {
 export default function Dashboard() {
     const navigate = useNavigate();
     const { token, logout } = useAuth();
+    const { showToast } = useToast();
     const [tripsList, setTripsList] = useState<Trip[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
@@ -403,11 +405,11 @@ export default function Dashboard() {
                 setTripsList((prev) => [responseData.data, ...prev]);
                 setIsNewOpen(false);
             } else {
-                alert(responseData.message || "Failed to create trip");
+                showToast(responseData.message || "Failed to create trip", "error");
             }
         } catch (err) {
             console.error("Error creating trip:", err);
-            alert("Network error creating trip");
+            showToast("Network error creating trip", "error");
         } finally {
             setIsCreatingTrip(false);
         }
@@ -431,11 +433,11 @@ export default function Dashboard() {
                 setTripsList(tripsList.filter((t) => t.id !== tripId));
                 setIsDeleteOpen(false);
             } else {
-                alert(data.message || "Failed to delete trip");
+                showToast(data.message || "Failed to delete trip", "error");
             }
         } catch (err) {
             console.error(err);
-            alert("Network error");
+            showToast("Network error", "error");
         } finally {
             setIsDeletingTrip(false);
             setActiveTrip(null);

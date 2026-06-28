@@ -105,7 +105,9 @@ export default function ConfirmDialog({
                 )}
                 <h2
                   id="confirm-dialog-title"
-                  className="font-display text-xl font-bold text-foreground leading-snug"
+                  className={`font-display text-xl font-bold leading-snug ${
+                    variant === "danger" ? "text-destructive" : "text-foreground"
+                  }`}
                 >
                   {title}
                 </h2>

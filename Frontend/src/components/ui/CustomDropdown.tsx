@@ -52,7 +52,7 @@ export default function CustomDropdown({
   return (
     <div className="relative w-full font-sans" ref={dropdownRef}>
       {label && (
-        <label className="block text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] mb-1.5 select-none">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 select-none">
           {label}
         </label>
       )}
@@ -62,9 +62,9 @@ export default function CustomDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between rounded-xl border border-[#EFECE6] bg-white py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary/50 text-foreground select-none cursor-pointer ${
+        className={`w-full flex items-center justify-between rounded-xl border border-border bg-card py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary/50 text-foreground select-none cursor-pointer ${
           disabled ? "opacity-50 cursor-not-allowed" : ""
-        } ${isOpen ? "border-[#AAD9BB] shadow-[0_0_0_3px_rgba(170,217,187,0.25)]" : ""}`}
+        } ${isOpen ? "border-primary/50 ring-1 ring-primary/20 shadow-xs" : ""}`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
           {selectedOption ? (
@@ -73,25 +73,25 @@ export default function CustomDropdown({
                 <img
                   src={resolveAvatarUrl(selectedOption.avatarUrl || "", selectedOption.value)}
                   alt=""
-                  className="w-5 h-5 rounded-full object-cover border border-[#EFECE6] shrink-0"
+                  className="w-5 h-5 rounded-full object-cover border border-border shrink-0"
                 />
               ) : (
-                <div className="w-5 h-5 rounded-full bg-[#EFECE6] flex items-center justify-center text-[#8B8A9B] shrink-0">
+                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
                   <UserIcon size={10} />
                 </div>
               )}
-              <span className="font-semibold text-[#2B2A4C] truncate">
+              <span className="font-semibold text-foreground truncate">
                 {selectedOption.label}
               </span>
             </>
           ) : (
-            <span className="text-foreground/45">{placeholder}</span>
+            <span className="text-muted-foreground/60">{placeholder}</span>
           )}
         </div>
         <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
-          className="text-[#8B8A9B] shrink-0 ml-1.5"
+          className="text-muted-foreground shrink-0 ml-1.5"
         >
           <ChevronDown size={14} />
         </motion.span>
@@ -105,10 +105,10 @@ export default function CustomDropdown({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-0 right-0 mt-1.5 bg-white border border-[#EFECE6] rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto custom-scrollbar overflow-hidden"
+            className="absolute left-0 right-0 mt-1.5 bg-card border border-border rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto custom-scrollbar overflow-hidden"
           >
             {options.length === 0 ? (
-              <div className="px-4 py-3 text-xs text-[#8B8A9B] select-none text-center">
+              <div className="px-4 py-3 text-xs text-muted-foreground select-none text-center">
                 No options available
               </div>
             ) : (
@@ -121,8 +121,8 @@ export default function CustomDropdown({
                     onClick={() => handleSelect(opt.value)}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm transition-colors text-left select-none cursor-pointer first:rounded-t-xl last:rounded-b-xl ${
                       isSelected
-                        ? "bg-[#eef7f1] text-[#1A5C3A]"
-                        : "hover:bg-muted text-[#2B2A4C]"
+                        ? "bg-primary/10 text-primary"
+                        : "hover:bg-muted text-foreground"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -130,10 +130,10 @@ export default function CustomDropdown({
                         <img
                           src={resolveAvatarUrl(opt.avatarUrl || "", opt.value)}
                           alt=""
-                          className="w-5.5 h-5.5 rounded-full object-cover border border-[#EFECE6] shrink-0"
+                          className="w-5.5 h-5.5 rounded-full object-cover border border-border shrink-0"
                         />
                       ) : (
-                        <div className="w-5.5 h-5.5 rounded-full bg-[#EFECE6] flex items-center justify-center text-[#8B8A9B] shrink-0">
+                        <div className="w-5.5 h-5.5 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
                           <UserIcon size={11} />
                         </div>
                       )}
@@ -142,14 +142,14 @@ export default function CustomDropdown({
                           {opt.label}
                         </span>
                         {opt.subtitle && (
-                          <span className="text-[10px] text-[#8B8A9B] mt-0.5 truncate">
+                          <span className="text-[10px] text-muted-foreground mt-0.5 truncate">
                             {opt.subtitle}
                           </span>
                         )}
                       </div>
                     </div>
                     {isSelected && (
-                      <Check size={14} strokeWidth={2.5} className="text-[#1A5C3A] shrink-0 ml-1.5" />
+                      <Check size={14} strokeWidth={2.5} className="text-primary shrink-0 ml-1.5" />
                     )}
                   </button>
                 );

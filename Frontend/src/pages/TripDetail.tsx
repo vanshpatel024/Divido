@@ -6,7 +6,8 @@ import {
     Plus,
     Flag,
     Check,
-    UserPlus
+    UserPlus,
+    AlertTriangle
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import { useAuth, resolveAvatarUrl } from "../contexts/AuthContext";
@@ -270,6 +271,8 @@ export default function TripDetail() {
             ),
             confirmLabel: "End Trip",
             variant: "danger" as const,
+            iconNode: <AlertTriangle size={20} />,
+            iconVariant: "danger" as const,
         }
         : pendingAction?.kind === "settleDebt"
             ? {
@@ -283,8 +286,10 @@ export default function TripDetail() {
                 ),
                 confirmLabel: "Mark as Paid",
                 variant: "primary" as const,
+                iconNode: undefined,
+                iconVariant: undefined,
             }
-            : { title: "", message: "", confirmLabel: "Confirm", variant: "primary" as const };
+            : { title: "", message: "", confirmLabel: "Confirm", variant: "primary" as const, iconNode: undefined, iconVariant: undefined };
 
     // Derived stop arrays — must be declared before any early returns (Rules of Hooks)
     const settlementStops = useMemo(
@@ -397,38 +402,24 @@ export default function TripDetail() {
 
     return (
         <div className="w-full font-sans">
-
-            <div className="border-b border-[#EFECE6] bg-white/50 py-3">
-                <div className="mx-auto max-w-5xl px-8 flex items-center gap-2">
-                    <Link
-                        to="/dashboard"
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
-                    >
-                        <ChevronLeft size={16} />
+            <main className="mx-auto max-w-5xl px-8 mt-10">
+                <section className="pb-8 border-b border-border">
+                    <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground mb-5 decoration-none transition-colors select-none">
+                        <ChevronLeft size={14} strokeWidth={3} /> Back to Trips
                     </Link>
-                    <nav className="text-xs font-semibold uppercase tracking-wider text-[#8B8A9B] flex items-center gap-1.5 select-none">
-                        <Link to="/dashboard" className="hover:text-foreground transition-colors decoration-none">Your Trips</Link>
-                        <span className="text-foreground/30">/</span>
-                        <span className="text-foreground">{trip.name}</span>
-                    </nav>
-                </div>
-            </div>
 
-            <main className="mx-auto max-w-5xl px-8">
-                <section className="py-8 border-b border-[#EFECE6]">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
                         <div>
-                            <h1 className="font-display text-5xl font-bold tracking-tight text-foreground leading-tight">
+                            <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-foreground leading-none mb-4">
                                 {trip.name}
                             </h1>
-                            <div className="flex items-center gap-3 mt-2 text-xs text-[#8B8A9B] select-none">
-                                <span>{trip.dates}</span>
-                                <span className="h-1 w-1 bg-foreground/20 rounded-full" />
-                                <span>{trip.participants.length} participants</span>
+                            <div className="flex items-center gap-2.5 text-xs font-semibold text-muted-foreground select-none">
+                                <span className="bg-muted/50 border border-border/50 px-2.5 py-1.5 rounded-lg">{trip.dates}</span>
+                                <span className="bg-muted/50 border border-border/50 px-2.5 py-1.5 rounded-lg">{trip.participants.length} participants</span>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 select-none shrink-0">
+                        <div className="flex items-center select-none shrink-0">
                             {(!trip.end_date) && (
                                 <Button
                                     disabled={isEndingTrip || isAddingStop || settlingDebtId !== null}
@@ -444,20 +435,6 @@ export default function TripDetail() {
                                     End Trip
                                 </Button>
                             )}
-                            {(!trip.end_date) && (
-                                <Button
-                                    disabled={isEndingTrip || isAddingStop || settlingDebtId !== null}
-                                    onClick={() => setIsAddStopOpen(true)}
-                                    variant="dark"
-                                    shape="pill"
-                                    size="sm"
-                                    icon={<Plus size={13} />}
-                                    iconPosition="left"
-                                    className="w-auto"
-                                >
-                                    Add Stop
-                                </Button>
-                            )}
                         </div>
                     </div>
 
@@ -469,7 +446,7 @@ export default function TripDetail() {
                                     src={resolveAvatarUrl(p.avatar_url || "", p.id || p.name)}
                                     alt={p.name}
                                     title={p.name}
-                                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white object-cover shadow-sm bg-[#EFECE6]"
+                                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-background object-cover shadow-sm bg-muted"
                                 />
                             ))}
                         </div>
@@ -485,14 +462,14 @@ export default function TripDetail() {
                     </div>
 
                     <div className="flex items-center gap-4 mt-4 select-none">
-                        <span className="text-xs text-[#8B8A9B] font-medium">
+                        <span className="text-xs text-muted-foreground font-medium">
                             Total Spend: <span className="font-bold text-foreground">{formatInr(totalSpend)}</span>
                         </span>
                     </div>
                 </section>
 
                 {/* Balances & Debts Panel */}
-                <section className="py-8 border-b border-[#EFECE6]">
+                <section className="py-8 border-b border-border">
                     <h2 className="font-display text-2xl font-bold tracking-tight text-foreground mb-5 select-none">
                         Balances & Debts
                     </h2>
@@ -511,30 +488,24 @@ export default function TripDetail() {
                                 return (
                                     <div
                                         key={`debt-${idx}`}
-                                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 ${isCreditor
-                                                ? "border-[#AAD9BB] bg-[#eef7f1]/30"
-                                                : isDebtor
-                                                    ? "border-[#F7DCB9] bg-[#fdfaf5]"
-                                                    : "border-[#EFECE6] bg-white"
-                                            }`}
+                                        className={`flex items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 group`}
                                     >
                                         <div className="flex flex-col gap-1 min-w-0">
                                             <span className="text-sm text-foreground font-medium leading-snug">
-                                                <span className={`font-bold ${isDebtor ? "text-[#7A4A00]" : ""}`}>{fromLabel}</span>
-                                                {" "}owes{" "}
-                                                <span className={`font-bold ${isCreditor ? "text-[#1A5C3A]" : ""}`}>{toLabel}</span>
+                                                <span className={`font-bold`}>{fromLabel}</span>
+                                                {" "}{isDebtor ? "owe" : "owes"}{" "}
+                                                <span className={`font-bold`}>{toLabel}</span>
                                             </span>
-                                            <span className={`text-xl font-extrabold tracking-tight ${isCreditor ? "text-[#1A5C3A]" : isDebtor ? "text-[#7A4A00]" : "text-brand-navy-text"
-                                                }`}>
+                                            <span className={`text-xl font-extrabold tracking-tight text-foreground`}>
                                                 {formatInr(debt.amount)}
                                             </span>
                                             {isCreditor && (
-                                                <span className="text-[10px] text-[#1A5C3A]/70 font-medium">
+                                                <span className="text-[10px] text-muted-foreground font-medium">
                                                     Tap ✓ once they pay you back
                                                 </span>
                                             )}
                                             {isDebtor && (
-                                                <span className="text-[10px] text-[#7A4A00]/70 font-medium">
+                                                <span className="text-[10px] text-muted-foreground font-medium">
                                                     Waiting to be marked paid
                                                 </span>
                                             )}
@@ -548,12 +519,12 @@ export default function TripDetail() {
                                                 variant="dark"
                                                 shape="pill"
                                                 size="sm"
-                                                className="w-auto px-3 py-1.5 shrink-0 ml-3"
+                                                className="w-auto px-3 py-1.5 shrink-0 ml-3 text-xs"
                                                 title="Mark as Paid"
                                                 icon={<Check size={13} strokeWidth={2.5} />}
                                                 iconPosition="left"
                                             >
-                                                Paid
+                                                Mark as Paid
                                             </Button>
                                         )}
                                     </div>
@@ -568,26 +539,26 @@ export default function TripDetail() {
                                         key={`settlement-${stop.id}`}
                                         initial={{ opacity: 0, y: 8 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="flex items-center justify-between p-4 rounded-2xl border border-[#AAD9BB]/40 bg-[#eef7f1]/20 transition-all duration-200"
+                                        className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-sm transition-all duration-200"
                                     >
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef7f1] text-[#1A5C3A] border border-[#AAD9BB]/50 shrink-0">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary shrink-0">
                                                 <Check size={14} strokeWidth={3} />
                                             </div>
                                             <div className="min-w-0">
-                                                <span className="text-sm font-semibold text-[#1A5C3A] leading-snug truncate block">
+                                                <span className="text-sm font-semibold text-foreground leading-snug truncate block">
                                                     {stop.name.replace(/^Settlement:\s*/, "")}
                                                 </span>
-                                                <span className="text-[10px] text-[#8B8A9B] block mt-0.5 select-none">
+                                                <span className="text-[10px] text-muted-foreground block mt-0.5 select-none">
                                                     {new Date(stop.created_at || stop.date).toLocaleDateString()} at {new Date(stop.created_at || stop.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="text-right select-none shrink-0 pl-2">
-                                            <span className="text-[9px] text-[#1A5C3A] font-bold uppercase tracking-wider block">
+                                            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider block">
                                                 Settled
                                             </span>
-                                            <span className="font-extrabold text-[#1A5C3A] text-base">
+                                            <span className="font-extrabold text-foreground text-base">
                                                 {formatInr(stop.total)}
                                             </span>
                                         </div>
@@ -595,31 +566,48 @@ export default function TripDetail() {
                                 ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-[#8B8A9B] font-medium select-none">
+                        <p className="text-sm text-muted-foreground font-medium select-none">
                             No balances yet. Add a stop to get started.
                         </p>
                     )}
                 </section>
 
                 {/* Stops Display */}
-                <section className="mb-8 mt-8">
-                    <h2 className="font-display text-2xl font-bold tracking-tight text-foreground mb-5 select-none">
-                        Stops
-                    </h2>
+                <section className="py-8">
+                    <div className="flex items-center justify-between mb-5 select-none">
+                        <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                            Stops
+                        </h2>
+                        {(!trip.end_date) && normalStops.length > 0 && (
+                            <Button
+                                disabled={isEndingTrip || isAddingStop || settlingDebtId !== null}
+                                onClick={() => setIsAddStopOpen(true)}
+                                isLoading={isAddingStop}
+                                variant="premium"
+                                shape="pill"
+                                size="sm"
+                                icon={<Plus size={13} />}
+                                iconPosition="left"
+                                className="w-auto shadow-md"
+                            >
+                                Add Stop
+                            </Button>
+                        )}
+                    </div>
 
                     {normalStops.length === 0 ? (
-                        <div className="text-center py-12 bg-white rounded-2xl border border-[#EFECE6] border-dashed">
-                            <p className="text-[#8B8A9B] font-medium text-sm">No stops added yet.</p>
+                        <div className="text-center py-12 bg-card rounded-2xl border border-border border-dashed">
+                            <p className="text-muted-foreground font-medium text-sm">No stops added yet.</p>
                             {!trip.end_date && (
                                 <div className="flex justify-center">
                                     <Button
                                         onClick={() => setIsAddStopOpen(true)}
-                                        variant="dark"
+                                        variant="premium"
                                         shape="pill"
                                         size="sm"
                                         icon={<Plus size={13} />}
                                         iconPosition="left"
-                                        className="mt-3 w-auto"
+                                        className="mt-3 w-auto shadow-md"
                                     >
                                         Add First Stop
                                     </Button>
@@ -634,17 +622,17 @@ export default function TripDetail() {
                                         key={stop.id}
                                         initial={{ opacity: 0, y: 12 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="bg-white border border-border rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-200 group"
+                                        className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-border/80 transition-all duration-200 group"
                                     >
-                                        <div className="flex items-center justify-between gap-4 pb-3.5 border-b border-[#EFECE6]">
+                                        <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
                                             <div className="flex items-center gap-2.5">
                                                 <div>
-                                                    <h3 className="font-semibold text-brand-navy-text leading-snug">{stop.name}</h3>
-                                                    <span className="text-[11px] text-[#8B8A9B] block mt-0.5 select-none">{new Date(stop.date).toLocaleDateString()}</span>
+                                                    <h3 className="font-semibold text-foreground leading-snug">{stop.name}</h3>
+                                                    <span className="text-[11px] text-muted-foreground block mt-0.5 select-none">{new Date(stop.date).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
                                             <div className="text-right select-none shrink-0">
-                                                <span className="text-[10px] text-[#8B8A9B] block font-semibold uppercase tracking-wider">Total</span>
+                                                <span className="text-[10px] text-muted-foreground block font-semibold uppercase tracking-wider">Total</span>
                                                 <span className="font-bold text-lg text-foreground">{formatInr(stop.total)}</span>
                                             </div>
                                         </div>
@@ -653,12 +641,12 @@ export default function TripDetail() {
                                             <div className="pt-3.5 space-y-2 select-none">
                                                 {stop.transactions.map((tx, idx) => (
                                                     <div key={idx} className="flex items-center justify-between text-xs">
-                                                        <span className="text-[#8B8A9B]">
-                                                            Paid by <span className="font-semibold text-brand-navy-text">{tx.paidBy}</span>
+                                                        <span className="text-muted-foreground">
+                                                            Paid by <span className="font-semibold text-foreground">{tx.paidBy}</span>
                                                         </span>
                                                         <div className="flex items-center gap-3">
-                                                            <span className="font-semibold text-brand-navy-text">{formatInr(tx.amount)}</span>
-                                                            <span className="text-[10px] text-[#8B8A9B] bg-[#F5F0E8] px-2 py-0.5 rounded border border-[#EFECE6]">
+                                                            <span className="font-semibold text-foreground">{formatInr(tx.amount)}</span>
+                                                            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded border border-border">
                                                                 split with {tx.splitCount}
                                                             </span>
                                                         </div>
@@ -705,6 +693,8 @@ export default function TripDetail() {
                 message={dialogProps.message}
                 confirmLabel={dialogProps.confirmLabel}
                 variant={dialogProps.variant}
+                iconNode={dialogProps.iconNode}
+                iconVariant={dialogProps.iconVariant}
                 isLoading={confirmLoading}
                 onConfirm={handleConfirm}
                 onCancel={closeConfirm}

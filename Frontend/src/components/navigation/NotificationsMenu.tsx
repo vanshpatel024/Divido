@@ -5,44 +5,21 @@ import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import ConfirmDialog from "../ui/ConfirmDialog";
 
-const SEEN_KEY = "divido_seen_activity_ids";
-const CLEARED_KEY = "divido_cleared_activity_ids";
+const SEEN_KEY = "divido_activity_last_opened";
 
-function getSeenIds(): Set<string> {
+function getLastOpened(): number {
   try {
     const raw = localStorage.getItem(SEEN_KEY);
-    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+    return raw ? parseInt(raw, 10) : 0;
   } catch {
-    return new Set();
+    return 0;
   }
 }
 
-function persistSeenIds(ids: Set<string>): void {
+function updateLastOpened(): void {
   try {
-    // Cap to the most recent 500 IDs to prevent unbounded localStorage growth
-    const arr = Array.from(ids).slice(-500);
-    localStorage.setItem(SEEN_KEY, JSON.stringify(arr));
-  } catch {
-    // Silently ignore storage errors
-  }
-}
-
-function getClearedIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(CLEARED_KEY);
-    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function persistClearedIds(ids: Set<string>): void {
-  try {
-    const arr = Array.from(ids).slice(-500);
-    localStorage.setItem(CLEARED_KEY, JSON.stringify(arr));
-  } catch {
-    // Silently ignore storage errors
-  }
+    localStorage.setItem(SEEN_KEY, Date.now().toString());
+  } catch {}
 }
 
 export default function NotificationsMenu() {
@@ -50,23 +27,18 @@ export default function NotificationsMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
   const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set());
-  const [clearedIds, setClearedIds] = useState<Set<string>>(new Set());
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setClearedIds(getClearedIds());
-  }, []);
-
   const computeUnread = useCallback((items: any[]) => {
-    const seen = getSeenIds();
+    const lastOpened = getLastOpened();
     
     // Filter out items where the actor is the current user themselves
     const unread = items.filter((a: any) => {
       if (a.actorId && user?.id && a.actorId === user.id) {
         return false;
       }
-      return !seen.has(a.id);
+      return new Date(a.date).getTime() > lastOpened;
     });
 
     setUnreadIds(new Set(unread.map(a => a.id)));
@@ -113,6 +85,7 @@ export default function NotificationsMenu() {
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsOpen(false);
+        setUnreadIds(new Set());
       }
     };
     if (isOpen) document.addEventListener("mousedown", handleClick);
@@ -123,10 +96,8 @@ export default function NotificationsMenu() {
     const opening = !isOpen;
     setIsOpen(opening);
     if (opening) {
-      // Mark all currently visible items as seen
-      const seen = getSeenIds();
-      activities.forEach((a) => seen.add(a.id));
-      persistSeenIds(seen);
+      updateLastOpened();
+    } else {
       setUnreadIds(new Set());
     }
   };
@@ -195,8 +166,8 @@ export default function NotificationsMenu() {
     }
   };
 
-  const visibleActivities = activities.filter((act) => !clearedIds.has(act.id));
-  const unreadCount = Array.from(unreadIds).filter((id) => !clearedIds.has(id)).length;
+  const visibleActivities = activities;
+  const unreadCount = unreadIds.size;
 
   const handleClearAllClick = (e: any) => {
     e.preventDefault();
@@ -205,17 +176,23 @@ export default function NotificationsMenu() {
     setIsConfirmOpen(true);
   };
 
-  const executeClearAll = () => {
-    const updatedCleared = new Set(clearedIds);
-    visibleActivities.forEach((a) => updatedCleared.add(a.id));
-    persistClearedIds(updatedCleared);
-    setClearedIds(updatedCleared);
-    
-    const seen = getSeenIds();
-    visibleActivities.forEach((a) => seen.add(a.id));
-    persistSeenIds(seen);
-    setUnreadIds(new Set());
-    setIsConfirmOpen(false);
+  const executeClearAll = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("http://localhost:3000/users/me/activities", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActivities([]);
+        setUnreadIds(new Set());
+      }
+    } catch (error) {
+      console.error("Failed to clear activities", error);
+    } finally {
+      setIsConfirmOpen(false);
+    }
   };
 
   return (

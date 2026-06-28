@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, LogOut, ChevronDown, Moon, Sun } from "lucide-react";
+import { User, LogOut, ChevronDown, Moon, Sun, AlertTriangle } from "lucide-react";
 import { useAuth, resolveAvatarUrl } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -195,6 +195,8 @@ export default function Navbar() {
             Are you sure you want to log out of <strong>Divido</strong>? You will be signed out of your current session.
           </>
         }
+        iconNode={<AlertTriangle size={20} />}
+        iconVariant="danger"
         confirmLabel="Log out"
         cancelLabel="Cancel"
         variant="danger"
