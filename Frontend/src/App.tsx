@@ -1,16 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Dashboard from "./components/Dashboard";
-import TripDetail from "./components/TripDetail";
-import Auth from "./components/Auth";
-import ProfilePage from "./components/ProfilePage";
-import NotFound from "./components/NotFound";
-import { ToastProvider } from "./components/Toast";
-import { AuthProvider } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
-import ProtectedRoute from "./components/ProtectedRoute";
-import PublicRoute from "./components/PublicRoute";
-import ResetPassword from "./components/ResetPassword";
-import MainLayout from "./components/MainLayout";
+import Dashboard from "./pages/Dashboard";
+import TripDetail from "./pages/TripDetail";
+import Auth from "./pages/Auth";
+import ProfilePage from "./pages/ProfilePage";
+import NotFound from "./pages/NotFound";
+import { ToastProvider } from "./components/ui/Toast";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicRoute from "./routes/PublicRoute";
+import ResetPassword from "./pages/ResetPassword";
+import MainLayout from "./components/layout/MainLayout";
 
 export default function App() {
   return (

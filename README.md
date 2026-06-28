@@ -39,19 +39,23 @@ The system utilizes a two-tier architecture comprising a React Frontend and a No
 Divido/
 ├── Backend/
 │   ├── src/
+│   │   ├── api/         # Domain-driven feature modules (auth, trips, users)
 │   │   ├── config/      # Environment variables and Supabase client initialization
-│   │   ├── controllers/ # HTTP route handlers orchestrating services and WS broadcasts
-│   │   ├── middleware/  # Express middlewares (Auth, Error handling)
-│   │   ├── routes/      # Express route definitions
-│   │   ├── services/    # Core business logic, DB interactions, and settlement algorithms
+│   │   ├── middlewares/ # Global Express middlewares (Auth, Error handling)
+│   │   ├── types/       # TypeScript type declarations
+│   │   ├── utils/       # Utility functions and helpers
 │   │   └── ws/          # WebSocket server and room-based pub/sub manager
 │   ├── index.ts         # Server entry point (HTTP + WS binding)
 │   └── package.json
 └── Frontend/
     ├── src/
-    │   ├── components/  # React UI components (Dashboard, Modals, Cards)
-    │   ├── context/     # React Context providers (AuthContext)
+    │   ├── assets/      # Static assets (images, icons)
+    │   ├── components/  # Reusable UI, layouts, modals, and feature components
+    │   ├── contexts/    # React Context providers (AuthContext, ThemeContext)
     │   ├── hooks/       # Custom hooks (useRealtimeTrip, useRealtimeDashboard)
+    │   ├── pages/       # Top-level route pages (Dashboard, TripDetail, Auth)
+    │   ├── routes/      # Route guard wrappers (ProtectedRoute, PublicRoute)
+    │   ├── styles/      # Global stylesheets
     │   ├── App.tsx      # Main application routing and providers
     │   └── main.tsx     # React DOM rendering
     ├── vite.config.ts   # Vite bundler configuration

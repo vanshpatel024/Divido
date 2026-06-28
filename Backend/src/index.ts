@@ -3,10 +3,10 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env';
-import authRoutes from './routes/auth.routes';
-import tripRoutes from './routes/trip.routes';
-import userRoutes from './routes/user.routes';
-import { errorHandler } from './middleware/error.middleware';
+import authRoutes from './api/auth/auth.routes';
+import tripRoutes from './api/trips/trip.routes';
+import userRoutes from './api/users/user.routes';
+import { errorHandler } from './middlewares/error.middleware';
 import { createResponse } from './utils/response';
 import { initWsServer } from './ws/wsServer';
 
