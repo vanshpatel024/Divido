@@ -80,7 +80,7 @@ export default function CustomDropdown({
                   <UserIcon size={10} />
                 </div>
               )}
-              <span className="font-semibold text-foreground truncate">
+              <span className="font-semibold text-foreground break-words text-left">
                 {selectedOption.label}
               </span>
             </>
@@ -138,11 +138,11 @@ export default function CustomDropdown({
                         </div>
                       )}
                       <div className="flex flex-col min-w-0">
-                        <span className={`leading-none truncate ${isSelected ? "font-bold" : "font-semibold"}`}>
+                        <span className={`leading-tight break-words ${isSelected ? "font-bold" : "font-semibold"}`}>
                           {opt.label}
                         </span>
                         {opt.subtitle && (
-                          <span className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                          <span className="text-[10px] text-muted-foreground mt-0.5 break-all">
                             {opt.subtitle}
                           </span>
                         )}

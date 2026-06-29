@@ -5,7 +5,7 @@ import Navbar from "./Navbar";
 
 export default function MainLayout() {
   const [backgroundLines, setBackgroundLines] = useState<{ path: string; strokeWidth: number }[]>([]);
-  
+
   useEffect(() => {
     // Helper to calculate Euclidean distance between two points
     const getDistance = (x1: number, y1: number, x2: number, y2: number) => {
@@ -15,7 +15,7 @@ export default function MainLayout() {
     // Storing line points dynamically to compute distances
     const generated: { start: { x: number; y: number }; end: { x: number; y: number } }[] = [];
     const lines: { path: string; strokeWidth: number }[] = [];
-    
+
     // Limits for random stroke widths (smooth and elegant, in screen pixels with non-scaling-stroke)
     const minWidth = 1.6;
     const maxWidth = 3.6;
@@ -40,8 +40,8 @@ export default function MainLayout() {
     // Optimize for mobile (fewer lines, maximally spaced out to prevent clumping)
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     // On mobile, pick 6 paths that are far apart (e.g. index 0, 3, 5, 7, 10, 11)
-    const activeSpans = isMobile 
-      ? [spans[0], spans[3], spans[5], spans[7], spans[10], spans[11]] 
+    const activeSpans = isMobile
+      ? [spans[0], spans[3], spans[5], spans[7], spans[10], spans[11]]
       : spans;
 
     const minDistance = 15; // Enforces that no two line ends/starts spawn within 15% distance of each other
@@ -105,7 +105,7 @@ export default function MainLayout() {
           opacity: "0.06",
         }}
       />
-      
+
       {/* Abstract lines background — placed at -z-10 so they render on top of the backdrop but behind content */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden opacity-[0.15] dark:opacity-[0.1]">
         <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">

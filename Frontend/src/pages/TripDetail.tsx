@@ -7,7 +7,8 @@ import {
     Flag,
     Check,
     UserPlus,
-    AlertTriangle
+    AlertTriangle,
+    Clock
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import { useAuth, resolveAvatarUrl } from "../contexts/AuthContext";
@@ -17,6 +18,32 @@ import InviteModal from "../components/modals/InviteModal";
 import { useToast } from "../components/ui/Toast";
 import { useRealtimeTrip } from "../hooks/useRealtimeTrip";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
+import Tooltip from "../components/ui/Tooltip";
+
+const renderSettlementLabel = (name: string, currentDisplayName?: string) => {
+    const raw = name.replace(/^Settlement:\s*/, ""); // e.g. "Alice to Bob"
+    if (!currentDisplayName) return <span>{raw}</span>;
+    
+    // Split by " to "
+    const parts = raw.split(" to ");
+    if (parts.length === 2) {
+        const from = parts[0].trim();
+        const to = parts[1].trim();
+        
+        const fromIsMe = from.toLowerCase() === currentDisplayName.toLowerCase();
+        const toIsMe = to.toLowerCase() === currentDisplayName.toLowerCase();
+        
+        return (
+            <span>
+                <span className={fromIsMe ? "font-bold text-foreground" : "font-semibold text-foreground"}>{fromIsMe ? "YOU" : from}</span>
+                <span className="text-muted-foreground"> paid </span>
+                <span className={toIsMe ? "font-bold text-foreground" : "font-semibold text-foreground"}>{toIsMe ? "YOU" : to}</span>
+            </span>
+        );
+    }
+    
+    return <span>{raw}</span>;
+};
 
 interface Transaction {
     paidBy: string;
@@ -470,105 +497,137 @@ export default function TripDetail() {
 
                 {/* Balances & Debts Panel */}
                 <section className="py-8 border-b border-border">
-                    <h2 className="font-display text-2xl font-bold tracking-tight text-foreground mb-5 select-none">
-                        Balances & Debts
-                    </h2>
+                    <div className="flex flex-col gap-1 mb-5">
+                        <div className="flex items-center justify-between select-none">
+                            <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                                Balances & Debts
+                            </h2>
+                            {((trip.debts && trip.debts.length > 0) || (settlementStops && settlementStops.length > 0)) && (
+                                <Link to={`/trip/${id}/balances`} className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 group">
+                                    View All <span className="group-hover:translate-x-0.5 transition-transform duration-200">&rarr;</span>
+                                </Link>
+                            )}
+                        </div>
+                        {((trip.debts && trip.debts.length > 0) || (settlementStops && settlementStops.length > 0)) && (
+                            <p className="text-[11px] text-muted-foreground select-none">
+                                Recent entries
+                            </p>
+                        )}
+                    </div>
 
                     {((trip.debts && trip.debts.length > 0) || (settlementStops && settlementStops.length > 0)) ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Active Debts */}
-                            {trip.debts && trip.debts.map((debt, idx) => {
-                                const isCreditor = debt.toId === user?.id;
-                                const isDebtor = debt.fromId === user?.id;
+                        (() => {
+                            const combinedBalances = [
+                                ...(trip.debts || []).map(debt => ({ type: 'debt', data: debt })),
+                                ...(settlementStops || [])
+                                    .sort((a, b) => new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime())
+                                    .map(stop => ({ type: 'settlement', data: stop }))
+                            ];
 
-                                // First-person contextual labels
-                                const fromLabel = isDebtor ? "YOU" : debt.fromName;
-                                const toLabel = isCreditor ? "YOU" : debt.toName;
+                            return (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {combinedBalances.map((item, idx) => {
+                                            let responsiveClass = "flex";
+                                            if (idx >= 4) responsiveClass = "hidden";
+                                            else if (idx >= 2) responsiveClass = "hidden md:flex";
 
-                                return (
-                                    <div
-                                        key={`debt-${idx}`}
-                                        className={`flex items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 group`}
-                                    >
-                                        <div className="flex flex-col gap-1 min-w-0">
-                                            <span className="text-sm text-foreground font-medium leading-snug">
-                                                <span className={`font-bold`}>{fromLabel}</span>
-                                                {" "}{isDebtor ? "owe" : "owes"}{" "}
-                                                <span className={`font-bold`}>{toLabel}</span>
-                                            </span>
-                                            <span className={`text-xl font-extrabold tracking-tight text-foreground`}>
-                                                {formatInr(debt.amount)}
-                                            </span>
-                                            {isCreditor && (
-                                                <span className="text-[10px] text-muted-foreground font-medium">
-                                                    Tap ✓ once they pay you back
-                                                </span>
-                                            )}
-                                            {isDebtor && (
-                                                <span className="text-[10px] text-muted-foreground font-medium">
-                                                    Waiting to be marked paid
-                                                </span>
-                                            )}
-                                        </div>
+                                            if (item.type === 'debt') {
+                                                const debt = item.data as any;
+                                                const isCreditor = debt.toId === user?.id;
+                                                const isDebtor = debt.fromId === user?.id;
+                                                const fromLabel = isDebtor ? "YOU" : debt.fromName;
+                                                const toLabel = isCreditor ? "YOU" : debt.toName;
+                                                const verb = isDebtor ? "owe" : "owes";
 
-                                        {isCreditor && (
-                                            <Button
-                                                disabled={settlingDebtId !== null}
-                                                onClick={() => handleSettleDebt(debt)}
-                                                isLoading={settlingDebtId === `${debt.fromId}-${debt.toId}`}
-                                                variant="dark"
-                                                shape="pill"
-                                                size="sm"
-                                                className="w-auto px-3 py-1.5 shrink-0 ml-3 text-xs"
-                                                title="Mark as Paid"
-                                                icon={<Check size={13} strokeWidth={2.5} />}
-                                                iconPosition="left"
-                                            >
-                                                Mark as Paid
-                                            </Button>
-                                        )}
+                                                return (
+                                                    <div
+                                                        key={`debt-${idx}`}
+                                                        className={`${responsiveClass} items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 group`}
+                                                    >
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground shrink-0 border border-border">
+                                                                <Clock size={14} strokeWidth={2.5} />
+                                                            </div>
+                                                                <div className="min-w-0 flex flex-col gap-0.5">
+                                                                    <span className="text-sm font-semibold text-foreground leading-snug block break-words pr-2">
+                                                                        <span className="font-bold">{fromLabel}</span> {verb} <span className="font-bold">{toLabel}</span>
+                                                                    </span>
+                                                                    <span className="text-[10px] text-muted-foreground block select-none">
+                                                                        {isCreditor ? "Tap ✓ to mark paid" : "Pending payment"}
+                                                                    </span>
+                                                                </div>
+                                                        </div>
+
+                                                        <div className="flex items-center shrink-0 pl-2">
+                                                            <div className="text-right select-none">
+                                                                <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider block">
+                                                                    Pending
+                                                                </span>
+                                                                <span className="font-extrabold text-foreground text-base">
+                                                                    {formatInr(debt.amount)}
+                                                                </span>
+                                                            </div>
+                                                            {isCreditor && (
+                                                                <Tooltip content="Mark as Paid" position="top">
+                                                                    <Button
+                                                                        disabled={settlingDebtId !== null}
+                                                                        onClick={() => handleSettleDebt(debt)}
+                                                                        isLoading={settlingDebtId === `${debt.fromId}-${debt.toId}`}
+                                                                        variant="premium"
+                                                                        shape="pill"
+                                                                        className="!w-8 !h-8 !p-0 shrink-0 ml-3"
+                                                                        title="Mark as Paid"
+                                                                    >
+                                                                        <Check size={16} strokeWidth={2.5} />
+                                                                    </Button>
+                                                                </Tooltip>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            } else {
+                                                const stop = item.data as any;
+                                                return (
+                                                    <motion.div
+                                                        key={`settlement-${stop.id}`}
+                                                        initial={{ opacity: 0, y: 8 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className={`${responsiveClass} items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-sm transition-all duration-200`}
+                                                    >
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary shrink-0">
+                                                                <Check size={14} strokeWidth={3} />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <span className="text-sm font-semibold text-foreground leading-snug block break-words pr-2">
+                                                                    {renderSettlementLabel(stop.name, user?.display_name)}
+                                                                </span>
+                                                                <span className="text-[10px] text-muted-foreground block mt-0.5 select-none">
+                                                                    {new Date(stop.created_at || stop.date).toLocaleDateString()} at {new Date(stop.created_at || stop.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right select-none shrink-0 pl-2">
+                                                            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider block">
+                                                                Settled
+                                                            </span>
+                                                            <span className="font-extrabold text-foreground text-base">
+                                                                {formatInr(stop.total)}
+                                                            </span>
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            }
+                                        })}
                                     </div>
-                                );
-                            })}
-
-                            {/* Completed Settlements */}
-                            {settlementStops
-                                .sort((a, b) => new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime())
-                                .map((stop) => (
-                                    <motion.div
-                                        key={`settlement-${stop.id}`}
-                                        initial={{ opacity: 0, y: 8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-sm transition-all duration-200"
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary shrink-0">
-                                                <Check size={14} strokeWidth={3} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <span className="text-sm font-semibold text-foreground leading-snug truncate block">
-                                                    {stop.name.replace(/^Settlement:\s*/, "")}
-                                                </span>
-                                                <span className="text-[10px] text-muted-foreground block mt-0.5 select-none">
-                                                    {new Date(stop.created_at || stop.date).toLocaleDateString()} at {new Date(stop.created_at || stop.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="text-right select-none shrink-0 pl-2">
-                                            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider block">
-                                                Settled
-                                            </span>
-                                            <span className="font-extrabold text-foreground text-base">
-                                                {formatInr(stop.total)}
-                                            </span>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                        </div>
+                                </>
+                            );
+                        })()
                     ) : (
-                        <p className="text-sm text-muted-foreground font-medium select-none">
-                            No balances yet. Add a stop to get started.
-                        </p>
+                        <div className="text-center py-10 bg-card/50 rounded-2xl border border-border border-dashed select-none">
+                            <p className="text-muted-foreground font-medium text-xs">No pending balances or settlements yet.</p>
+                        </div>
                     )}
                 </section>
 

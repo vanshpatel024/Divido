@@ -115,12 +115,23 @@ export default function NotificationsMenu() {
 
   const renderActivityText = (act: any) => {
     switch (act.type) {
-      case 'invitation_response':
+      case 'invitation_response': {
+        const isAccepted = typeof act.status === 'string' && act.status.toLowerCase() === 'accepted';
+        const isDeclined = typeof act.status === 'string' && act.status.toLowerCase() === 'declined';
+        
+        let statusClass = "font-bold";
+        if (isAccepted) {
+          statusClass = "font-bold text-status-getback-text bg-status-getback-bg px-1.5 py-0.5 rounded-md";
+        } else if (isDeclined) {
+          statusClass = "font-bold text-destructive bg-status-owe-bg px-1.5 py-0.5 rounded-md";
+        }
+
         return (
           <span>
-            <strong>{act.userName}</strong> <strong>{act.status}</strong> your invitation to <strong>{act.tripName}</strong>
+            <strong>{act.userName}</strong> <span className={statusClass}>{act.status}</span> your invitation to <strong>{act.tripName}</strong>
           </span>
         );
+      }
       case 'trip_ended':
         return (
           <span>

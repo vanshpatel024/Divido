@@ -3,6 +3,7 @@ import Dashboard from "./pages/Dashboard";
 import TripDetail from "./pages/TripDetail";
 import Auth from "./pages/Auth";
 import ProfilePage from "./pages/ProfilePage";
+import TripBalances from "./pages/TripBalances";
 import NotFound from "./pages/NotFound";
 import { ToastProvider } from "./components/ui/Toast";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -32,6 +33,7 @@ export default function App() {
             >
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/trip/:id" element={<TripDetail />} />
+              <Route path="/trip/:id/balances" element={<TripBalances />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
             <Route

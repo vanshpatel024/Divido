@@ -4,12 +4,12 @@ import { z } from 'zod';
 export const authSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
-  displayName: z.string().min(2, 'Display name must be at least 2 characters long').optional(),
-  username: z.string().min(3, 'Username must be at least 3 characters').regex(/^[a-zA-Z0-9_]+$/, 'Alphanumeric and underscores only'),
+  displayName: z.string().min(2, 'Display name must be at least 2 characters long').max(40, 'Display name cannot exceed 40 characters').optional(),
+  username: z.string().min(3, 'Username must be at least 3 characters').max(25, 'Username cannot exceed 25 characters').regex(/^[a-zA-Z0-9_]+$/, 'Alphanumeric and underscores only'),
 });
 
 export const profileUpdateSchema = z.object({
-  displayName: z.string().min(2, 'Display name must be at least 2 characters long').optional(),
+  displayName: z.string().min(2, 'Display name must be at least 2 characters long').max(40, 'Display name cannot exceed 40 characters').optional(),
   avatarUrl: z.string().url('Invalid avatar URL').optional(),
 });
 

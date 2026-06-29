@@ -405,5 +405,16 @@ html {
   background-color: #1C2030 !important;
 }
 
+/* Remove default spin-buttons/arrows from input type="number" globally */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 
 

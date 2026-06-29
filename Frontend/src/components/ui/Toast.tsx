@@ -42,27 +42,23 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed top-6 right-6 z-55 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none select-none">
+      <div className="fixed top-4 left-4 right-4 sm:top-6 sm:left-auto sm:right-6 sm:w-96 z-50 flex flex-col gap-3 pointer-events-none select-none">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
               key={t.id}
-              initial={{ opacity: 0, y: -20, scale: 0.9 }}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className={`pointer-events-auto flex items-center gap-2.5 rounded-2xl px-4 py-3 shadow-md border ${
-                t.type === "success"
-                  ? "bg-[#AAD9BB] border-[#8bc79f] text-[#1A5C3A]"
-                  : "bg-red-50 border-red-100 text-red-700"
-              }`}
+              transition={{ duration: 0.2, type: "spring", stiffness: 400, damping: 30 }}
+              className="pointer-events-auto flex items-center gap-3 rounded-2xl p-4 bg-card/90 backdrop-blur-xl border border-border shadow-lg dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
             >
               {t.type === "success" ? (
-                <CheckCircle2 size={18} className="shrink-0 text-[#1A5C3A]" />
+                <CheckCircle2 size={20} className="shrink-0 text-status-getback-text" />
               ) : (
-                <AlertCircle size={18} className="shrink-0 text-red-600" />
+                <AlertCircle size={20} className="shrink-0 text-destructive" />
               )}
-              <span className="text-xs font-semibold tracking-wide font-sans">
+              <span className="text-[13px] font-medium text-foreground font-sans leading-tight">
                 {t.message}
               </span>
             </motion.div>

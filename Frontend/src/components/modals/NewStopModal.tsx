@@ -555,7 +555,7 @@ export default function NewStopModal({ isOpen, onClose, onCreate, participants, 
                         return (
                           <div key={p.id ? `${p.id}-${idx}` : idx} className="flex items-center justify-between gap-3">
                             <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-sm font-semibold text-foreground truncate">{p.name}</span>
+                              <span className="text-sm font-semibold text-foreground break-words">{p.name}</span>
                               {isAutoFillTarget && (
                                 <span className="text-[10px] text-accent font-semibold mt-0.5 select-none animate-pulse">
                                   Leftover: {autoFillPayer.amount.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })}
@@ -630,7 +630,7 @@ export default function NewStopModal({ isOpen, onClose, onCreate, participants, 
                           <UserIcon size={12} />
                         </div>
                       )}
-                      <span className={`text-sm flex-1 truncate ${isSelected ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>
+                      <span className={`text-sm flex-1 break-words ${isSelected ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>
                         {p.name}
                       </span>
                       <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? "border-accent bg-accent text-white" : "border-muted-foreground"}`}>

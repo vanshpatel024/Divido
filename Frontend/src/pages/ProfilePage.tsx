@@ -118,13 +118,13 @@ export default function ProfilePage() {
                 alt=""
                 className="w-20 h-20 rounded-full border border-border shadow-sm object-cover bg-muted"
               />
-              <div className="text-center sm:text-left flex-1">
-                <h2 className="font-display text-2xl font-bold text-foreground leading-snug">
+              <div className="text-center sm:text-left flex-1 min-w-0">
+                <h2 className="font-display text-2xl font-bold text-foreground leading-snug break-words">
                   {user?.display_name || "Guest User"}
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center sm:justify-start gap-1 select-none">
-                  <AtSign size={14} className="text-muted-foreground" />
-                  <span>{user?.username || "username"}</span>
+                <p className="text-sm text-muted-foreground mt-1 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 select-none">
+                  <AtSign size={14} className="text-muted-foreground shrink-0 hidden sm:block" />
+                  <span className="break-all">{user?.username || "username"}</span>
                 </p>
               </div>
             </div>
@@ -135,9 +135,9 @@ export default function ProfilePage() {
                   <Mail size={13} className="text-muted-foreground" />
                   Email Address
                 </label>
-                <div className="w-full rounded-xl border border-border bg-muted/20 py-2.5 px-3.5 text-sm text-foreground/70 font-medium select-none flex items-center">
-                  <span>{user?.email || "—"}</span>
-                  <span className="ml-auto text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Account email</span>
+                <div className="w-full rounded-xl border border-border bg-muted/20 py-3 px-4 text-sm text-foreground/70 font-medium select-none flex flex-col-reverse sm:flex-row sm:items-center items-start gap-2">
+                  <span className="break-all">{user?.email || "—"}</span>
+                  <span className="sm:ml-auto shrink-0 text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Account email</span>
                 </div>
               </div>
             </div>

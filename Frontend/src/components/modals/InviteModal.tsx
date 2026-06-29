@@ -241,8 +241,16 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
         exit={{ opacity: 0, y: 4 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative z-10 font-sans max-h-[90vh] overflow-visible flex flex-col text-foreground"
+        className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-2xl relative z-10 font-sans max-h-[90vh] overflow-visible flex flex-col text-foreground"
       >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors duration-200 p-1.5 rounded-full hover:bg-muted/50 cursor-pointer z-20"
+          aria-label="Close modal"
+        >
+          <X size={16} />
+        </button>
+
         <h3 className="font-display text-2xl font-bold text-foreground mb-5 select-none shrink-0">
           Invite Friends
         </h3>
@@ -373,7 +381,7 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
               disabled={isSubmitting}
               type="submit"
               isLoading={isSubmitting}
-              variant="dark"
+              variant="premium"
               shape="pill"
               size="md"
               className="w-auto"

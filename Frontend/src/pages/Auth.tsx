@@ -16,79 +16,13 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import Logo from "../components/ui/Logo";
 import Button from "../components/ui/Button";
-
-const CAROUSEL_INTERVAL_MS = 5000;
+import AuthSidebar from "../components/layout/AuthSidebar";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { login, signup } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Carousel State
-  const carouselTexts = [
-    { title: "Plan together.\nPay together.", subtitle: "Split trip expenses with friends. Track balances, settle up, and keep your journeys stress-free." },
-    { title: "Track every expense\neffortlessly.", subtitle: "No more spreadsheets. Just add the cost, tag your friends, and we'll do the math." },
-    { title: "Settle up with\na single tap.", subtitle: "Send reminders, view balances, and pay each other back directly through the app." }
-  ];
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [slideDirection, setSlideDirection] = useState(1);
-
-  // Auto-rotate slides every 5s (resets to 5s if user manually changes slide)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSlideDirection(1);
-      setCurrentSlide((prev) => (prev + 1) % carouselTexts.length);
-    }, CAROUSEL_INTERVAL_MS);
-    return () => clearTimeout(timer);
-  }, [currentSlide]);
-
-  const handleNextSlide = () => {
-    setSlideDirection(1);
-    setCurrentSlide((prev) => (prev + 1) % carouselTexts.length);
-  };
-
-  const handlePrevSlide = () => {
-    setSlideDirection(-1);
-    setCurrentSlide((prev) => (prev - 1 + carouselTexts.length) % carouselTexts.length);
-  };
-
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 20 : -20,
-      opacity: 0,
-      filter: "blur(4px)"
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      filter: "blur(0px)",
-      transition: { duration: 0.4, type: "spring" as const, stiffness: 300, damping: 30 }
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? 20 : -20,
-      opacity: 0,
-      filter: "blur(4px)",
-      transition: { duration: 0.3 }
-    })
-  };
-
-  // Dynamic Background SVG Lines
-  const [randomLines, setRandomLines] = useState<string[]>([]);
-  useEffect(() => {
-    const lines = [];
-    const numLines = 5;
-    for (let i = 0; i < numLines; i++) {
-      const startY = 15 + (70 / numLines) * i + (Math.random() * 10 - 5);
-      const cp1X = 25 + (Math.random() * 20 - 10);
-      const cp1Y = startY + (Math.random() * 30 - 15);
-      const cp2X = 75 + (Math.random() * 20 - 10);
-      const cp2Y = startY + (Math.random() * 30 - 15);
-      const endY = startY + (Math.random() * 20 - 10);
-      lines.push(`M -10 ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, 110 ${endY}`);
-    }
-    setRandomLines(lines);
-  }, []);
 
   // Theme State
   const { theme, toggleTheme } = useTheme();
@@ -213,12 +147,18 @@ export default function Auth() {
     if (!firstName.trim()) {
       setFirstNameError("First name is required");
       hasError = true;
+    } else if (firstName.trim().length > 20) {
+      setFirstNameError("Max 20 characters");
+      hasError = true;
     } else {
       setFirstNameError("");
     }
 
     if (!lastName.trim()) {
       setLastNameError("Last name is required");
+      hasError = true;
+    } else if (lastName.trim().length > 20) {
+      setLastNameError("Max 20 characters");
       hasError = true;
     } else {
       setLastNameError("");
@@ -229,6 +169,9 @@ export default function Auth() {
       hasError = true;
     } else if (username.trim().length < 3) {
       setUsernameError("At least 3 characters");
+      hasError = true;
+    } else if (username.trim().length > 25) {
+      setUsernameError("Max 25 characters");
       hasError = true;
     } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
       setUsernameError("Letters, numbers, and underscores only");
@@ -310,75 +253,7 @@ export default function Auth() {
       {/* MOBILE HEADER STRIP */}
       <div className="md:hidden w-full h-3 bg-gradient-to-r from-primary via-accent to-secondary opacity-60"></div>
 
-      {/* LEFT COLUMN: Desktop Only (40% width) */}
-      <div className="hidden md:flex md:w-[40%] relative flex-col justify-between h-full p-12 overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
-        {/* Dynamic Background */}
-        <div className="absolute inset-0 z-0 transition-all duration-700 bg-gradient-to-br from-sidebar-start via-sidebar-middle to-sidebar-end">
-          <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary opacity-[0.05] blur-[80px] pointer-events-none"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent opacity-[0.05] blur-[80px] pointer-events-none"></div>
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
-            {randomLines.map((path, idx) => (
-              <path key={idx} d={path} fill="none" stroke={idx % 2 === 0 ? "var(--wave-stroke-even)" : "var(--wave-stroke-odd)"} strokeWidth="0.15" />
-            ))}
-          </svg>
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 mt-4">
-          <Logo variant="sidebar" />
-        </div>
-
-        <div className="relative z-10 mt-auto pb-4 h-[240px] flex flex-col justify-end">
-          <AnimatePresence custom={slideDirection} mode="wait">
-            <motion.div
-              key={currentSlide}
-              custom={slideDirection}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              className="flex flex-col"
-            >
-              <h1 className="font-display text-4xl font-bold text-white leading-tight mb-4 whitespace-pre-line">
-                {carouselTexts[currentSlide].title}
-              </h1>
-              <p className="text-white/80 font-sans text-sm max-w-[280px] leading-relaxed">
-                {carouselTexts[currentSlide].subtitle}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-          
-          <div className="flex items-center justify-between mt-8 w-full max-w-[280px]">
-            <div className="flex gap-2">
-              {carouselTexts.map((_, idx) => (
-                <button 
-                  key={idx}
-                  onClick={() => {
-                    setSlideDirection(idx > currentSlide ? 1 : -1);
-                    setCurrentSlide(idx);
-                  }}
-                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 cursor-pointer ${idx === currentSlide ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/60'}`}
-                ></button>
-              ))}
-            </div>
-            
-            <div className="flex gap-3">
-              <button 
-                onClick={handlePrevSlide}
-                className="w-8 h-8 rounded-full flex items-center justify-center border border-white/20 text-white hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <ArrowRight size={14} className="rotate-180" />
-              </button>
-              <button 
-                onClick={handleNextSlide}
-                className="w-8 h-8 rounded-full flex items-center justify-center border border-white/20 text-white hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <ArrowRight size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AuthSidebar />
 
       {/* RIGHT COLUMN: Auth Form (60% width) */}
       <div className="w-full md:w-[60%] h-full flex flex-col items-center justify-start md:justify-center p-6 md:p-12 overflow-y-auto relative z-0 transition-colors duration-700 bg-background">
