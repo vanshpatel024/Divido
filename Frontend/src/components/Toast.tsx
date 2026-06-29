@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Info } from "lucide-react";
 
-type ToastType = "success" | "error";
+type ToastType = "success" | "error" | "info";
 
 interface Toast {
   id: string;
@@ -29,7 +29,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const showToast = useCallback((message: string, type: ToastType = "success") => {
     setToasts((prev) => {
-      // Deduplicate: skip if an identical message is already visible
       if (prev.some((t) => t.message === message)) return prev;
       const id = Math.random().toString(36).substring(2, 9);
       setTimeout(() => {
@@ -54,11 +53,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               className={`pointer-events-auto flex items-center gap-2.5 rounded-2xl px-4 py-3 shadow-md border ${
                 t.type === "success"
                   ? "bg-[#AAD9BB] border-[#8bc79f] text-[#1A5C3A]"
+                  : t.type === "info"
+                  ? "bg-[#E8EAF6] border-[#C5CAE9] text-[#2B2A4C]"
                   : "bg-red-50 border-red-100 text-red-700"
               }`}
             >
               {t.type === "success" ? (
                 <CheckCircle2 size={18} className="shrink-0 text-[#1A5C3A]" />
+              ) : t.type === "info" ? (
+                <Info size={18} className="shrink-0 text-[#2B2A4C]" />
               ) : (
                 <AlertCircle size={18} className="shrink-0 text-red-600" />
               )}

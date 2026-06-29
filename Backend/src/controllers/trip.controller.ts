@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { TripService, tripCreateSchema, stopCreateSchema, tripInviteSchema } from '../services/trip.service';
+import { TripService, tripCreateSchema, stopCreateSchema, stopUpdateSchema, tripInviteSchema } from '../services/trip.service';
 import { createResponse } from '../utils/response';
 import { ZodError } from 'zod';
 import { wsManager } from '../ws/wsManager';
+import { supabaseAdmin } from '../config/supabase';
 
 export class TripController {
   static async getUserTrips(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -152,6 +153,79 @@ export class TripController {
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json(createResponse(false, 'Validation error', undefined, (error as any).errors));
+        return;
+      }
+      next(error);
+    }
+  }
+
+  static async updateStop(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+      const parsedData = stopUpdateSchema.parse(req.body);
+      const tripId = req.params.id as string;
+      const stopId = req.params.stopId as string;
+      const result = await TripService.updateStop(tripId, stopId, req.user.id, parsedData);
+
+      // Get editor name for toast notification
+      const { data: editorProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('display_name, username')
+        .eq('id', req.user.id)
+        .single();
+
+      const editorName = editorProfile?.display_name || editorProfile?.username || 'Someone';
+      const tripName = (await supabaseAdmin.from('trips').select('name').eq('id', tripId).single()).data?.name || 'this trip';
+      const newTotal = result.stop.total_amount;
+
+      // Broadcast to all clients viewing this trip
+      wsManager.broadcast(tripId, 'stop_updated', { 
+        stopId: result.stop.id, 
+        actorId: req.user.id,
+        editorName,
+        tripName,
+        oldTotal: result.oldTotal,
+        newTotal: Number(newTotal)
+      });
+      // Also push to each participant's dashboard room so their totals refresh
+      const participantIds = await TripService.getTripParticipantIds(tripId);
+      wsManager.broadcastToDashboards(participantIds, 'stop_updated', { tripId, actorId: req.user.id });
+
+      res.status(200).json(createResponse(true, 'Stop updated', result.stop));
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json(createResponse(false, 'Validation error', undefined, (error as any).errors));
+        return;
+      }
+      next(error);
+    }
+  }
+
+  static async deleteStop(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json(createResponse(false, 'Unauthorized'));
+        return;
+      }
+      const tripId = req.params.id as string;
+      const stopId = req.params.stopId as string;
+      await TripService.deleteStop(tripId, stopId, req.user.id);
+
+      wsManager.broadcast(tripId, 'stop_deleted', { stopId, actorId: req.user.id });
+      const participantIds = await TripService.getTripParticipantIds(tripId);
+      wsManager.broadcastToDashboards(participantIds, 'stop_deleted', { tripId, actorId: req.user.id });
+
+      res.status(200).json(createResponse(true, 'Stop deleted'));
+    } catch (error: any) {
+      if (error.message && error.message.includes('not found')) {
+        res.status(404).json(createResponse(false, error.message));
+        return;
+      }
+      if (error.message && error.message.includes('Cannot delete')) {
+        res.status(400).json(createResponse(false, error.message));
         return;
       }
       next(error);
