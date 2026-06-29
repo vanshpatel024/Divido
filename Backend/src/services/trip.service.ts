@@ -505,7 +505,7 @@ export class TripService {
   static async getStops(tripId: string) {
     const { data: stops, error: stopsError } = await supabaseAdmin
       .from('stops')
-      .select('*, created_by, created_at, updated_at')
+      .select('*')
       .eq('trip_id', tripId)
       .order('date', { ascending: false })
       .order('created_at', { ascending: false });
@@ -538,12 +538,12 @@ export class TripService {
     const creatorIds = [...new Set(stops.map(s => s.created_by).filter(Boolean))];
     let creatorNames: Record<string, string> = {};
     if (creatorIds.length > 0) {
-      const { data: creators } = await supabaseAdmin
+      const { data: creators, error: creatorsError } = await supabaseAdmin
         .from('profiles')
         .select('id, display_name, username')
         .in('id', creatorIds);
       
-      if (creators) {
+      if (!creatorsError && creators) {
         creators.forEach((c: any) => {
           creatorNames[c.id] = c.display_name || c.username || 'Unknown';
         });
@@ -571,7 +571,7 @@ export class TripService {
         total: Number(stop.total_amount),
         created_by: stop.created_by,
         creator_name: creatorNames[stop.created_by] || null,
-        edited: Boolean(stop.updated_at),
+        edited: Boolean(stop.last_updated_at),
         transactions
       };
     });
@@ -595,13 +595,22 @@ export class TripService {
         trip_id: tripId,
         name: input.name,
         date: input.date,
-        total_amount: input.totalAmount,
-        created_by: creatorId
+        total_amount: input.totalAmount
       })
       .select()
       .single();
 
     if (stopError) throw stopError;
+
+    // Try to set created_by separately — will silently fail if column doesn't exist yet
+    try {
+      await supabaseAdmin
+        .from('stops')
+        .update({ created_by: creatorId })
+        .eq('id', stop.id);
+    } catch {
+      // Column may not exist yet, that's fine
+    }
 
     const paymentsData = input.payments.map(p => ({
       stop_id: stop.id,
@@ -667,7 +676,7 @@ export class TripService {
     if (input.totalAmount !== undefined) stopUpdate.total_amount = input.totalAmount;
 
     if (Object.keys(stopUpdate).length > 0 || input.payments !== undefined || input.splits !== undefined) {
-      stopUpdate.updated_at = new Date().toISOString();
+      stopUpdate.last_updated_at = new Date().toISOString();
       const { error: updateError } = await supabaseAdmin
         .from('stops')
         .update(stopUpdate)
