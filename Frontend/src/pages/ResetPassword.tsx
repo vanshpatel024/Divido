@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Lock, Sun, Moon, AlertCircle, ArrowRight } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Sun,
+  Moon,
+  AlertCircle,
+  ArrowRight,
+} from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import Logo from "../components/ui/Logo";
 import Button from "../components/ui/Button";
@@ -89,12 +97,18 @@ export default function ResetPassword() {
 
         const responseData = await res.json();
         if (res.ok && responseData.success) {
-          showToast("Password updated successfully. Please log in with your new credentials.", "success");
+          showToast(
+            "Password updated successfully. Please log in with your new credentials.",
+            "success",
+          );
           // Clear hash fragments to prevent accidental double-submits
           window.location.hash = "";
           navigate("/auth");
         } else {
-          setGeneralError(responseData.message || "Failed to update password. Link may be expired.");
+          setGeneralError(
+            responseData.message ||
+              "Failed to update password. Link may be expired.",
+          );
         }
       } catch (err: any) {
         setGeneralError("Network error. Please try again later.");
@@ -108,20 +122,24 @@ export default function ResetPassword() {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+      transition: { staggerChildren: 0.05, delayChildren: 0.1 },
     },
-    exit: { opacity: 0, transition: { duration: 0.15 } }
+    exit: { opacity: 0, transition: { duration: 0.15 } },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 8 },
-    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 400, damping: 30 } }
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring" as const, stiffness: 400, damping: 30 },
+    },
   };
 
   if (isInvalid) {
     return (
-      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center p-6 font-sans select-none text-foreground transition-colors duration-700">
-        <motion.div 
+      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center p-6 font-sans text-foreground transition-colors duration-700">
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="bg-card/85 backdrop-blur-xl border border-border/20 rounded-2xl p-8 max-w-[380px] w-full text-center shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
@@ -129,14 +147,14 @@ export default function ResetPassword() {
           <div className="w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-4">
             <Lock size={32} />
           </div>
-          <h3 className="font-display text-lg font-bold text-foreground">Invalid Reset Link</h3>
+          <h3 className="font-display text-lg font-bold text-foreground">
+            Invalid Reset Link
+          </h3>
           <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-            This password reset link is invalid, incomplete, or has expired. Please request a new link from the login page.
+            This password reset link is invalid, incomplete, or has expired.
+            Please request a new link from the login page.
           </p>
-          <Button
-            onClick={() => navigate("/auth")}
-            className="mt-6 w-full"
-          >
+          <Button onClick={() => navigate("/auth")} className="mt-6 w-full">
             Go to Login
           </Button>
         </motion.div>
@@ -148,7 +166,7 @@ export default function ResetPassword() {
     <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden font-sans bg-background text-foreground">
       {/* Noise Overlay */}
       <div className="pointer-events-none absolute inset-0 z-[100] opacity-[0.03] mix-blend-overlay bg-[url('data:image/svg+xml;utf8,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')]"></div>
-      
+
       {/* MOBILE HEADER STRIP */}
       <div className="md:hidden w-full h-3 bg-gradient-to-r from-primary via-accent to-secondary opacity-60"></div>
 
@@ -156,40 +174,39 @@ export default function ResetPassword() {
 
       {/* RIGHT COLUMN: Reset Form (60% width) */}
       <div className="w-full md:w-[60%] h-full flex flex-col items-center justify-start md:justify-center p-6 md:p-12 overflow-y-auto relative z-0 transition-colors duration-700 bg-background">
-        
         {/* Top-Right Theme Toggle */}
         <div className="w-full flex justify-end mb-6 md:mb-0 md:absolute md:top-8 md:right-8 z-20">
-           <button
-             type="button"
-             onClick={toggleTheme}
-             className="relative flex items-center justify-center w-10 h-10 rounded-full border border-border shadow-sm bg-card hover:bg-muted/30 text-accent dark:bg-secondary dark:hover:bg-muted dark:text-primary transition-all duration-300 cursor-pointer overflow-hidden"
-           >
-              <AnimatePresence mode="wait">
-                {isDark ? (
-                  <motion.div
-                    key="moon"
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                    className="absolute"
-                  >
-                    <Moon size={16} />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="sun"
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 20, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                    className="absolute"
-                  >
-                    <Sun size={16} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-           </button>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="relative flex items-center justify-center w-10 h-10 rounded-full border border-border shadow-sm bg-card hover:bg-muted/30 text-accent dark:bg-secondary dark:hover:bg-muted dark:text-primary transition-all duration-300 cursor-pointer overflow-hidden"
+          >
+            <AnimatePresence mode="wait">
+              {isDark ? (
+                <motion.div
+                  key="moon"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -20, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                  className="absolute"
+                >
+                  <Moon size={16} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="sun"
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 20, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                  className="absolute"
+                >
+                  <Sun size={16} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
         </div>
 
         {/* Form Container Card */}
@@ -204,8 +221,13 @@ export default function ResetPassword() {
             onSubmit={handleSubmit}
             className="flex flex-col gap-3 w-full mt-6"
           >
-            <motion.div variants={itemVariants} className="w-full text-center mb-2">
-              <h2 className="font-display text-lg font-bold text-foreground transition-colors duration-700">Update Password</h2>
+            <motion.div
+              variants={itemVariants}
+              className="w-full text-center mb-2"
+            >
+              <h2 className="font-display text-lg font-bold text-foreground transition-colors duration-700">
+                Update Password
+              </h2>
               <p className="text-xs mt-1 text-muted-foreground transition-colors duration-700">
                 Enter your new secure password below to regain access.
               </p>
@@ -223,7 +245,7 @@ export default function ResetPassword() {
 
             <motion.div variants={itemVariants} className="flex flex-col">
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest select-none transition-colors duration-700 text-muted-foreground">
+                <label className="text-[10px] font-bold uppercase tracking-widest transition-colors duration-700 text-muted-foreground">
                   NEW PASSWORD
                 </label>
               </div>
@@ -237,8 +259,8 @@ export default function ResetPassword() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className={`w-full rounded-lg border py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
-                    passwordError 
-                      ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                    passwordError
+                      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
                       : "border-border focus:border-primary"
                   }`}
                 />
@@ -259,7 +281,7 @@ export default function ResetPassword() {
 
             <motion.div variants={itemVariants} className="flex flex-col">
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest select-none transition-colors duration-700 text-muted-foreground">
+                <label className="text-[10px] font-bold uppercase tracking-widest transition-colors duration-700 text-muted-foreground">
                   CONFIRM PASSWORD
                 </label>
               </div>
@@ -273,8 +295,8 @@ export default function ResetPassword() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   className={`w-full rounded-lg border py-3 pl-10 pr-10 text-[13px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 bg-background/50 text-foreground ${
-                    confirmPasswordError 
-                      ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                    confirmPasswordError
+                      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
                       : "border-border focus:border-primary"
                   }`}
                 />
@@ -283,7 +305,11 @@ export default function ResetPassword() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer transition-colors duration-700 z-10 text-muted-foreground hover:text-foreground"
                 >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showConfirmPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
                 </button>
               </div>
               {confirmPasswordError && (

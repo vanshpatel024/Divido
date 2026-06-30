@@ -2,7 +2,13 @@ import type { ButtonHTMLAttributes } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children?: React.ReactNode;
-  variant?: "premium" | "secondary" | "dark" | "dark-outline" | "danger" | "danger-outline";
+  variant?:
+    | "premium"
+    | "secondary"
+    | "dark"
+    | "dark-outline"
+    | "danger"
+    | "danger-outline";
   size?: "sm" | "md" | "lg";
   shape?: "pill" | "square";
   isLoading?: boolean;
@@ -23,32 +29,36 @@ export default function Button({
   ...props
 }: ButtonProps) {
   // Base classes (flexible width, center align)
-  const hasWidth = className.split(" ").some(c => c.startsWith("w-"));
+  const hasWidth = className.split(" ").some((c) => c.startsWith("w-"));
   const widthClass = hasWidth ? "" : "w-full";
 
-  const baseClass = `${widthClass} cursor-pointer flex items-center justify-center select-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold`;
+  const baseClass = `${widthClass} cursor-pointer flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold`;
 
   // Variant mappings
   const variantClasses = {
     premium: "btn-premium text-white",
-    secondary: "btn-secondary-premium border border-border bg-card text-foreground hover:bg-muted/10",
+    secondary:
+      "btn-secondary-premium border border-border bg-card text-foreground hover:bg-muted/10",
     dark: "bg-brand-navy hover:bg-brand-navy-hover text-white",
-    "dark-outline": "border border-border text-foreground bg-transparent hover:border-primary/50 hover:bg-primary/5 transition-colors duration-200",
-    danger: "bg-destructive hover:bg-destructive-hover text-destructive-foreground",
-    "danger-outline": "border border-destructive text-destructive bg-transparent hover:bg-destructive/10"
+    "dark-outline":
+      "border border-border text-foreground bg-transparent hover:border-primary/50 hover:bg-primary/5 transition-colors duration-200",
+    danger:
+      "bg-destructive hover:bg-destructive-hover text-destructive-foreground",
+    "danger-outline":
+      "border border-destructive text-destructive bg-transparent hover:bg-destructive/10",
   };
 
   // Size mappings
   const sizeClasses = {
     sm: "h-[32px] px-3.5 text-xs font-semibold gap-1.5",
     md: "h-[40px] px-5 text-xs font-bold gap-2",
-    lg: "h-[44px] px-6 text-[13px] font-bold gap-2"
+    lg: "h-[44px] px-6 text-[13px] font-bold gap-2",
   };
 
   // Shape mappings
   const shapeClasses = {
     pill: "rounded-full",
-    square: "rounded-xl"
+    square: "rounded-xl",
   };
 
   const finalClassName = `${baseClass} ${variantClasses[variant]} ${sizeClasses[size]} ${shapeClasses[shape]} ${className}`;

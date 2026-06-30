@@ -11,9 +11,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="w-full font-sans select-none relative">
+      <div className="w-full font-sans relative">
         <div className="fixed inset-0 backdrop-blur-md bg-background/50 z-[-5] pointer-events-none transition-all duration-500" />
-        
+
         {/* Navbar Skeleton */}
         <header className="sticky top-0 z-10 border-b border-border bg-background/85 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -44,7 +44,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm border-l-4 relative select-none"
+                className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm border-l-4 relative"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2 flex-1">

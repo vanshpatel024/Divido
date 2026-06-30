@@ -17,7 +17,11 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 400, damping: 30 } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 400, damping: 30 },
+  },
 };
 
 export default function ProfilePage() {
@@ -46,9 +50,15 @@ export default function ProfilePage() {
 
       const responseData = await res.json();
       if (responseData.success) {
-        showToast("Password reset email sent successfully. Please check your inbox.", "success");
+        showToast(
+          "Password reset email sent successfully. Please check your inbox.",
+          "success",
+        );
       } else {
-        showToast(responseData.message || "Failed to send reset email", "error");
+        showToast(
+          responseData.message || "Failed to send reset email",
+          "error",
+        );
       }
     } catch (err) {
       console.error("Error resetting password:", err);
@@ -91,7 +101,6 @@ export default function ProfilePage() {
 
   return (
     <div className="w-full font-sans transition-colors duration-300">
-
       <motion.main
         variants={containerVariants}
         initial="hidden"
@@ -99,7 +108,7 @@ export default function ProfilePage() {
         className="mx-auto max-w-2xl px-6 py-10 space-y-6"
       >
         {/* Back Button */}
-        <motion.div variants={itemVariants} className="flex items-center select-none">
+        <motion.div variants={itemVariants} className="flex items-center">
           <Link
             to="/dashboard"
             className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors decoration-none"
@@ -108,13 +117,19 @@ export default function ProfilePage() {
             <span>Back to Trips</span>
           </Link>
         </motion.div>
-        
+
         {/* Profile Card */}
-        <motion.section variants={itemVariants} className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-border transition-all duration-300">
+        <motion.section
+          variants={itemVariants}
+          className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-border transition-all duration-300"
+        >
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-border/50">
               <img
-                src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.display_name || "")}&background=AAD9BB&color=000`}
+                src={
+                  user?.avatar_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.display_name || "")}&background=AAD9BB&color=000`
+                }
                 alt=""
                 className="w-20 h-20 rounded-full border border-border shadow-sm object-cover bg-muted"
               />
@@ -122,22 +137,29 @@ export default function ProfilePage() {
                 <h2 className="font-display text-2xl font-bold text-foreground leading-snug break-words">
                   {user?.display_name || "Guest User"}
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 select-none">
-                  <AtSign size={14} className="text-muted-foreground shrink-0 hidden sm:block" />
-                  <span className="break-all">{user?.username || "username"}</span>
+                <p className="text-sm text-muted-foreground mt-1 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1">
+                  <AtSign
+                    size={14}
+                    className="text-muted-foreground shrink-0 hidden sm:block"
+                  />
+                  <span className="break-all">
+                    {user?.username || "username"}
+                  </span>
                 </p>
               </div>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 select-none">
+                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
                   <Mail size={13} className="text-muted-foreground" />
                   Email Address
                 </label>
-                <div className="w-full rounded-xl border border-border bg-muted/20 py-3 px-4 text-sm text-foreground/70 font-medium select-none flex flex-col-reverse sm:flex-row sm:items-center items-start gap-2">
+                <div className="w-full rounded-xl border border-border bg-muted/20 py-3 px-4 text-sm text-foreground/70 font-medium flex flex-col-reverse sm:flex-row sm:items-center items-start gap-2">
                   <span className="break-all">{user?.email || "—"}</span>
-                  <span className="sm:ml-auto shrink-0 text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Account email</span>
+                  <span className="sm:ml-auto shrink-0 text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">
+                    Account email
+                  </span>
                 </div>
               </div>
             </div>
@@ -145,8 +167,11 @@ export default function ProfilePage() {
         </motion.section>
 
         {/* Reset Password Card */}
-        <motion.section variants={itemVariants} className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-border transition-all duration-300">
-          <div className="flex items-center gap-3 mb-2 select-none">
+        <motion.section
+          variants={itemVariants}
+          className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-border transition-all duration-300"
+        >
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
               <KeyRound size={16} />
             </div>
@@ -154,7 +179,7 @@ export default function ProfilePage() {
               Reset Password
             </h3>
           </div>
-          <p className="text-xs text-muted-foreground mb-5 select-none pl-11">
+          <p className="text-xs text-muted-foreground mb-5 pl-11">
             Request a secure link to reset your account password.
           </p>
 
@@ -172,8 +197,11 @@ export default function ProfilePage() {
         </motion.section>
 
         {/* Danger Zone Card */}
-        <motion.section variants={itemVariants} className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-destructive/40 transition-all duration-300">
-          <div className="flex items-center gap-3 mb-2 select-none">
+        <motion.section
+          variants={itemVariants}
+          className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-destructive/40 transition-all duration-300"
+        >
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
               <ShieldAlert size={16} />
             </div>
@@ -181,7 +209,7 @@ export default function ProfilePage() {
               Danger Zone
             </h3>
           </div>
-          <p className="text-xs text-muted-foreground mb-5 select-none pl-11">
+          <p className="text-xs text-muted-foreground mb-5 pl-11">
             Take caution with these irreversible actions.
           </p>
 
@@ -204,7 +232,9 @@ export default function ProfilePage() {
         title="Reset password?"
         message={
           <>
-            Are you sure you want to send a password reset link to <strong>{user?.email}</strong>? You will receive an email to update your credentials.
+            Are you sure you want to send a password reset link to{" "}
+            <strong>{user?.email}</strong>? You will receive an email to update
+            your credentials.
           </>
         }
         confirmLabel="Send reset link"
@@ -220,7 +250,9 @@ export default function ProfilePage() {
         title="Delete Account?"
         message={
           <>
-            Are you sure you want to delete your account? <strong>This action cannot be undone</strong> and all your trips and personal data will be permanently deleted.
+            Are you sure you want to delete your account?{" "}
+            <strong>This action cannot be undone</strong> and all your trips and
+            personal data will be permanently deleted.
           </>
         }
         confirmLabel="Delete Account"
@@ -238,7 +270,7 @@ function ProfileSkeleton() {
   return (
     <div className="w-full font-sans relative">
       <div className="fixed inset-0 backdrop-blur-md bg-background/50 z-[-5] pointer-events-none transition-all duration-500" />
-      <div className="mx-auto max-w-2xl px-6 py-10 space-y-6 select-none">
+      <div className="mx-auto max-w-2xl px-6 py-10 space-y-6">
         {/* Back Button Skeleton */}
         <div className="h-4 w-32 bg-muted rounded-md skeleton-shimmer mb-6" />
 

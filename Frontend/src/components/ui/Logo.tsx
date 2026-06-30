@@ -6,10 +6,13 @@ interface LogoProps {
   isDark?: boolean;
 }
 
-export default function Logo({ variant = "navbar", className = "" }: LogoProps) {
+export default function Logo({
+  variant = "navbar",
+  className = "",
+}: LogoProps) {
   if (variant === "card") {
     return (
-      <div className={`flex flex-col items-center gap-3 mb-6 select-none ${className}`}>
+      <div className={`flex flex-col items-center gap-3 mb-6 ${className}`}>
         <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-accent to-destructive shadow-sm">
           <Leaf size={20} className="text-white" />
         </div>
@@ -27,16 +30,18 @@ export default function Logo({ variant = "navbar", className = "" }: LogoProps) 
 
   if (variant === "sidebar") {
     return (
-      <div className={`flex items-center gap-2 text-white select-none ${className}`}>
+      <div className={`flex items-center gap-2 text-white ${className}`}>
         <Leaf size={24} />
-        <span className="font-display text-xl font-bold tracking-tight">Divido</span>
+        <span className="font-display text-xl font-bold tracking-tight">
+          Divido
+        </span>
       </div>
     );
   }
 
   // Default navbar variant (horizontal, smaller, matches brand accents)
   return (
-    <div className={`flex items-center gap-2 select-none ${className}`}>
+    <div className={`flex items-center gap-2 ${className}`}>
       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-accent to-destructive shadow-sm">
         <Leaf size={16} className="text-white" />
       </div>

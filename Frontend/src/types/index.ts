@@ -1,4 +1,5 @@
-export type Category = "food" | "hotel" | "transport" | "flight" | "entertainment";
+export type Category =
+  "food" | "hotel" | "transport" | "flight" | "entertainment";
 
 export type Balance =
   | { kind: "owed"; amount: number }

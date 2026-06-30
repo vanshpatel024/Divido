@@ -8,9 +8,21 @@ const CAROUSEL_INTERVAL_MS = 5000;
 export default function AuthSidebar() {
   // Carousel State
   const carouselTexts = [
-    { title: "Plan together.\nPay together.", subtitle: "Split trip expenses with friends. Track balances, settle up, and keep your journeys stress-free." },
-    { title: "Track every expense\neffortlessly.", subtitle: "No more spreadsheets. Just add the cost, tag your friends, and we'll do the math." },
-    { title: "Settle up with\na single tap.", subtitle: "Send reminders, view balances, and pay each other back directly through the app." }
+    {
+      title: "Plan together.\nPay together.",
+      subtitle:
+        "Split trip expenses with friends. Track balances, settle up, and keep your journeys stress-free.",
+    },
+    {
+      title: "Track every expense\neffortlessly.",
+      subtitle:
+        "No more spreadsheets. Just add the cost, tag your friends, and we'll do the math.",
+    },
+    {
+      title: "Settle up with\na single tap.",
+      subtitle:
+        "Send reminders, view balances, and pay each other back directly through the app.",
+    },
   ];
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideDirection, setSlideDirection] = useState(1);
@@ -31,27 +43,34 @@ export default function AuthSidebar() {
 
   const handlePrevSlide = () => {
     setSlideDirection(-1);
-    setCurrentSlide((prev) => (prev - 1 + carouselTexts.length) % carouselTexts.length);
+    setCurrentSlide(
+      (prev) => (prev - 1 + carouselTexts.length) % carouselTexts.length,
+    );
   };
 
   const slideVariants = {
     enter: (direction: number) => ({
       x: direction > 0 ? 20 : -20,
       opacity: 0,
-      filter: "blur(4px)"
+      filter: "blur(4px)",
     }),
     center: {
       x: 0,
       opacity: 1,
       filter: "blur(0px)",
-      transition: { duration: 0.4, type: "spring" as const, stiffness: 300, damping: 30 }
+      transition: {
+        duration: 0.4,
+        type: "spring" as const,
+        stiffness: 300,
+        damping: 30,
+      },
     },
     exit: (direction: number) => ({
       x: direction < 0 ? 20 : -20,
       opacity: 0,
       filter: "blur(4px)",
-      transition: { duration: 0.3 }
-    })
+      transition: { duration: 0.3 },
+    }),
   };
 
   // Dynamic Background SVG Lines
@@ -66,7 +85,9 @@ export default function AuthSidebar() {
       const cp2X = 75 + (Math.random() * 20 - 10);
       const cp2Y = startY + (Math.random() * 30 - 15);
       const endY = startY + (Math.random() * 20 - 10);
-      lines.push(`M -10 ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, 110 ${endY}`);
+      lines.push(
+        `M -10 ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, 110 ${endY}`,
+      );
     }
     setRandomLines(lines);
   }, []);
@@ -77,9 +98,23 @@ export default function AuthSidebar() {
       <div className="absolute inset-0 z-0 transition-all duration-700 bg-gradient-to-br from-sidebar-start via-sidebar-middle to-sidebar-end">
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary opacity-[0.05] blur-[80px] pointer-events-none"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent opacity-[0.05] blur-[80px] pointer-events-none"></div>
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          preserveAspectRatio="none"
+          viewBox="0 0 100 100"
+        >
           {randomLines.map((path, idx) => (
-            <path key={idx} d={path} fill="none" stroke={idx % 2 === 0 ? "var(--wave-stroke-even)" : "var(--wave-stroke-odd)"} strokeWidth="0.15" />
+            <path
+              key={idx}
+              d={path}
+              fill="none"
+              stroke={
+                idx % 2 === 0
+                  ? "var(--wave-stroke-even)"
+                  : "var(--wave-stroke-odd)"
+              }
+              strokeWidth="0.15"
+            />
           ))}
         </svg>
       </div>
@@ -108,31 +143,31 @@ export default function AuthSidebar() {
             </p>
           </motion.div>
         </AnimatePresence>
-        
+
         <div className="flex items-center justify-between mt-8 w-full max-w-[280px]">
           <div className="flex gap-2">
             {carouselTexts.map((_, idx) => (
-              <button 
+              <button
                 key={idx}
                 type="button"
                 onClick={() => {
                   setSlideDirection(idx > currentSlide ? 1 : -1);
                   setCurrentSlide(idx);
                 }}
-                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 cursor-pointer ${idx === currentSlide ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/60'}`}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 cursor-pointer ${idx === currentSlide ? "bg-white w-4" : "bg-white/40 hover:bg-white/60"}`}
               ></button>
             ))}
           </div>
-          
+
           <div className="flex gap-3">
-            <button 
+            <button
               type="button"
               onClick={handlePrevSlide}
               className="w-8 h-8 rounded-full flex items-center justify-center border border-white/20 text-white hover:bg-white/10 transition-colors cursor-pointer"
             >
               <ArrowRight size={14} className="rotate-180" />
             </button>
-            <button 
+            <button
               type="button"
               onClick={handleNextSlide}
               className="w-8 h-8 rounded-full flex items-center justify-center border border-white/20 text-white hover:bg-white/10 transition-colors cursor-pointer"

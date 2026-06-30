@@ -10,7 +10,12 @@ interface InviteModalProps {
   isOpen: boolean;
   onClose: () => void;
   tripId: string;
-  existingParticipants: { id?: string; name: string; username?: string; avatar_url?: string }[];
+  existingParticipants: {
+    id?: string;
+    name: string;
+    username?: string;
+    avatar_url?: string;
+  }[];
 }
 
 interface SearchedUser {
@@ -22,17 +27,24 @@ interface SearchedUser {
   isInvited?: boolean;
 }
 
-export default function InviteModal({ isOpen, onClose, tripId, existingParticipants }: InviteModalProps) {
+export default function InviteModal({
+  isOpen,
+  onClose,
+  tripId,
+  existingParticipants,
+}: InviteModalProps) {
   const { showToast } = useToast();
   const { token, user } = useAuth();
   const [inviteeInput, setInviteeInput] = useState("");
   const [selectedInvitees, setSelectedInvitees] = useState<SearchedUser[]>([]);
-  
+
   const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingInvitees, setPendingInvitees] = useState<{ id: string; username: string; display_name: string; avatar_url: string }[]>([]);
-  
+  const [pendingInvitees, setPendingInvitees] = useState<
+    { id: string; username: string; display_name: string; avatar_url: string }[]
+  >([]);
+
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Apply scroll lock hook
@@ -42,9 +54,12 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
   const fetchPendingInvitations = async () => {
     if (!token || !tripId) return;
     try {
-      const res = await fetch(`http://localhost:3000/trips/${tripId}/invitations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(
+        `http://localhost:3000/trips/${tripId}/invitations`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const data = await res.json();
       if (data.success) {
         setPendingInvitees(data.data || []);
@@ -71,16 +86,21 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
 
     return () => {
       window.removeEventListener("divido_trip_update", handleRealtimeUpdate);
-      window.removeEventListener("divido_dashboard_update", handleRealtimeUpdate);
+      window.removeEventListener(
+        "divido_dashboard_update",
+        handleRealtimeUpdate,
+      );
     };
   }, []);
 
   const isUserParticipant = (userId: string) => {
-    return existingParticipants.some(p => p.id === userId) || userId === user?.id;
+    return (
+      existingParticipants.some((p) => p.id === userId) || userId === user?.id
+    );
   };
 
   const isUserInvited = (userId: string) => {
-    return pendingInvitees.some(p => p.id === userId);
+    return pendingInvitees.some((p) => p.id === userId);
   };
 
   useEffect(() => {
@@ -99,9 +119,12 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
       if (inviteeInput.trim().length >= 2) {
         setIsSearching(true);
         try {
-          const res = await fetch(`http://localhost:3000/users/search?q=${encodeURIComponent(inviteeInput.trim())}&tripId=${tripId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const res = await fetch(
+            `http://localhost:3000/users/search?q=${encodeURIComponent(inviteeInput.trim())}&tripId=${tripId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
           const data = await res.json();
           if (data.success) {
             setSearchResults(data.data || []);
@@ -136,7 +159,7 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
     if (isUserParticipant(selectedUser.id)) return;
     if (isUserInvited(selectedUser.id)) return;
     // Don't add if already queued in this send batch
-    if (selectedInvitees.some(p => p.id === selectedUser.id)) {
+    if (selectedInvitees.some((p) => p.id === selectedUser.id)) {
       showToast("User already added", "error");
       return;
     }
@@ -162,11 +185,11 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          invitees: selectedInvitees.map(p => p.id)
-        })
+          invitees: selectedInvitees.map((p) => p.id),
+        }),
       });
 
       const responseData = await res.json();
@@ -179,16 +202,18 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
         // Build detailed messages
         const msgParts: string[] = [];
         if (invited.length > 0) {
-          msgParts.push(`Invitations sent successfully to ${invited.length} friend(s)`);
+          msgParts.push(
+            `Invitations sent successfully to ${invited.length} friend(s)`,
+          );
         }
         if (alreadyInvited.length > 0) {
-          msgParts.push(`${alreadyInvited.join(", ")} already invited`);
+          msgParts.push(`${alreadyInvited.join(",")} already invited`);
         }
         if (alreadyJoined.length > 0) {
-          msgParts.push(`${alreadyJoined.join(", ")} already participant(s)`);
+          msgParts.push(`${alreadyJoined.join(",")} already participant(s)`);
         }
 
-        const fullMessage = msgParts.join(". ");
+        const fullMessage = msgParts.join(".");
         const toastType = invited.length > 0 ? "success" : "error";
         showToast(fullMessage || "Invitations processed", toastType);
 
@@ -196,10 +221,12 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
         const idsToRemove = new Set<string>([
           ...invited,
           ...(data.alreadyInvitedIds || []),
-          ...(data.alreadyJoinedIds || [])
+          ...(data.alreadyJoinedIds || []),
         ]);
 
-        const remaining = selectedInvitees.filter(u => !idsToRemove.has(u.id));
+        const remaining = selectedInvitees.filter(
+          (u) => !idsToRemove.has(u.id),
+        );
         setSelectedInvitees(remaining);
         setInviteeInput("");
         setSearchResults([]);
@@ -212,7 +239,10 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
         // Refresh pending list
         fetchPendingInvitations();
       } else {
-        showToast(responseData.message || "Failed to send invitations", "error");
+        showToast(
+          responseData.message || "Failed to send invitations",
+          "error",
+        );
       }
     } catch (error) {
       console.error(error);
@@ -251,14 +281,20 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
           <X size={16} />
         </button>
 
-        <h3 className="font-display text-2xl font-bold text-foreground mb-5 select-none shrink-0">
+        <h3 className="font-display text-2xl font-bold text-foreground mb-5 shrink-0">
           Invite Friends
         </h3>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-visible">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-4 overflow-visible"
+        >
           {/* Participants Search */}
-          <div className="relative overflow-visible flex flex-col" ref={searchRef}>
-            <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 select-none text-muted-foreground transition-colors duration-200">
+          <div
+            className="relative overflow-visible flex flex-col"
+            ref={searchRef}
+          >
+            <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-muted-foreground transition-colors duration-200">
               Search Friends
             </label>
             <div className="relative">
@@ -283,7 +319,7 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
             {/* Search Dropdown */}
             <AnimatePresence>
               {searchResults.length > 0 && inviteeInput.length >= 2 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -5 }}
@@ -295,9 +331,11 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
                     const isDisabled = isJoined || isInvited;
 
                     return (
-                      <div 
+                      <div
                         key={u.id ? `${u.id}-${idx}` : idx}
-                        onClick={() => { if (!isDisabled) handleAddInvitee(u); }}
+                        onClick={() => {
+                          if (!isDisabled) handleAddInvitee(u);
+                        }}
                         className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
                           isDisabled
                             ? "opacity-60 cursor-not-allowed"
@@ -305,25 +343,36 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
                         }`}
                       >
                         {u.avatar_url ? (
-                          <img src={resolveAvatarUrl(u.avatar_url, u.id || u.username)} alt="" className="w-6 h-6 rounded-full object-cover border border-border" />
+                          <img
+                            src={resolveAvatarUrl(
+                              u.avatar_url,
+                              u.id || u.username,
+                            )}
+                            alt=""
+                            className="w-6 h-6 rounded-full object-cover border border-border"
+                          />
                         ) : (
                           <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                             <UserIcon size={12} />
                           </div>
                         )}
                         <div className="flex flex-col flex-1">
-                          <span className="text-sm font-semibold text-foreground leading-none">{u.display_name || u.username}</span>
-                          <span className="text-[10px] text-muted-foreground mt-0.5">@{u.username}</span>
+                          <span className="text-sm font-semibold text-foreground leading-none">
+                            {u.display_name || u.username}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                            @{u.username}
+                          </span>
                         </div>
 
                         {/* Real-time Status Badges */}
                         {isJoined && (
-                          <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-600 select-none">
+                          <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
                             Joined
                           </span>
                         )}
                         {!isJoined && isInvited && (
-                          <span className="inline-flex items-center rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-600 select-none animate-pulse">
+                          <span className="inline-flex items-center rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-600 animate-pulse">
                             Invited
                           </span>
                         )}
@@ -336,14 +385,18 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
 
             {/* Added Invitee list */}
             {selectedInvitees.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3 select-none">
+              <div className="flex flex-wrap gap-2 mt-3">
                 {selectedInvitees.map((p) => (
                   <span
                     key={p.id}
                     className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border pl-1.5 pr-2 py-1 text-xs font-semibold text-foreground"
                   >
                     {p.avatar_url ? (
-                      <img src={resolveAvatarUrl(p.avatar_url, p.id || p.username)} alt="" className="w-4 h-4 rounded-full object-cover border border-border" />
+                      <img
+                        src={resolveAvatarUrl(p.avatar_url, p.id || p.username)}
+                        alt=""
+                        className="w-4 h-4 rounded-full object-cover border border-border"
+                      />
                     ) : (
                       <div className="w-4 h-4 rounded-full bg-card border border-border flex items-center justify-center">
                         <UserIcon size={8} />
@@ -365,7 +418,7 @@ export default function InviteModal({ isOpen, onClose, tripId, existingParticipa
           </div>
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/40 select-none mt-2 shrink-0">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/40 mt-2 shrink-0">
             <Button
               disabled={isSubmitting}
               type="button"

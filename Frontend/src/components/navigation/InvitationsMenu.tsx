@@ -25,13 +25,18 @@ export default function InvitationsMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set());
-  const [loadingAction, setLoadingAction] = useState<{ id: string; action: "accept" | "reject" } | null>(null);
+  const [loadingAction, setLoadingAction] = useState<{
+    id: string;
+    action: "accept" | "reject";
+  } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const computeUnread = useCallback((items: any[]) => {
     const lastOpened = getLastOpened();
     const fresh = new Set<string>(
-      items.filter((inv: any) => new Date(inv.created_at).getTime() > lastOpened).map(inv => inv.id)
+      items
+        .filter((inv: any) => new Date(inv.created_at).getTime() > lastOpened)
+        .map((inv) => inv.id),
     );
     setUnreadIds(fresh);
   }, []);
@@ -60,16 +65,21 @@ export default function InvitationsMenu() {
     const handleUpdate = (e: Event) => {
       const customEvt = e as CustomEvent<{ type?: string; payload?: any }>;
       const { type } = customEvt.detail || {};
-      
+
       // Invitations menu only needs to fetch on invitation-related events
-      if (type && type !== 'invitation_received' && type !== 'invitation_response') {
+      if (
+        type &&
+        type !== "invitation_received" &&
+        type !== "invitation_response"
+      ) {
         return;
       }
-      
+
       fetchInvitations();
     };
-    window.addEventListener('divido_dashboard_update', handleUpdate);
-    return () => window.removeEventListener('divido_dashboard_update', handleUpdate);
+    window.addEventListener("divido_dashboard_update", handleUpdate);
+    return () =>
+      window.removeEventListener("divido_dashboard_update", handleUpdate);
   }, [fetchInvitations]);
 
   // Close on outside click
@@ -96,16 +106,22 @@ export default function InvitationsMenu() {
 
   const respondToInvite = async (invitationId: string, accept: boolean) => {
     if (!token) return;
-    setLoadingAction({ id: invitationId, action: accept ? "accept" : "reject" });
+    setLoadingAction({
+      id: invitationId,
+      action: accept ? "accept" : "reject",
+    });
     try {
-      const res = await fetch(`http://localhost:3000/trips/invitations/${invitationId}/respond`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `http://localhost:3000/trips/invitations/${invitationId}/respond`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ accept }),
         },
-        body: JSON.stringify({ accept }),
-      });
+      );
       if (res.ok) {
         // Remove from local list and clean up from seen set too
         setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
@@ -150,16 +166,20 @@ export default function InvitationsMenu() {
             className="fixed left-4 right-4 top-[72px] sm:absolute sm:top-auto sm:left-auto sm:right-0 mt-2 sm:w-80 origin-top-right rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden flex flex-col z-50 sm:z-20"
           >
             <div className="p-4 border-b border-border shrink-0 flex items-center justify-between">
-              <h3 className="font-semibold text-[#2B2A4C] dark:text-foreground">Trip Invitations</h3>
+              <h3 className="font-semibold text-[#2B2A4C] dark:text-foreground">
+                Trip Invitations
+              </h3>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-bold text-status-getback-text bg-status-getback-bg border border-status-getback-text/20 px-2 py-0.5 rounded-full select-none">
+                <span className="text-[10px] font-bold text-status-getback-text bg-status-getback-bg border border-status-getback-text/20 px-2 py-0.5 rounded-full">
                   {unreadCount} new
                 </span>
               )}
             </div>
             <div className="overflow-y-auto max-h-[340px] flex flex-col custom-scrollbar">
               {invitations.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">No pending invitations</div>
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No pending invitations
+                </div>
               ) : (
                 invitations.map((inv) => {
                   const isUnread = unreadIds.has(inv.id);
@@ -167,7 +187,9 @@ export default function InvitationsMenu() {
                     <div
                       key={inv.id}
                       className={`relative p-4 border-b border-border transition-colors ${
-                        isUnread ? "bg-[#f5fbf7] dark:bg-status-getback-bg/20" : ""
+                        isUnread
+                          ? "bg-[#f5fbf7] dark:bg-status-getback-bg/20"
+                          : ""
                       }`}
                     >
                       {/* Unread left-border accent */}
@@ -178,24 +200,30 @@ export default function InvitationsMenu() {
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-sm text-[#2B2A4C] dark:text-foreground">
-                              <strong>{inv.sender.display_name}</strong> invited you to join{" "}
+                              <strong>{inv.sender.display_name}</strong> invited
+                              you to join{""}
                               <strong>{inv.trip.name}</strong>
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(inv.created_at).toLocaleDateString()} at {new Date(inv.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(inv.created_at).toLocaleDateString()} at{" "}
+                              {new Date(inv.created_at).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </p>
                           </div>
                           {isUnread && (
                             <span className="mt-1 h-2 w-2 rounded-full bg-[#AAD9BB] dark:bg-status-getback-text shrink-0" />
                           )}
                         </div>
-                        <div className="flex gap-2 select-none">
+                        <div className="flex gap-2">
                           <button
                             onClick={() => respondToInvite(inv.id, true)}
                             disabled={loadingAction?.id === inv.id}
                             className="flex-1 rounded-lg bg-status-getback-bg py-1.5 text-xs font-semibold text-status-getback-text hover:bg-status-getback-text hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {loadingAction?.id === inv.id && loadingAction?.action === "accept"
+                            {loadingAction?.id === inv.id &&
+                            loadingAction?.action === "accept"
                               ? "Accepting..."
                               : "Accept"}
                           </button>
@@ -204,7 +232,8 @@ export default function InvitationsMenu() {
                             disabled={loadingAction?.id === inv.id}
                             className="flex-1 rounded-lg bg-destructive/10 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {loadingAction?.id === inv.id && loadingAction?.action === "reject"
+                            {loadingAction?.id === inv.id &&
+                            loadingAction?.action === "reject"
                               ? "Declining..."
                               : "Decline"}
                           </button>

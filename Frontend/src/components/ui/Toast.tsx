@@ -24,24 +24,29 @@ export const useToast = () => {
   return context;
 };
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, type: ToastType = "success") => {
-    setToasts((prev) => {
-      if (prev.some((t) => t.message === message)) return prev;
-      const id = Math.random().toString(36).substring(2, 9);
-      setTimeout(() => {
-        setToasts((current) => current.filter((t) => t.id !== id));
-      }, 2500);
-      return [...prev, { id, message, type }];
-    });
-  }, []);
+  const showToast = useCallback(
+    (message: string, type: ToastType = "success") => {
+      setToasts((prev) => {
+        if (prev.some((t) => t.message === message)) return prev;
+        const id = Math.random().toString(36).substring(2, 9);
+        setTimeout(() => {
+          setToasts((current) => current.filter((t) => t.id !== id));
+        }, 2500);
+        return [...prev, { id, message, type }];
+      });
+    },
+    [],
+  );
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed top-4 left-4 right-4 sm:top-6 sm:left-auto sm:right-6 sm:w-96 z-50 flex flex-col gap-3 pointer-events-none select-none">
+      <div className="fixed top-4 left-4 right-4 sm:top-6 sm:left-auto sm:right-6 sm:w-96 z-50 flex flex-col gap-3 pointer-events-none">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
@@ -49,11 +54,19 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ duration: 0.2, type: "spring", stiffness: 400, damping: 30 }}
+              transition={{
+                duration: 0.2,
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+              }}
               className="pointer-events-auto flex items-center gap-3 rounded-2xl p-4 bg-card/90 backdrop-blur-xl border border-border shadow-lg dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
             >
               {t.type === "success" ? (
-                <CheckCircle2 size={20} className="shrink-0 text-status-getback-text" />
+                <CheckCircle2
+                  size={20}
+                  className="shrink-0 text-status-getback-text"
+                />
               ) : (
                 <AlertCircle size={20} className="shrink-0 text-destructive" />
               )}

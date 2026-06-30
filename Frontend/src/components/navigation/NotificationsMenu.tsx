@@ -30,19 +30,22 @@ export default function NotificationsMenu() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const computeUnread = useCallback((items: any[]) => {
-    const lastOpened = getLastOpened();
-    
-    // Filter out items where the actor is the current user themselves
-    const unread = items.filter((a: any) => {
-      if (a.actorId && user?.id && a.actorId === user.id) {
-        return false;
-      }
-      return new Date(a.date).getTime() > lastOpened;
-    });
+  const computeUnread = useCallback(
+    (items: any[]) => {
+      const lastOpened = getLastOpened();
 
-    setUnreadIds(new Set(unread.map(a => a.id)));
-  }, [user?.id]);
+      // Filter out items where the actor is the current user themselves
+      const unread = items.filter((a: any) => {
+        if (a.actorId && user?.id && a.actorId === user.id) {
+          return false;
+        }
+        return new Date(a.date).getTime() > lastOpened;
+      });
+
+      setUnreadIds(new Set(unread.map((a) => a.id)));
+    },
+    [user?.id],
+  );
 
   const fetchActivities = useCallback(async () => {
     if (!token) return;
@@ -68,16 +71,17 @@ export default function NotificationsMenu() {
     const handleUpdate = (e: Event) => {
       const customEvt = e as CustomEvent<{ type?: string; payload?: any }>;
       const { type } = customEvt.detail || {};
-      
+
       // Activity feed doesn't care about invitation_received
-      if (type === 'invitation_received') {
+      if (type === "invitation_received") {
         return;
       }
-      
+
       fetchActivities();
     };
-    window.addEventListener('divido_dashboard_update', handleUpdate);
-    return () => window.removeEventListener('divido_dashboard_update', handleUpdate);
+    window.addEventListener("divido_dashboard_update", handleUpdate);
+    return () =>
+      window.removeEventListener("divido_dashboard_update", handleUpdate);
   }, [fetchActivities]);
 
   // Close on outside click
@@ -115,61 +119,92 @@ export default function NotificationsMenu() {
 
   const renderActivityText = (act: any) => {
     switch (act.type) {
-      case 'invitation_response': {
-        const isAccepted = typeof act.status === 'string' && act.status.toLowerCase() === 'accepted';
-        const isDeclined = typeof act.status === 'string' && act.status.toLowerCase() === 'declined';
-        
+      case "invitation_response": {
+        const isAccepted =
+          typeof act.status === "string" &&
+          act.status.toLowerCase() === "accepted";
+        const isDeclined =
+          typeof act.status === "string" &&
+          act.status.toLowerCase() === "declined";
+
         let statusClass = "font-bold";
         if (isAccepted) {
-          statusClass = "font-bold text-status-getback-text bg-status-getback-bg px-1.5 py-0.5 rounded-md";
+          statusClass =
+            "font-bold text-status-getback-text bg-status-getback-bg px-1.5 py-0.5 rounded-md";
         } else if (isDeclined) {
-          statusClass = "font-bold text-destructive bg-status-owe-bg px-1.5 py-0.5 rounded-md";
+          statusClass =
+            "font-bold text-destructive bg-status-owe-bg px-1.5 py-0.5 rounded-md";
         }
 
         return (
           <span>
-            <strong>{act.userName}</strong> <span className={statusClass}>{act.status}</span> your invitation to <strong>{act.tripName}</strong>
+            <strong>{act.userName}</strong>{" "}
+            <span className={statusClass}>{act.status}</span> your invitation to{" "}
+            <strong>{act.tripName}</strong>
           </span>
         );
       }
-      case 'trip_ended':
+      case "trip_ended":
         return (
           <span>
             <strong>{act.tripName}</strong> has <strong>ended</strong>.
           </span>
         );
-      case 'settlement': {
+      case "settlement": {
         const parsed = parseSettlementNames(act.name);
-        const formattedAmount = typeof act.amount === 'number' ? formatInr(act.amount) : act.amount;
+        const formattedAmount =
+          typeof act.amount === "number" ? formatInr(act.amount) : act.amount;
         if (parsed) {
-          if (act.role === 'receiver') {
-            return <span>Received <strong>{formattedAmount}</strong> from <strong>{parsed.from}</strong></span>;
+          if (act.role === "receiver") {
+            return (
+              <span>
+                Received <strong>{formattedAmount}</strong> from{" "}
+                <strong>{parsed.from}</strong>
+              </span>
+            );
           } else {
-            return <span>Paid <strong>{formattedAmount}</strong> to <strong>{parsed.to}</strong></span>;
+            return (
+              <span>
+                Paid <strong>{formattedAmount}</strong> to{" "}
+                <strong>{parsed.to}</strong>
+              </span>
+            );
           }
         }
-        if (act.role === 'receiver') {
-          return <span>Received <strong>{formattedAmount}</strong> for settlement</span>;
-        } else {
-          return <span>Paid <strong>{formattedAmount}</strong> for settlement</span>;
-        }
-      }
-      case 'member_joined':
-        return (
-          <span>
-            <strong>{act.userName}</strong> <strong>joined</strong> <strong>{act.tripName}</strong>
-          </span>
-        );
-      case 'member_left': {
-        const match = act.name.match(/^Activity:\s*(.*?)\s+left\s+the\s+(.*?)\s+trip$/i);
-        if (match) {
+        if (act.role === "receiver") {
           return (
             <span>
-              <strong>{match[1]}</strong> <strong>left</strong> the <strong>{match[2]}</strong> trip
+              Received <strong>{formattedAmount}</strong> for settlement
+            </span>
+          );
+        } else {
+          return (
+            <span>
+              Paid <strong>{formattedAmount}</strong> for settlement
             </span>
           );
         }
-        const cleanName = act.name.replace(/^Activity:\s*/i, '');
+      }
+      case "member_joined":
+        return (
+          <span>
+            <strong>{act.userName}</strong> <strong>joined</strong>{" "}
+            <strong>{act.tripName}</strong>
+          </span>
+        );
+      case "member_left": {
+        const match = act.name.match(
+          /^Activity:\s*(.*?)\s+left\s+the\s+(.*?)\s+trip$/i,
+        );
+        if (match) {
+          return (
+            <span>
+              <strong>{match[1]}</strong> <strong>left</strong> the{" "}
+              <strong>{match[2]}</strong> trip
+            </span>
+          );
+        }
+        const cleanName = act.name.replace(/^Activity:\s*/i, "");
         return <span>{cleanName}</span>;
       }
       default:
@@ -192,7 +227,7 @@ export default function NotificationsMenu() {
     try {
       const res = await fetch("http://localhost:3000/users/me/activities", {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success) {
@@ -231,8 +266,10 @@ export default function NotificationsMenu() {
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="fixed left-4 right-4 top-[72px] sm:absolute sm:top-auto sm:left-auto sm:right-0 mt-2 sm:w-80 origin-top-right rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden flex flex-col z-50 sm:z-20"
           >
-            <div className="p-4 border-b border-border shrink-0 flex items-center justify-between select-none">
-              <h3 className="font-semibold text-[#2B2A4C] dark:text-foreground">Activity Feed</h3>
+            <div className="p-4 border-b border-border shrink-0 flex items-center justify-between">
+              <h3 className="font-semibold text-[#2B2A4C] dark:text-foreground">
+                Activity Feed
+              </h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <span className="text-[10px] font-bold text-status-getback-text bg-status-getback-bg border border-status-getback-text/20 px-2 py-0.5 rounded-full">
@@ -240,7 +277,9 @@ export default function NotificationsMenu() {
                   </span>
                 )}
                 {unreadCount > 0 && visibleActivities.length > 0 && (
-                  <span className="text-[#E8E3D9] dark:text-border text-xs">|</span>
+                  <span className="text-[#E8E3D9] dark:text-border text-xs">
+                    |
+                  </span>
                 )}
                 {visibleActivities.length > 0 && (
                   <button
@@ -254,17 +293,21 @@ export default function NotificationsMenu() {
             </div>
             <div className="overflow-y-auto max-h-[340px] flex flex-col custom-scrollbar">
               {visibleActivities.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">No recent activities</div>
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No recent activities
+                </div>
               ) : (
                 visibleActivities.map((act) => {
                   const isUnread = unreadIds.has(act.id);
                   return (
                     <Link
                       key={act.id}
-                      to={act.tripId ? `/trip/${act.tripId}` : '#'}
+                      to={act.tripId ? `/trip/${act.tripId}` : "#"}
                       onClick={() => setIsOpen(false)}
                       className={`relative p-3 border-b border-border hover:bg-muted transition-colors decoration-none block ${
-                        isUnread ? "bg-[#f5fbf7] dark:bg-status-getback-bg/20" : ""
+                        isUnread
+                          ? "bg-[#f5fbf7] dark:bg-status-getback-bg/20"
+                          : ""
                       }`}
                     >
                       {/* Unread left-border accent */}
@@ -275,7 +318,11 @@ export default function NotificationsMenu() {
                         <div className="flex-1 text-sm text-[#2B2A4C] dark:text-foreground">
                           {renderActivityText(act)}
                           <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(act.date).toLocaleDateString()} at {new Date(act.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(act.date).toLocaleDateString()} at{" "}
+                            {new Date(act.date).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </p>
                         </div>
                         {isUnread && (
@@ -296,7 +343,9 @@ export default function NotificationsMenu() {
         title="Clear Activity Feed?"
         message={
           <>
-            Are you sure you want to <strong>clear your activity feed</strong>? This will <strong>hide all activities</strong> from the list. This action <strong>cannot be undone</strong>.
+            Are you sure you want to <strong>clear your activity feed</strong>?
+            This will <strong>hide all activities</strong> from the list. This
+            action <strong>cannot be undone</strong>.
           </>
         }
         confirmLabel="Clear Feed"

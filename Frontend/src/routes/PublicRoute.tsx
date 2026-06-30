@@ -11,7 +11,7 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen bg-background flex flex-col md:flex-row overflow-hidden font-sans select-none">
+      <div className="h-screen w-screen bg-background flex flex-col md:flex-row overflow-hidden font-sans">
         {/* LEFT COLUMN: Desktop Only (40% width) */}
         <div className="hidden md:flex md:w-[40%] bg-card flex-col items-center justify-center h-full p-8 border-r border-border">
           {/* Panda placeholder box (matches the carousel/illustration area) */}
@@ -25,7 +25,6 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
         {/* RIGHT COLUMN: Auth Form (60% width) */}
         <div className="w-full md:w-[60%] h-full flex flex-col items-center justify-center p-6 md:p-12 relative">
-          
           {/* Theme Toggle Skeleton (Top Right) */}
           <div className="absolute top-6 right-6">
             <div className="h-10 w-10 rounded-full bg-muted skeleton-shimmer" />
@@ -55,7 +54,7 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
             {/* Button placeholder */}
             <div className="h-12 w-full rounded-full bg-muted skeleton-shimmer mt-2" />
-            
+
             {/* Footer link placeholder */}
             <div className="h-4 w-32 rounded bg-muted skeleton-shimmer mt-2" />
           </div>

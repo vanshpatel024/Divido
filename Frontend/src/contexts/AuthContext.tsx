@@ -14,7 +14,12 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, displayName: string, username: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    displayName: string,
+    username: string,
+  ) => Promise<void>;
   logout: () => void;
   updateUser: (updatedFields: Partial<User>) => void;
 }
@@ -22,7 +27,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const resolveAvatarUrl = (url: string, nameOrId: string): string => {
-  if (url && url.includes("ui-avatars.com") && url.includes("background=random")) {
+  if (
+    url &&
+    url.includes("ui-avatars.com") &&
+    url.includes("background=random")
+  ) {
     const colors = ["AAD9BB", "C9B7E0", "F7DCB9", "FBC4AB", "B7D4E0", "E0CFB7"];
     let hash = 0;
     for (let i = 0; i < nameOrId.length; i++) {
@@ -35,7 +44,9 @@ export const resolveAvatarUrl = (url: string, nameOrId: string): string => {
   return url;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +67,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const newSession = refreshData.data.session;
           localStorage.setItem("divido_token", newSession.access_token);
           if (newSession.refresh_token) {
-            localStorage.setItem("divido_refresh_token", newSession.refresh_token);
+            localStorage.setItem(
+              "divido_refresh_token",
+              newSession.refresh_token,
+            );
           }
           setToken(newSession.access_token);
           return newSession.access_token;
@@ -78,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               Authorization: `Bearer ${storedToken}`,
             },
           });
-          
+
           if (res.status === 401 && storedRefreshToken) {
             // Try refreshing
             storedToken = await handleRefresh(storedRefreshToken);
@@ -101,9 +115,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (responseData.success) {
               const profile = responseData.data.profile || {};
               const authUser = responseData.data.auth || {};
-              const resolvedDisplayName = profile.display_name || authUser.user_metadata?.display_name || "";
-              const rawAvatarUrl = profile.avatar_url || authUser.user_metadata?.avatar_url || "";
-              const resolvedAvatarUrl = resolveAvatarUrl(rawAvatarUrl, authUser.id || profile.id || resolvedDisplayName);
+              const resolvedDisplayName =
+                profile.display_name ||
+                authUser.user_metadata?.display_name ||
+                "";
+              const rawAvatarUrl =
+                profile.avatar_url || authUser.user_metadata?.avatar_url || "";
+              const resolvedAvatarUrl = resolveAvatarUrl(
+                rawAvatarUrl,
+                authUser.id || profile.id || resolvedDisplayName,
+              );
 
               setToken(storedToken);
               setUser({
@@ -130,12 +151,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
 
     // Auto refresh token every 45 mins
-    const intervalId = setInterval(() => {
-      const storedRefreshToken = localStorage.getItem("divido_refresh_token");
-      if (storedRefreshToken) {
-        handleRefresh(storedRefreshToken);
-      }
-    }, 45 * 60 * 1000);
+    const intervalId = setInterval(
+      () => {
+        const storedRefreshToken = localStorage.getItem("divido_refresh_token");
+        if (storedRefreshToken) {
+          handleRefresh(storedRefreshToken);
+        }
+      },
+      45 * 60 * 1000,
+    );
 
     return () => clearInterval(intervalId);
   }, []);
@@ -157,11 +181,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { session, user: authUser } = responseData.data;
     const tokenStr = session.access_token;
-    
+
     let display_name = authUser.user_metadata?.display_name || "";
     let avatar_url = authUser.user_metadata?.avatar_url || "";
     let username = "";
-    
+
     // Try to get profile as well if it's there
     try {
       const profileRes = await fetch("http://localhost:3000/auth/me", {
@@ -179,7 +203,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn("Could not fetch profile, using user metadata:", e);
     }
 
-    const resolvedAvatarUrl = resolveAvatarUrl(avatar_url, authUser.id || display_name);
+    const resolvedAvatarUrl = resolveAvatarUrl(
+      avatar_url,
+      authUser.id || display_name,
+    );
 
     localStorage.setItem("divido_token", session.access_token);
     if (session.refresh_token) {
@@ -195,7 +222,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const signup = async (email: string, password: string, displayName: string, username: string) => {
+  const signup = async (
+    email: string,
+    password: string,
+    displayName: string,
+    username: string,
+  ) => {
     const res = await fetch("http://localhost:3000/auth/signup", {
       method: "POST",
       headers: {
@@ -211,11 +243,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const { session, user: authUser } = responseData.data;
-    
+
     if (session && session.access_token) {
       const tokenStr = session.access_token;
       const rawAvatarUrl = authUser.user_metadata?.avatar_url || "";
-      const resolvedAvatarUrl = resolveAvatarUrl(rawAvatarUrl, authUser.id || displayName);
+      const resolvedAvatarUrl = resolveAvatarUrl(
+        rawAvatarUrl,
+        authUser.id || displayName,
+      );
 
       localStorage.setItem("divido_token", tokenStr);
       if (session.refresh_token) {
@@ -249,14 +284,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If we update display_name or avatar_url, let's resolve new avatar if background=random is there
       if (updatedFields.display_name || updatedFields.avatar_url) {
         const rawAvatar = newUser.avatar_url || "";
-        newUser.avatar_url = resolveAvatarUrl(rawAvatar, newUser.id || newUser.display_name || "");
+        newUser.avatar_url = resolveAvatarUrl(
+          rawAvatar,
+          newUser.id || newUser.display_name || "",
+        );
       }
       return newUser;
     });
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, signup, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

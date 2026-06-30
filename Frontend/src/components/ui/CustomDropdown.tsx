@@ -25,7 +25,7 @@ export default function CustomDropdown({
   onChange,
   disabled = false,
   placeholder = "Select option",
-  label
+  label,
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -36,7 +36,10 @@ export default function CustomDropdown({
   // Close on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -52,7 +55,7 @@ export default function CustomDropdown({
   return (
     <div className="relative w-full font-sans" ref={dropdownRef}>
       {label && (
-        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 select-none">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
           {label}
         </label>
       )}
@@ -62,7 +65,7 @@ export default function CustomDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between rounded-xl border border-border bg-card py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary/50 text-foreground select-none cursor-pointer ${
+        className={`w-full flex items-center justify-between rounded-xl border border-border bg-card py-2.5 px-3.5 text-sm outline-none transition-all duration-200 hover:border-primary/50 focus:border-primary/50 text-foreground cursor-pointer ${
           disabled ? "opacity-50 cursor-not-allowed" : ""
         } ${isOpen ? "border-primary/50 ring-1 ring-primary/20 shadow-xs" : ""}`}
       >
@@ -71,7 +74,10 @@ export default function CustomDropdown({
             <>
               {selectedOption.avatarUrl !== undefined ? (
                 <img
-                  src={resolveAvatarUrl(selectedOption.avatarUrl || "", selectedOption.value)}
+                  src={resolveAvatarUrl(
+                    selectedOption.avatarUrl || "",
+                    selectedOption.value,
+                  )}
                   alt=""
                   className="w-5 h-5 rounded-full object-cover border border-border shrink-0"
                 />
@@ -108,7 +114,7 @@ export default function CustomDropdown({
             className="absolute left-0 right-0 mt-1.5 bg-card border border-border rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto custom-scrollbar overflow-hidden"
           >
             {options.length === 0 ? (
-              <div className="px-4 py-3 text-xs text-muted-foreground select-none text-center">
+              <div className="px-4 py-3 text-xs text-muted-foreground text-center">
                 No options available
               </div>
             ) : (
@@ -119,7 +125,7 @@ export default function CustomDropdown({
                     key={`${opt.value}-${idx}`}
                     type="button"
                     onClick={() => handleSelect(opt.value)}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm transition-colors text-left select-none cursor-pointer first:rounded-t-xl last:rounded-b-xl ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm transition-colors text-left cursor-pointer first:rounded-t-xl last:rounded-b-xl ${
                       isSelected
                         ? "bg-primary/10 text-primary"
                         : "hover:bg-muted text-foreground"
@@ -138,7 +144,9 @@ export default function CustomDropdown({
                         </div>
                       )}
                       <div className="flex flex-col min-w-0">
-                        <span className={`leading-tight break-words ${isSelected ? "font-bold" : "font-semibold"}`}>
+                        <span
+                          className={`leading-tight break-words ${isSelected ? "font-bold" : "font-semibold"}`}
+                        >
                           {opt.label}
                         </span>
                         {opt.subtitle && (
@@ -149,7 +157,11 @@ export default function CustomDropdown({
                       </div>
                     </div>
                     {isSelected && (
-                      <Check size={14} strokeWidth={2.5} className="text-primary shrink-0 ml-1.5" />
+                      <Check
+                        size={14}
+                        strokeWidth={2.5}
+                        className="text-primary shrink-0 ml-1.5"
+                      />
                     )}
                   </button>
                 );

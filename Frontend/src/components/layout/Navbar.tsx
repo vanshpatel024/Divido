@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, LogOut, ChevronDown, Moon, Sun, AlertTriangle } from "lucide-react";
+import {
+  User,
+  LogOut,
+  ChevronDown,
+  Moon,
+  Sun,
+  AlertTriangle,
+} from "lucide-react";
 import { useAuth, resolveAvatarUrl } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +30,9 @@ export default function Navbar() {
 
   // Single shared WebSocket connection for all navbar subcomponents
   useRealtimeDashboard(token, user?.id, (type, payload) => {
-    window.dispatchEvent(new CustomEvent('divido_dashboard_update', { detail: { type, payload } }));
+    window.dispatchEvent(
+      new CustomEvent("divido_dashboard_update", { detail: { type, payload } }),
+    );
   });
 
   const displayName =
@@ -134,7 +143,9 @@ export default function Navbar() {
                 >
                   {/* User info header */}
                   <div className="px-4 py-3 border-b border-border sm:hidden">
-                    <p className="text-xs text-muted-foreground font-sans">Signed in as</p>
+                    <p className="text-xs text-muted-foreground font-sans">
+                      Signed in as
+                    </p>
                     <p className="text-sm font-semibold text-brand-navy-text truncate mt-0.5">
                       {displayName}
                     </p>
@@ -192,7 +203,8 @@ export default function Navbar() {
         title="Log out?"
         message={
           <>
-            Are you sure you want to log out of <strong>Divido</strong>? You will be signed out of your current session.
+            Are you sure you want to log out of <strong>Divido</strong>? You
+            will be signed out of your current session.
           </>
         }
         iconNode={<AlertTriangle size={20} />}

@@ -20,13 +20,18 @@ interface SearchedUser {
   avatar_url: string;
 }
 
-export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting = false }: NewTripModalProps) {
+export default function NewTripModal({
+  isOpen,
+  onClose,
+  onCreate,
+  isSubmitting = false,
+}: NewTripModalProps) {
   const { showToast } = useToast();
   const { token, user } = useAuth();
   const [name, setName] = useState("");
   const [participantInput, setParticipantInput] = useState("");
   const [participants, setParticipants] = useState<SearchedUser[]>([]);
-  
+
   const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -50,9 +55,12 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
       if (participantInput.trim().length >= 2) {
         setIsSearching(true);
         try {
-          const res = await fetch(`http://localhost:3000/users/search?q=${encodeURIComponent(participantInput.trim())}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const res = await fetch(
+            `http://localhost:3000/users/search?q=${encodeURIComponent(participantInput.trim())}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
           const data = await res.json();
           if (data.success) {
             setSearchResults(data.data || []);
@@ -87,7 +95,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
       showToast("You are already included in the trip", "error");
       return;
     }
-    if (participants.some(p => p.id === selectedUser.id)) {
+    if (participants.some((p) => p.id === selectedUser.id)) {
       showToast("User already added", "error");
       return;
     }
@@ -109,14 +117,14 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
 
     const tripData = {
       name: name.trim(),
-      invitees: participants.map(p => p.id),
+      invitees: participants.map((p) => p.id),
       categories: [],
     };
 
     if (onCreate) {
       onCreate(tripData);
     }
-    
+
     // Reset state
     setName("");
     setParticipantInput("");
@@ -153,14 +161,17 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
           <X size={16} />
         </button>
 
-        <h3 className="font-display text-2xl font-bold text-foreground mb-5 select-none shrink-0">
+        <h3 className="font-display text-2xl font-bold text-foreground mb-5 shrink-0">
           Create New Trip
         </h3>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-visible">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-4 overflow-visible"
+        >
           {/* Trip Name */}
           <div className="flex flex-col">
-            <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none text-muted-foreground transition-colors duration-700">
+            <label className="text-[10px] font-bold uppercase tracking-widest mb-1 text-muted-foreground transition-colors duration-700">
               Trip Name
             </label>
             <div className="relative group">
@@ -180,8 +191,11 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
           </div>
 
           {/* Participants */}
-          <div className="relative overflow-visible flex flex-col" ref={searchRef}>
-            <label className="text-[10px] font-bold uppercase tracking-widest mb-1 select-none text-muted-foreground transition-colors duration-700">
+          <div
+            className="relative overflow-visible flex flex-col"
+            ref={searchRef}
+          >
+            <label className="text-[10px] font-bold uppercase tracking-widest mb-1 text-muted-foreground transition-colors duration-700">
               Invite Friends
             </label>
             <div className="relative group">
@@ -206,28 +220,39 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
             {/* Search Dropdown */}
             <AnimatePresence>
               {searchResults.length > 0 && participantInput.length >= 2 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -5 }}
                   className="absolute left-0 right-0 top-full mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50 max-h-48 overflow-y-auto"
                 >
                   {searchResults.map((u, idx) => (
-                    <div 
+                    <div
                       key={u.id ? `${u.id}-${idx}` : idx}
                       onClick={() => handleAddParticipant(u)}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/65 cursor-pointer transition-colors"
                     >
                       {u.avatar_url ? (
-                        <img src={resolveAvatarUrl(u.avatar_url, u.id || u.username)} alt="" className="w-6 h-6 rounded-full object-cover border border-border" />
+                        <img
+                          src={resolveAvatarUrl(
+                            u.avatar_url,
+                            u.id || u.username,
+                          )}
+                          alt=""
+                          className="w-6 h-6 rounded-full object-cover border border-border"
+                        />
                       ) : (
                         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                           <UserIcon size={12} />
                         </div>
                       )}
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-foreground leading-none">{u.display_name || u.username}</span>
-                        <span className="text-[10px] text-muted-foreground mt-0.5">@{u.username}</span>
+                        <span className="text-sm font-semibold text-foreground leading-none">
+                          {u.display_name || u.username}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground mt-0.5">
+                          @{u.username}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -237,14 +262,18 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
 
             {/* Added Participants list */}
             {participants.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3 select-none">
+              <div className="flex flex-wrap gap-2 mt-3">
                 {participants.map((p) => (
                   <span
                     key={p.id}
                     className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border pl-1.5 pr-2 py-1 text-xs font-semibold text-foreground"
                   >
                     {p.avatar_url ? (
-                      <img src={resolveAvatarUrl(p.avatar_url, p.id || p.username)} alt="" className="w-4 h-4 rounded-full object-cover border border-border" />
+                      <img
+                        src={resolveAvatarUrl(p.avatar_url, p.id || p.username)}
+                        alt=""
+                        className="w-4 h-4 rounded-full object-cover border border-border"
+                      />
                     ) : (
                       <div className="w-4 h-4 rounded-full bg-card border border-border flex items-center justify-center">
                         <UserIcon size={8} />
@@ -266,7 +295,7 @@ export default function NewTripModal({ isOpen, onClose, onCreate, isSubmitting =
           </div>
 
           {/* Form Actions */}
-          <div className="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-border/40 select-none mt-2 shrink-0">
+          <div className="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-border/40 mt-2 shrink-0">
             <Button
               disabled={isSubmitting}
               type="button"

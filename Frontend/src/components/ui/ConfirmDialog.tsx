@@ -46,7 +46,7 @@ export default function ConfirmDialog({
       if (e.key === "Escape" && !isLoading) onCancel();
       if (e.key === "Enter" && !isLoading && !confirmDisabled) onConfirm();
     },
-    [isOpen, isLoading, confirmDisabled, onConfirm, onCancel]
+    [isOpen, isLoading, confirmDisabled, onConfirm, onCancel],
   );
 
   useEffect(() => {
@@ -58,8 +58,8 @@ export default function ConfirmDialog({
     iconVariant === "danger"
       ? "bg-destructive/10 text-destructive"
       : iconVariant === "warning"
-      ? "bg-amber-500/10 text-amber-500"
-      : "bg-primary/10 text-primary";
+        ? "bg-amber-500/10 text-amber-500"
+        : "bg-primary/10 text-primary";
 
   return createPortal(
     <AnimatePresence>
@@ -106,7 +106,9 @@ export default function ConfirmDialog({
                 <h2
                   id="confirm-dialog-title"
                   className={`font-display text-xl font-bold leading-snug ${
-                    variant === "danger" ? "text-destructive" : "text-foreground"
+                    variant === "danger"
+                      ? "text-destructive"
+                      : "text-foreground"
                   }`}
                 >
                   {title}
@@ -155,7 +157,6 @@ export default function ConfirmDialog({
         </>
       )}
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 }
-

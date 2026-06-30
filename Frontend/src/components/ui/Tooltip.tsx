@@ -6,7 +6,11 @@ interface TooltipProps {
   position?: "top" | "bottom" | "left" | "right";
 }
 
-export default function Tooltip({ content, children, position = "top" }: TooltipProps) {
+export default function Tooltip({
+  content,
+  children,
+  position = "top",
+}: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   const positionClasses = {
@@ -18,9 +22,11 @@ export default function Tooltip({ content, children, position = "top" }: Tooltip
 
   const arrowClasses = {
     top: "top-full left-1/2 -translate-x-1/2 border-t-brand-navy border-x-transparent border-b-transparent",
-    bottom: "bottom-full left-1/2 -translate-x-1/2 border-b-brand-navy border-x-transparent border-t-transparent",
+    bottom:
+      "bottom-full left-1/2 -translate-x-1/2 border-b-brand-navy border-x-transparent border-t-transparent",
     left: "left-full top-1/2 -translate-y-1/2 border-l-brand-navy border-y-transparent border-r-transparent",
-    right: "right-full top-1/2 -translate-y-1/2 border-r-brand-navy border-y-transparent border-l-transparent",
+    right:
+      "right-full top-1/2 -translate-y-1/2 border-r-brand-navy border-y-transparent border-l-transparent",
   };
 
   return (
@@ -38,9 +44,7 @@ export default function Tooltip({ content, children, position = "top" }: Tooltip
           role="tooltip"
         >
           {content}
-          <div
-            className={`absolute border-[4px] ${arrowClasses[position]}`}
-          />
+          <div className={`absolute border-[4px] ${arrowClasses[position]}`} />
         </div>
       )}
     </div>

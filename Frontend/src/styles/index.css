@@ -82,55 +82,55 @@ html {
 :root {
   --radius: 0.875rem;
   /* Coral Horizon theme - Light */
-  --background: #FAF6F1;
-  --foreground: #13161D;
-  --card: #FFFFFF;
-  --card-foreground: #13161D;
-  --popover: #FFFFFF;
-  --popover-foreground: #13161D;
-  --primary: #58A6FF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #FFB3A7;
-  --secondary-foreground: #13161D;
+  --background: #faf6f1;
+  --foreground: #13161d;
+  --card: #ffffff;
+  --card-foreground: #13161d;
+  --popover: #ffffff;
+  --popover-foreground: #13161d;
+  --primary: #58a6ff;
+  --primary-foreground: #ffffff;
+  --secondary: #ffb3a7;
+  --secondary-foreground: #13161d;
   --muted: rgba(255, 107, 107, 0.15);
-  --muted-foreground: #8B93A8;
-  --accent: #FF6B6B;
-  --accent-foreground: #FFFFFF;
-  --destructive: #D9534F;
-  --destructive-foreground: #FFFFFF;
-  --border: #E8DDD3;
-  --input: #E8DDD3;
-  --ring: #58A6FF;
-  --chart-1: #58A6FF;
-  --chart-2: #D9534F;
-  --chart-3: #5CB85C;
-  --chart-4: #A78BFA;
-  --chart-5: #C4A882;
-  --sidebar: #FAF6F1;
-  --sidebar-foreground: #13161D;
-  --sidebar-primary: #58A6FF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #FFEDD5;
-  --sidebar-accent-foreground: #13161D;
-  --sidebar-border: #E8DDD3;
-  --sidebar-ring: #58A6FF;
-  --accent-hover: #F05E5E;
-  --destructive-hover: #C9302C;
-  --sidebar-gradient-start: #71B2FF;
-  --sidebar-gradient-middle: #FF8080;
-  --sidebar-gradient-end: #FFE2C2;
+  --muted-foreground: #8b93a8;
+  --accent: #ff6b6b;
+  --accent-foreground: #ffffff;
+  --destructive: #d9534f;
+  --destructive-foreground: #ffffff;
+  --border: #e8ddd3;
+  --input: #e8ddd3;
+  --ring: #58a6ff;
+  --chart-1: #58a6ff;
+  --chart-2: #d9534f;
+  --chart-3: #5cb85c;
+  --chart-4: #a78bfa;
+  --chart-5: #c4a882;
+  --sidebar: #faf6f1;
+  --sidebar-foreground: #13161d;
+  --sidebar-primary: #58a6ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffedd5;
+  --sidebar-accent-foreground: #13161d;
+  --sidebar-border: #e8ddd3;
+  --sidebar-ring: #58a6ff;
+  --accent-hover: #f05e5e;
+  --destructive-hover: #c9302c;
+  --sidebar-gradient-start: #71b2ff;
+  --sidebar-gradient-middle: #ff8080;
+  --sidebar-gradient-end: #ffe2c2;
   --wave-stroke-even: rgba(255, 255, 255, 0.25);
   --wave-stroke-odd: rgba(255, 255, 255, 0.25);
-  --brand-navy: #2B2A4C;
+  --brand-navy: #2b2a4c;
   --brand-navy-hover: #1f1e36;
-  --brand-navy-text: #2B2A4C;
+  --brand-navy-text: #2b2a4c;
   --status-owe-bg: rgba(217, 83, 79, 0.1);
   --status-getback-bg: rgba(92, 184, 92, 0.15);
-  --status-getback-text: #5CB85C;
+  --status-getback-text: #5cb85c;
   --status-settled-bg: #8b93a8d2;
-  --status-settled-text: #FFFFFF;
+  --status-settled-text: #ffffff;
   --status-settled-border: #d8dbe0;
-  --status-settled-hover-border: #70788C;
+  --status-settled-hover-border: #70788c;
   /* Dashboard specific tokens - Light */
   --hero-overlay: rgba(0, 0, 0, 0);
   --hero-blob-1: rgba(255, 255, 255, 0.06);
@@ -147,55 +147,55 @@ html {
 
 .dark {
   /* Coral Horizon theme - Dark */
-  --background: #13161D;
-  --foreground: #C2C9D6;
-  --card: #1A1E2E;
-  --card-foreground: #FFFFFF;
-  --popover: #1A1E2E;
-  --popover-foreground: #FFFFFF;
-  --primary: #58A6FF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #1C2030;
-  --secondary-foreground: #C2C9D6;
+  --background: #13161d;
+  --foreground: #c2c9d6;
+  --card: #1a1e2e;
+  --card-foreground: #ffffff;
+  --popover: #1a1e2e;
+  --popover-foreground: #ffffff;
+  --primary: #58a6ff;
+  --primary-foreground: #ffffff;
+  --secondary: #1c2030;
+  --secondary-foreground: #c2c9d6;
   --muted: rgba(255, 107, 107, 0.12);
-  --muted-foreground: #8B93A8;
-  --accent: #FF6B6B;
-  --accent-foreground: #FFFFFF;
-  --destructive: #D9534F;
-  --destructive-foreground: #FFFFFF;
-  --border: #2A2F42;
-  --input: #2A2F42;
-  --ring: #58A6FF;
-  --chart-1: #58A6FF;
-  --chart-2: #D9534F;
-  --chart-3: #5CB85C;
-  --chart-4: #A78BFA;
-  --chart-5: #C4A882;
-  --sidebar: #1A1E2E;
-  --sidebar-foreground: #C2C9D6;
-  --sidebar-primary: #58A6FF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #252A3A;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #2A2F42;
-  --sidebar-ring: #58A6FF;
-  --accent-hover: #F05E5E;
-  --destructive-hover: #C9302C;
-  --sidebar-gradient-start: #0B0E14;
+  --muted-foreground: #8b93a8;
+  --accent: #ff6b6b;
+  --accent-foreground: #ffffff;
+  --destructive: #d9534f;
+  --destructive-foreground: #ffffff;
+  --border: #2a2f42;
+  --input: #2a2f42;
+  --ring: #58a6ff;
+  --chart-1: #58a6ff;
+  --chart-2: #d9534f;
+  --chart-3: #5cb85c;
+  --chart-4: #a78bfa;
+  --chart-5: #c4a882;
+  --sidebar: #1a1e2e;
+  --sidebar-foreground: #c2c9d6;
+  --sidebar-primary: #58a6ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #252a3a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2a2f42;
+  --sidebar-ring: #58a6ff;
+  --accent-hover: #f05e5e;
+  --destructive-hover: #c9302c;
+  --sidebar-gradient-start: #0b0e14;
   --sidebar-gradient-middle: #151926;
-  --sidebar-gradient-end: #1C1420;
+  --sidebar-gradient-end: #1c1420;
   --wave-stroke-even: rgba(88, 166, 255, 0.08);
   --wave-stroke-odd: rgba(255, 107, 107, 0.08);
-  --brand-navy: #312E5C;
-  --brand-navy-hover: #3C3A6E;
-  --brand-navy-text: #FFFFFF;
+  --brand-navy: #312e5c;
+  --brand-navy-hover: #3c3a6e;
+  --brand-navy-text: #ffffff;
   --status-owe-bg: rgba(217, 83, 79, 0.15);
   --status-getback-bg: rgba(92, 184, 92, 0.15);
-  --status-getback-text: #5CB85C;
-  --status-settled-bg: #2D313F;
-  --status-settled-text: #FFFFFF;
-  --status-settled-border: #3D4457;
-  --status-settled-hover-border: #8B93A8;
+  --status-getback-text: #5cb85c;
+  --status-settled-bg: #2d313f;
+  --status-settled-text: #ffffff;
+  --status-settled-border: #3d4457;
+  --status-settled-hover-border: #8b93a8;
   /* Dashboard specific tokens - Dark */
   --hero-overlay: rgba(0, 0, 0, 0.3);
   --hero-blob-1: rgba(255, 255, 255, 0.06);
@@ -213,11 +213,31 @@ html {
 @layer base {
   * {
     border-color: var(--color-border);
+    caret-color: transparent;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+
+  input,
+  textarea,
+  [contenteditable] {
+    caret-color: auto;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-foreground);
+  }
+
+  button,
+  a,
+  svg,
+  img {
+    user-select: none;
+    -webkit-user-select: none;
   }
 }
 
@@ -244,7 +264,8 @@ html {
 
 /* Smooth Minimal Skeleton Pulse */
 @keyframes smooth-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -287,7 +308,8 @@ html {
 /* Firefox scrollbar styles */
 * {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--foreground) 16%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 16%, transparent)
+    transparent;
 }
 
 /* Custom Scrollbar Utility */
@@ -318,13 +340,16 @@ html {
   background: color-mix(in srgb, var(--foreground) 24%, transparent);
 }
 
-
 /* Premium Button Styles with Grain Texture and Hover Gradient Shift */
 .btn-premium {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(to right, var(--accent), var(--destructive)) !important;
+  background: linear-gradient(
+    to right,
+    var(--accent),
+    var(--destructive)
+  ) !important;
   border: none !important;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
@@ -334,7 +359,11 @@ html {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, var(--accent-hover), var(--destructive-hover));
+  background: linear-gradient(
+    to right,
+    var(--accent-hover),
+    var(--destructive-hover)
+  );
   opacity: 0;
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 2;
@@ -372,7 +401,10 @@ html {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease !important;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease !important;
 }
 
 .btn-secondary-premium::before {
@@ -402,7 +434,7 @@ html {
 }
 
 .dark .btn-secondary-premium:hover {
-  background-color: #1C2030 !important;
+  background-color: #1c2030 !important;
 }
 
 /* Remove default spin-buttons/arrows from input type="number" globally */
@@ -415,6 +447,3 @@ input::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
-
-
-

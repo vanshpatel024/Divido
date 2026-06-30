@@ -44,7 +44,8 @@ export default function DeleteTripConfirmModal({
 
   if (!cachedTrip) return null;
 
-  const isDeletable = cachedTrip.end_date && cachedTrip.balance.kind === 'settled';
+  const isDeletable =
+    cachedTrip.end_date && cachedTrip.balance.kind === "settled";
 
   const handleDelete = () => {
     if (!isDeletable || isDeleting) return;
@@ -76,7 +77,7 @@ export default function DeleteTripConfirmModal({
         onClick={(e) => e.stopPropagation()}
         className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative z-10 font-sans text-foreground"
       >
-        <div className="flex items-center gap-3 mb-4 select-none">
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
             <AlertTriangle size={20} />
           </div>
@@ -86,20 +87,27 @@ export default function DeleteTripConfirmModal({
         </div>
 
         <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-          This will permanently remove you from <span className="font-semibold text-foreground">{cachedTrip.name}</span>. If you are the last participant, the trip will be completely deleted.
+          This will permanently remove you from{" "}
+          <span className="font-semibold text-foreground">
+            {cachedTrip.name}
+          </span>
+          . If you are the last participant, the trip will be completely
+          deleted.
         </p>
 
         {!isDeletable && (
           <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-xs text-destructive font-medium">
             {!cachedTrip.end_date ? (
               <p>You cannot leave this trip because it hasn't ended yet.</p>
-            ) : cachedTrip.balance.kind !== 'settled' ? (
-              <p>You cannot leave this trip because your balance is not settled.</p>
+            ) : cachedTrip.balance.kind !== "settled" ? (
+              <p>
+                You cannot leave this trip because your balance is not settled.
+              </p>
             ) : null}
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2.5 select-none">
+        <div className="flex items-center justify-end gap-2.5">
           <Button
             type="button"
             disabled={isDeleting}
