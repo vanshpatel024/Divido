@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,12 +8,16 @@ import {
     Check,
     UserPlus,
     AlertTriangle,
-    Clock
+    Clock,
+    Pencil,
+    Trash2,
+    MoreHorizontal
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import { useAuth, resolveAvatarUrl } from "../contexts/AuthContext";
 import type { Trip } from "../types";
 import NewStopModal from "../components/modals/NewStopModal";
+import EditStopModal from "../components/EditStopModal";
 import InviteModal from "../components/modals/InviteModal";
 import { useToast } from "../components/ui/Toast";
 import { useRealtimeTrip } from "../hooks/useRealtimeTrip";
@@ -58,6 +62,9 @@ interface Stop {
     date: string;
     created_at?: string;
     total: number;
+    created_by?: string | null;
+    creator_name?: string | null;
+    edited?: boolean;
     transactions: Transaction[];
 }
 
@@ -98,6 +105,21 @@ export default function TripDetail() {
     const [isAddingStop, setIsAddingStop] = useState(false);
     const [settlingDebtId, setSettlingDebtId] = useState<string | null>(null);
     const [isInviteOpen, setIsInviteOpen] = useState(false);
+
+    // Edit stop state
+    const [isEditStopOpen, setIsEditStopOpen] = useState(false);
+    const [editingStop, setEditingStop] = useState<Stop | null>(null);
+    const [isEditingStop, setIsEditingStop] = useState(false);
+
+    // Three-dot menu state
+    const [openMenuStopId, setOpenMenuStopId] = useState<string | null>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Delete stop state
+    const [isDeleteStopOpen, setIsDeleteStopOpen] = useState(false);
+    const [deleteStopId, setDeleteStopId] = useState<string | null>(null);
+    const [deleteStopName, setDeleteStopName] = useState<string>("");
+    const [isDeletingStop, setIsDeletingStop] = useState(false);
 
     // ConfirmDialog state
     type PendingAction = { kind: "endTrip" } | { kind: "settleDebt"; debt: any };
@@ -169,6 +191,31 @@ export default function TripDetail() {
     // Real-time: refetch whenever another participant mutates the trip
     useRealtimeTrip(id, token, user?.id, fetchTripAndStops);
 
+    // Listen for stop_edited WS events from other participants
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            if (detail) {
+                const msg = `${detail.editorName} edited a transaction in ${detail.tripName} — ₹${detail.oldTotal} → ₹${detail.newTotal}`;
+                showToast(msg, "info");
+            }
+        };
+        window.addEventListener("divido_stop_edited", handler);
+        return () => window.removeEventListener("divido_stop_edited", handler);
+    }, [showToast]);
+
+    // Close three-dot menu on outside click
+    useEffect(() => {
+        if (!openMenuStopId) return;
+        const handleClick = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setOpenMenuStopId(null);
+            }
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, [openMenuStopId]);
+
     const handleEndTrip = () => {
         if (!token || !id || isEndingTrip) return;
         openConfirm({ kind: "endTrip" });
@@ -228,6 +275,77 @@ export default function TripDetail() {
             showToast("Network error", "error");
         } finally {
             setIsAddingStop(false);
+        }
+    };
+
+    const openEditStop = (stop: Stop) => {
+        setEditingStop(stop);
+        setIsEditStopOpen(true);
+    };
+
+    const handleEditStop = async (stopData: any) => {
+        if (!token || !id || !editingStop) return;
+        setIsEditingStop(true);
+        try {
+            const res = await fetch(`http://localhost:3000/trips/${id}/stops/${editingStop.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(stopData),
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                showToast("Stop updated successfully", "success");
+                setIsEditStopOpen(false);
+                setEditingStop(null);
+                await fetchTripAndStops();
+            } else {
+                showToast(data.message || "Failed to update stop", "error");
+            }
+        } catch (error) {
+            console.error(error);
+            showToast("Network error", "error");
+        } finally {
+            setIsEditingStop(false);
+        }
+    };
+
+    const openDeleteStop = (stop: Stop) => {
+        setOpenMenuStopId(null);
+        setDeleteStopId(stop.id);
+        setDeleteStopName(stop.name);
+        setIsDeleteStopOpen(true);
+    };
+
+    const handleDeleteStop = async () => {
+        if (!token || !id || !deleteStopId) return;
+        setIsDeletingStop(true);
+        try {
+            const res = await fetch(`http://localhost:3000/trips/${id}/stops/${deleteStopId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                setStops((prev) => prev.filter((s) => s.id !== deleteStopId));
+                showToast("Stop deleted successfully", "success");
+                setIsDeleteStopOpen(false);
+                setDeleteStopId(null);
+                setDeleteStopName("");
+            } else {
+                showToast(data.message || "Failed to delete stop", "error");
+            }
+        } catch (error) {
+            console.error(error);
+            showToast("Network error", "error");
+        } finally {
+            setIsDeletingStop(false);
         }
     };
 
@@ -676,6 +794,7 @@ export default function TripDetail() {
                     ) : (
                         <div className="space-y-5 w-full">
                             {normalStops.map((stop) => {
+                                const isMenuOpen = openMenuStopId === stop.id;
                                 return (
                                     <motion.article
                                         key={stop.id}
@@ -683,16 +802,78 @@ export default function TripDetail() {
                                         animate={{ opacity: 1, y: 0 }}
                                         className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-border/80 transition-all duration-200 group"
                                     >
-                                        <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
-                                            <div className="flex items-center gap-2.5">
-                                                <div>
-                                                    <h3 className="font-semibold text-foreground leading-snug">{stop.name}</h3>
-                                                    <span className="text-[11px] text-muted-foreground block mt-0.5 select-none">{new Date(stop.date).toLocaleDateString()}</span>
-                                                </div>
+                                        <div className="flex items-start justify-between gap-4 pb-3.5 border-b border-border">
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="font-semibold text-foreground leading-snug">{stop.name}</h3>
+                                                <span className="text-[11px] text-muted-foreground block mt-0.5 select-none">
+                                                    {new Date(stop.date).toLocaleDateString()}
+                                                </span>
+                                                {stop.creator_name && (
+                                                    <span className="text-[11px] text-muted-foreground font-normal block mt-1 select-none">
+                                                        Created by {stop.creator_name}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="text-right select-none shrink-0">
-                                                <span className="text-[10px] text-muted-foreground block font-semibold uppercase tracking-wider">Total</span>
-                                                <span className="font-bold text-lg text-foreground">{formatInr(stop.total)}</span>
+
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                {/* Total */}
+                                                <div className="text-right select-none">
+                                                    <span className="text-[10px] text-muted-foreground block font-semibold uppercase tracking-wider">Total</span>
+                                                    <div className="flex items-center gap-1.5 justify-end">
+                                                        <span className="font-bold text-lg text-foreground">{formatInr(stop.total)}</span>
+                                                        {stop.edited && (
+                                                            <span
+                                                                title="This stop was edited"
+                                                                className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full select-none border border-border"
+                                                            >
+                                                                edited
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Three-dot menu */}
+                                                {!trip.end_date && (
+                                                    <div className="relative" ref={isMenuOpen ? menuRef : undefined}>
+                                                        <button
+                                                            onClick={() => setOpenMenuStopId(isMenuOpen ? null : stop.id)}
+                                                            className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 cursor-pointer"
+                                                            title="More options"
+                                                        >
+                                                            <MoreHorizontal size={16} />
+                                                        </button>
+                                                        <AnimatePresence>
+                                                            {isMenuOpen && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                                                                    transition={{ duration: 0.12 }}
+                                                                    className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-xl shadow-lg z-20 py-1"
+                                                                >
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setOpenMenuStopId(null);
+                                                                            openEditStop(stop);
+                                                                        }}
+                                                                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-foreground hover:bg-muted transition-colors duration-150 cursor-pointer text-left"
+                                                                    >
+                                                                        <Pencil size={13} className="text-muted-foreground" />
+                                                                        Edit Stop
+                                                                    </button>
+                                                                    <div className="mx-3 my-1 border-t border-border" />
+                                                                    <button
+                                                                        onClick={() => openDeleteStop(stop)}
+                                                                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-red-500 hover:bg-red-500/10 transition-colors duration-150 cursor-pointer text-left"
+                                                                    >
+                                                                        <Trash2 size={13} />
+                                                                        Delete Stop
+                                                                    </button>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -736,6 +917,24 @@ export default function TripDetail() {
                         isSubmitting={isAddingStop}
                     />
                 )}
+                {isEditStopOpen && trip && editingStop && (
+                    <EditStopModal
+                        isOpen={isEditStopOpen}
+                        onClose={() => {
+                            if (!isEditingStop) {
+                                setIsEditStopOpen(false);
+                                setEditingStop(null);
+                            }
+                        }}
+                        onUpdate={handleEditStop}
+                        participants={trip.participants.map(p => ({
+                            ...p,
+                            id: p.id || ""
+                        }))}
+                        stop={editingStop}
+                        isSubmitting={isEditingStop}
+                    />
+                )}
                 {isInviteOpen && trip && (
                     <InviteModal
                         isOpen={isInviteOpen}
@@ -758,6 +957,58 @@ export default function TripDetail() {
                 onConfirm={handleConfirm}
                 onCancel={closeConfirm}
             />
+
+            {/* Delete Stop Confirmation */}
+            <AnimatePresence>
+                {isDeleteStopOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => { if (!isDeletingStop) { setIsDeleteStopOpen(false); setDeleteStopId(null); setDeleteStopName(""); } }}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-xs cursor-pointer"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-card border border-border rounded-2xl w-full max-w-sm p-6 shadow-xl relative z-10 font-sans"
+                        >
+                            <h3 className="font-display text-xl font-bold text-foreground mb-2 select-none">
+                                Delete Stop?
+                            </h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-6 select-none">
+                                This will permanently delete <span className="font-semibold text-foreground">{deleteStopName}</span> and all its transactions. This cannot be undone.
+                            </p>
+                            <div className="flex items-center justify-end gap-2.5">
+                                <Button
+                                    disabled={isDeletingStop}
+                                    onClick={() => { setIsDeleteStopOpen(false); setDeleteStopId(null); setDeleteStopName(""); }}
+                                    variant="secondary"
+                                    shape="pill"
+                                    size="sm"
+                                    className="w-auto"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    disabled={isDeletingStop}
+                                    onClick={handleDeleteStop}
+                                    isLoading={isDeletingStop}
+                                    variant="danger"
+                                    shape="pill"
+                                    size="sm"
+                                    className="w-auto min-w-[5rem]"
+                                >
+                                    Delete
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

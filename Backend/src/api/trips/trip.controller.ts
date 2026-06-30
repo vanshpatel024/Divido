@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { TripService, tripCreateSchema, stopCreateSchema, stopUpdateSchema, tripInviteSchema } from '../services/trip.service';
-import { createResponse } from '../utils/response';
+import { TripService, tripCreateSchema, stopCreateSchema, stopUpdateSchema, tripInviteSchema } from '../trips/trip.service';
+import { createResponse } from '../../utils/response';
 import { ZodError } from 'zod';
-import { wsManager } from '../ws/wsManager';
-import { supabaseAdmin } from '../config/supabase';
+import { wsManager } from '../../ws/wsManager';
+import { supabaseAdmin } from '../../config/supabase';
 
 export class TripController {
   static async getUserTrips(req: Request, res: Response, next: NextFunction): Promise<void> {

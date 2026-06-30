@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { User as UserIcon } from "lucide-react";
-import { useToast } from "./Toast";
-import { useAuth, resolveAvatarUrl } from "../context/AuthContext";
-import CustomDropdown from "./CustomDropdown";
+import { useToast } from "./ui/Toast";
+import { useAuth, resolveAvatarUrl } from "../contexts/AuthContext";
+import CustomDropdown from "./ui/CustomDropdown";
 
 interface Participant {
   id: string;
@@ -66,9 +66,9 @@ export default function EditStopModal({ isOpen, onClose, onUpdate, participants,
       
       // Get all unique split participants from transactions
       const splitParticipants = [...new Set(stop.transactions.flatMap(t => 
-        Array.from({ length: t.splitCount }, (_, i) => t.paidBy)
+        Array.from({ length: t.splitCount }, () => t.paidBy)
       ))];
-      const splitIds = splitParticipants.map(p => participants.find(pt => pt.name === p)?.id).filter(Boolean);
+      const splitIds = splitParticipants.map(p => participants.find(pt => pt.name === p)?.id).filter((id): id is string => !!id);
       setSplits(splitIds);
       
       // Initialize multiple payments
