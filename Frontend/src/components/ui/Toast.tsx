@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Info } from "lucide-react";
 
-type ToastType = "success" | "error";
+type ToastType = "success" | "error" | "info";
 
 interface Toast {
   id: string;
@@ -29,7 +29,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const showToast = useCallback((message: string, type: ToastType = "success") => {
     setToasts((prev) => {
-      // Deduplicate: skip if an identical message is already visible
       if (prev.some((t) => t.message === message)) return prev;
       const id = Math.random().toString(36).substring(2, 9);
       setTimeout(() => {

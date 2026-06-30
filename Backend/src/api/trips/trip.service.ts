@@ -23,8 +23,22 @@ export const stopCreateSchema = z.object({
   splits: z.array(z.string().uuid()).min(1, "At least one split participant must be specified")
 });
 
+export const stopUpdateSchema = z.object({
+  name: z.string().min(2, "Stop name must be at least 2 characters long").optional(),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid date format",
+  }).optional(),
+  totalAmount: z.number().positive("Total amount must be positive").optional(),
+  payments: z.array(z.object({
+    userId: z.string().uuid(),
+    amount: z.number().nonnegative("Payment amount cannot be negative")
+  })).min(1, "At least one payment must be specified").optional(),
+  splits: z.array(z.string().uuid()).min(1, "At least one split participant must be specified").optional()
+});
+
 export type TripCreateInput = z.infer<typeof tripCreateSchema>;
 export type StopCreateInput = z.infer<typeof stopCreateSchema>;
+export type StopUpdateInput = z.infer<typeof stopUpdateSchema>;
 
 export const tripInviteSchema = z.object({
   invitees: z.array(z.string().uuid()).min(1, "At least one invitee must be specified"),
@@ -576,6 +590,22 @@ export class TripService {
 
     if (splitsError) throw splitsError;
 
+    // Fetch creator names for all stops
+    const creatorIds = [...new Set(stops.map(s => s.created_by).filter(Boolean))];
+    let creatorNames: Record<string, string> = {};
+    if (creatorIds.length > 0) {
+      const { data: creators, error: creatorsError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, display_name, username')
+        .in('id', creatorIds);
+      
+      if (!creatorsError && creators) {
+        creators.forEach((c: any) => {
+          creatorNames[c.id] = c.display_name || c.username || 'Unknown';
+        });
+      }
+    }
+
     return stops.map((stop: any) => {
       const stopSplits = splits.filter(sp => sp.stop_id === stop.id);
       const splitCount = stopSplits.length;
@@ -595,6 +625,9 @@ export class TripService {
         date: stop.date,
         created_at: stop.created_at,
         total: Number(stop.total_amount),
+        created_by: stop.created_by,
+        creator_name: creatorNames[stop.created_by] || null,
+        edited: Boolean(stop.last_updated_at),
         transactions
       };
     });
@@ -624,6 +657,16 @@ export class TripService {
       .single();
 
     if (stopError) throw stopError;
+
+    // Try to set created_by separately — will silently fail if column doesn't exist yet
+    try {
+      await supabaseAdmin
+        .from('stops')
+        .update({ created_by: creatorId })
+        .eq('id', stop.id);
+    } catch {
+      // Column may not exist yet, that's fine
+    }
 
     const paymentsData = input.payments.map(p => ({
       stop_id: stop.id,
@@ -678,6 +721,128 @@ export class TripService {
     }
 
     return stop;
+  }
+
+  static async updateStop(tripId: string, stopId: string, editorId: string, input: StopUpdateInput) {
+    // Verify editor is a participant
+    const { data: isMember, error: memberError } = await supabaseAdmin
+      .from('trip_participants')
+      .select('id')
+      .eq('trip_id', tripId)
+      .eq('user_id', editorId)
+      .maybeSingle();
+
+    if (memberError || !isMember) {
+      throw new Error("You are not a participant in this trip.");
+    }
+
+    // Verify stop exists and belongs to trip
+    const { data: existingStop, error: stopError } = await supabaseAdmin
+      .from('stops')
+      .select('id, total_amount, name, date')
+      .eq('id', stopId)
+      .eq('trip_id', tripId)
+      .single();
+
+    if (stopError || !existingStop) {
+      throw new Error("Stop not found.");
+    }
+
+    const oldTotal = Number(existingStop.total_amount);
+
+    // Build update object for stops table
+    const stopUpdate: Record<string, any> = {};
+    if (input.name !== undefined) stopUpdate.name = input.name;
+    if (input.date !== undefined) stopUpdate.date = input.date;
+    if (input.totalAmount !== undefined) stopUpdate.total_amount = input.totalAmount;
+
+    if (Object.keys(stopUpdate).length > 0 || input.payments !== undefined || input.splits !== undefined) {
+      stopUpdate.last_updated_at = new Date().toISOString();
+      const { error: updateError } = await supabaseAdmin
+        .from('stops')
+        .update(stopUpdate)
+        .eq('id', stopId);
+
+      if (updateError) throw updateError;
+    }
+
+    // Update payments if provided
+    if (input.payments !== undefined) {
+      // Delete existing payments
+      await supabaseAdmin.from('stop_payments').delete().eq('stop_id', stopId);
+
+      const paymentsData = input.payments.map(p => ({
+        stop_id: stopId,
+        user_id: p.userId,
+        amount: p.amount
+      }));
+      const { error: paymentsError } = await supabaseAdmin
+        .from('stop_payments')
+        .insert(paymentsData);
+
+      if (paymentsError) throw paymentsError;
+    }
+
+    // Update splits if provided
+    if (input.splits !== undefined) {
+      // Delete existing splits
+      await supabaseAdmin.from('stop_splits').delete().eq('stop_id', stopId);
+
+      const splitsData = input.splits.map(userId => ({
+        stop_id: stopId,
+        user_id: userId
+      }));
+      const { error: splitsError } = await supabaseAdmin
+        .from('stop_splits')
+        .insert(splitsData);
+
+      if (splitsError) throw splitsError;
+    }
+
+    // Return updated stop with related data
+    const { data: updatedStop, error: fetchError } = await supabaseAdmin
+      .from('stops')
+      .select('*')
+      .eq('id', stopId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    return { stop: updatedStop, oldTotal };
+  }
+
+  static async deleteStop(tripId: string, stopId: string, userId: string) {
+    const { data: isMember, error: memberError } = await supabaseAdmin
+      .from('trip_participants')
+      .select('id')
+      .eq('trip_id', tripId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (memberError || !isMember) {
+      throw new Error("You are not a participant in this trip.");
+    }
+
+    const { data: existingStop, error: stopError } = await supabaseAdmin
+      .from('stops')
+      .select('id, name')
+      .eq('id', stopId)
+      .eq('trip_id', tripId)
+      .single();
+
+    if (stopError || !existingStop) {
+      throw new Error("Stop not found.");
+    }
+
+    if (existingStop.name.startsWith("Settlement:")) {
+      throw new Error("Cannot delete settlement stops.");
+    }
+
+    await supabaseAdmin.from('stop_payments').delete().eq('stop_id', stopId);
+    await supabaseAdmin.from('stop_splits').delete().eq('stop_id', stopId);
+    await supabaseAdmin.from('stops').delete().eq('id', stopId);
+
+    return { success: true };
   }
 
   // --- Invitations Methods ---

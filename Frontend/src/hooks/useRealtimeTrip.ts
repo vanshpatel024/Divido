@@ -72,6 +72,9 @@ export function useRealtimeTrip(
               tripId?: string;
               tripName?: string;
               actorId?: string;
+              editorName?: string;
+              oldTotal?: number;
+              newTotal?: number;
             };
           };
 
@@ -81,7 +84,6 @@ export function useRealtimeTrip(
           }
 
           if (msg.type === 'subscribed') {
-            // Reconnected/subscribed successfully — trigger a sync to catch any missed updates
             onUpdateRef.current();
             return;
           }
@@ -91,18 +93,24 @@ export function useRealtimeTrip(
             msg.type === 'trip_ended' ||
             msg.type === 'participant_joined' ||
             msg.type === 'participant_left' ||
-            msg.type === 'invitations_changed'
+            msg.type === 'invitations_changed' ||
+            msg.type === 'stop_updated' ||
+            msg.type === 'stop_deleted'
           ) {
             onUpdateRef.current();
             window.dispatchEvent(new CustomEvent('divido_trip_update'));
 
-            // Suppress notifications for actions the current user performed themselves
             const isOwnAction = msg.payload?.actorId && currentUserIdRef.current && msg.payload.actorId === currentUserIdRef.current;
 
             if (!isOwnAction && msg.type === 'participant_joined' && onNotificationRef.current) {
               onNotificationRef.current('joined', msg.payload?.userName || 'A participant');
             } else if (!isOwnAction && msg.type === 'participant_left' && onNotificationRef.current) {
               onNotificationRef.current('left', msg.payload?.userName || 'A participant');
+            } else if (!isOwnAction && msg.type === 'stop_updated' && msg.payload) {
+              const { editorName, tripName, oldTotal, newTotal } = msg.payload;
+              window.dispatchEvent(new CustomEvent('divido_stop_edited', {
+                detail: { editorName, tripName, oldTotal, newTotal }
+              }));
             }
           }
         } catch {
