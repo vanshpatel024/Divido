@@ -11,6 +11,7 @@ import {
 import { motion } from "framer-motion";
 import type { Trip, Balance } from "../../types";
 import { resolveAvatarUrl } from "../../contexts/AuthContext";
+import Tooltip from "../ui/Tooltip";
 
 const formatInr = (n: number) =>
   "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -142,19 +143,20 @@ export default function TripCard({
           <StatusBadge balance={trip.balance} />
 
           {onDelete && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete(trip);
-              }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive cursor-pointer transition-colors"
-              aria-label="Leave Trip"
-              title="Leave Trip"
-            >
-              <DoorOpen size={14} />
-            </button>
+            <Tooltip content="Leave Trip" position="top">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(trip);
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive cursor-pointer transition-colors"
+                aria-label="Leave Trip"
+              >
+                <DoorOpen size={14} />
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>

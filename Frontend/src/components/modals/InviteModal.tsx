@@ -4,6 +4,7 @@ import { X, Search, User as UserIcon } from "lucide-react";
 import { useToast } from "../ui/Toast";
 import { useAuth, resolveAvatarUrl } from "../../contexts/AuthContext";
 import Button from "../ui/Button";
+import Tooltip from "../ui/Tooltip";
 import useBodyScrollLock from "../../hooks/useBodyScrollLock";
 
 interface InviteModalProps {
@@ -273,13 +274,15 @@ export default function InviteModal({
         onClick={(e) => e.stopPropagation()}
         className="bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-2xl relative z-10 font-sans max-h-[90vh] overflow-visible flex flex-col text-foreground"
       >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors duration-200 p-1.5 rounded-full hover:bg-muted/50 cursor-pointer z-20"
-          aria-label="Close modal"
-        >
-          <X size={16} />
-        </button>
+        <Tooltip content="Close" position="top" className="absolute top-4 right-4 z-20">
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground transition-colors duration-200 p-1.5 rounded-full hover:bg-muted/50 cursor-pointer"
+            aria-label="Close modal"
+          >
+            <X size={16} />
+          </button>
+        </Tooltip>
 
         <h3 className="font-display text-2xl font-bold text-foreground mb-5 shrink-0">
           Invite Friends

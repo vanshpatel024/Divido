@@ -9,6 +9,7 @@ import { useToast } from "../components/ui/Toast";
 import { useRealtimeTrip } from "../hooks/useRealtimeTrip";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import Tooltip from "../components/ui/Tooltip";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const renderSettlementLabel = (name: string, currentDisplayName?: string) => {
   const raw = name.replace(/^Settlement:\s*/, ""); // e.g."Alice to Bob"
@@ -77,11 +78,56 @@ export default function TripBalances() {
   const navigate = useNavigate();
   const { token, logout, user } = useAuth();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [trip, setTrip] = useState<Trip | null>(null);
-  const [stops, setStops] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    data: trip,
+    isLoading: isTripLoading,
+    error: tripError,
+  } = useQuery<Trip, Error>({
+    queryKey: ["trip", id],
+    queryFn: async () => {
+      if (!token || !id) throw new Error("Missing params");
+      const res = await fetch(`http://localhost:3000/trips/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        logout();
+        navigate("/auth");
+        throw new Error("Unauthorized");
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      return data.data;
+    },
+    enabled: !!token && !!id,
+  });
+
+  const {
+    data: stops = [],
+    isLoading: isStopsLoading,
+    error: stopsError,
+  } = useQuery<any[], Error>({
+    queryKey: ["tripStops", id],
+    queryFn: async () => {
+      if (!token || !id) throw new Error("Missing params");
+      const res = await fetch(`http://localhost:3000/trips/${id}/stops`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        logout();
+        navigate("/auth");
+        throw new Error("Unauthorized");
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      return data.data || [];
+    },
+    enabled: !!token && !!id,
+  });
+
+  const isLoading = isTripLoading || isStopsLoading;
+  const error = tripError?.message || stopsError?.message || "";
 
   const [settlingDebtId, setSettlingDebtId] = useState<string | null>(null);
 
@@ -104,49 +150,31 @@ export default function TripBalances() {
     setPendingAction(null);
   }, [confirmLoading]);
 
-  const fetchTripAndStops = useCallback(async () => {
+  const refetchTripAndStops = useCallback(async () => {
     if (!token || !id) return;
     try {
       const [tripRes, stopsRes] = await Promise.all([
-        fetch(`http://localhost:3000/trips/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`http://localhost:3000/trips/${id}/stops`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch(`http://localhost:3000/trips/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`http://localhost:3000/trips/${id}/stops`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
-
-      if (tripRes.status === 401 || stopsRes.status === 401) {
-        logout();
-        navigate("/auth");
-        return;
-      }
-
       const tripData = await tripRes.json();
       const stopsData = await stopsRes.json();
-
-      if (tripData.success) {
-        setTrip(tripData.data);
+      
+      if (tripData.success && stopsData.success) {
+        // Set both simultaneously to prevent UI tearing
+        queryClient.setQueryData(["trip", id], tripData.data);
+        queryClient.setQueryData(["tripStops", id], stopsData.data || []);
       } else {
-        setError(tripData.message);
+        queryClient.invalidateQueries({ queryKey: ["trip", id] });
+        queryClient.invalidateQueries({ queryKey: ["tripStops", id] });
       }
-
-      if (stopsData.success) {
-        setStops(stopsData.data || []);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch trip details.");
-    } finally {
-      setIsLoading(false);
+    } catch (e) {
+      queryClient.invalidateQueries({ queryKey: ["trip", id] });
+      queryClient.invalidateQueries({ queryKey: ["tripStops", id] });
     }
-  }, [id, token, logout, navigate]);
+  }, [queryClient, id, token]);
 
-  useEffect(() => {
-    fetchTripAndStops();
-  }, [fetchTripAndStops]);
-
-  useRealtimeTrip(id, token, user?.id, fetchTripAndStops);
+  useRealtimeTrip(id, token, user?.id, refetchTripAndStops);
 
   const handleSettleDebt = (debt: any) => {
     if (!token || !id || settlingDebtId !== null) return;
@@ -165,6 +193,7 @@ export default function TripBalances() {
       payments: [{ userId: debt.fromId, amount: debt.amount }],
       splits: [debt.toId],
     };
+
     try {
       const res = await fetch(`http://localhost:3000/trips/${id}/stops`, {
         method: "POST",
@@ -178,11 +207,42 @@ export default function TripBalances() {
       if (res.ok && data.success) {
         setConfirmOpen(false);
         setPendingAction(null);
-        showToast("Settlement recorded successfully", "success");
-        if (data.data?.id) {
-          markActivityAsSeen(`settlement-${data.data.id}`);
+        
+        // Manually update cache on success to ensure perfect UI synchronization
+        const newStop = data.data;
+        if (newStop) {
+          const formattedStop = {
+            id: newStop.id,
+            name: newStop.name,
+            date: newStop.date,
+            created_at: newStop.created_at,
+            total: Number(newStop.total_amount || debt.amount),
+            created_by: user?.id,
+            creator_name: "You",
+            edited: false,
+            transactions: [{ paidBy: debt.fromName, paidById: debt.fromId, amount: debt.amount, splitCount: 1, avatarColor: "#AAD9BB" }],
+            splitParticipants: [debt.toId],
+          };
+          queryClient.setQueryData(["tripStops", id], (old: any) => {
+            if (!old) return [formattedStop];
+            // Ensure we don't duplicate if websocket already added it
+            if (old.some((s: any) => s.id === formattedStop.id)) return old;
+            return [formattedStop, ...old];
+          });
         }
-        await fetchTripAndStops();
+
+        queryClient.setQueryData(["trip", id], (old: any) => {
+          if (!old) return old;
+          const updatedDebts = (old.debts || []).filter(
+            (d: any) => !(d.fromId === debt.fromId && d.toId === debt.toId)
+          );
+          return { ...old, debts: updatedDebts };
+        });
+
+        showToast("Settlement recorded successfully", "success");
+        if (newStop?.id) {
+          markActivityAsSeen(`settlement-${newStop.id}`);
+        }
       } else {
         showToast(data.message || "Failed to record settlement", "error");
       }
@@ -340,7 +400,6 @@ export default function TripBalances() {
                               shape="pill"
                               size="sm"
                               className="h-9 w-9 p-0 shrink-0 shadow-sm"
-                              title="Mark as Paid"
                             >
                               <Check size={16} strokeWidth={3} />
                             </Button>

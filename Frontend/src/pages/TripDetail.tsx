@@ -24,6 +24,7 @@ import { useToast } from "../components/ui/Toast";
 import { useRealtimeTrip } from "../hooks/useRealtimeTrip";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import Tooltip from "../components/ui/Tooltip";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const renderSettlementLabel = (name: string, currentDisplayName?: string) => {
   const raw = name.replace(/^Settlement:\s*/, ""); // e.g."Alice to Bob"
@@ -111,11 +112,56 @@ export default function TripDetail() {
   const navigate = useNavigate();
   const { token, logout, user } = useAuth();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [trip, setTrip] = useState<Trip | null>(null);
-  const [stops, setStops] = useState<Stop[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    data: trip,
+    isLoading: isTripLoading,
+    error: tripError,
+  } = useQuery<Trip, Error>({
+    queryKey: ["trip", id],
+    queryFn: async () => {
+      if (!token || !id) throw new Error("Missing params");
+      const res = await fetch(`http://localhost:3000/trips/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        logout();
+        navigate("/auth");
+        throw new Error("Unauthorized");
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      return data.data;
+    },
+    enabled: !!token && !!id,
+  });
+
+  const {
+    data: stops = [],
+    isLoading: isStopsLoading,
+    error: stopsError,
+  } = useQuery<Stop[], Error>({
+    queryKey: ["tripStops", id],
+    queryFn: async () => {
+      if (!token || !id) throw new Error("Missing params");
+      const res = await fetch(`http://localhost:3000/trips/${id}/stops`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        logout();
+        navigate("/auth");
+        throw new Error("Unauthorized");
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      return data.data || [];
+    },
+    enabled: !!token && !!id,
+  });
+
+  const isLoading = isTripLoading || isStopsLoading;
+  const error = tripError?.message || stopsError?.message || "";
 
   const [isAddStopOpen, setIsAddStopOpen] = useState(false);
   const [isEndingTrip, setIsEndingTrip] = useState(false);
@@ -154,71 +200,34 @@ export default function TripDetail() {
     setPendingAction(null);
   }, [confirmLoading]);
 
-  const fetchTripAndStops = useCallback(async () => {
+  const refetchTripAndStops = useCallback(async () => {
     if (!token || !id) return;
     try {
       const [tripRes, stopsRes] = await Promise.all([
-        fetch(`http://localhost:3000/trips/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`http://localhost:3000/trips/${id}/stops`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch(`http://localhost:3000/trips/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`http://localhost:3000/trips/${id}/stops`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
-
-      if (tripRes.status === 401 || stopsRes.status === 401) {
-        logout();
-        navigate("/auth");
-        return;
-      }
-
       const tripData = await tripRes.json();
       const stopsData = await stopsRes.json();
-
-      if (tripData.success) {
-        setTrip(tripData.data);
+      
+      if (tripData.success && stopsData.success) {
+        // Set both simultaneously to prevent UI tearing
+        queryClient.setQueryData(["trip", id], tripData.data);
+        queryClient.setQueryData(["tripStops", id], stopsData.data || []);
       } else {
-        setError(tripData.message);
+        queryClient.invalidateQueries({ queryKey: ["trip", id] });
+        queryClient.invalidateQueries({ queryKey: ["tripStops", id] });
       }
-
-      if (stopsData.success) {
-        setStops(stopsData.data || []);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch trip details.");
-    } finally {
-      setIsLoading(false);
+    } catch (e) {
+      queryClient.invalidateQueries({ queryKey: ["trip", id] });
+      queryClient.invalidateQueries({ queryKey: ["tripStops", id] });
     }
-  }, [id, token, logout, navigate]);
-
-  const [prevId, setPrevId] = useState(id);
-  if (id !== prevId) {
-    setPrevId(id);
-    setIsLoading(true);
-    setError("");
-  }
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchTripAndStops();
-  }, [fetchTripAndStops]);
+  }, [queryClient, id, token]);
 
   // Real-time: refetch whenever another participant mutates the trip
-  useRealtimeTrip(id, token, user?.id, fetchTripAndStops);
+  useRealtimeTrip(id, token, user?.id, refetchTripAndStops);
 
-  // Listen for stop_edited WS events from other participants
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail) {
-        const msg = `${detail.editorName} edited a transaction in ${detail.tripName} — ₹${detail.oldTotal} → ₹${detail.newTotal}`;
-        showToast(msg, "info");
-      }
-    };
-    window.addEventListener("divido_stop_edited", handler);
-    return () => window.removeEventListener("divido_stop_edited", handler);
-  }, [showToast]);
+
 
   // Close three-dot menu on outside click
   useEffect(() => {
@@ -251,7 +260,7 @@ export default function TripDetail() {
         setConfirmOpen(false);
         setPendingAction(null);
         markActivityAsSeen(`trip-end-${id}`);
-        await fetchTripAndStops();
+        refetchTripAndStops();
       } else {
         showToast(data.message || "Failed to end trip", "error");
       }
@@ -282,7 +291,30 @@ export default function TripDetail() {
       if (res.ok && data.success) {
         showToast("Stop added successfully", "success");
         setIsAddStopOpen(false);
-        await fetchTripAndStops();
+        
+        // Optimistically update the cache to prevent UI race conditions
+        const newStop = data.data;
+        if (newStop) {
+          const formattedStop = {
+            id: newStop.id,
+            name: newStop.name,
+            date: newStop.date,
+            created_at: newStop.created_at,
+            total: Number(newStop.total_amount),
+            created_by: user?.id,
+            creator_name: user?.display_name || "You",
+            edited: false,
+            transactions: [], // Not needed for immediate render if refetch happens, but keeps shape
+            splitParticipants: [],
+          };
+          queryClient.setQueryData(["tripStops", id], (old: any) => {
+            if (!old) return [formattedStop];
+            if (old.some((s: any) => s.id === formattedStop.id)) return old;
+            return [formattedStop, ...old];
+          });
+        }
+        
+        refetchTripAndStops();
       } else {
         showToast(data.message || "Failed to add stop", "error");
       }
@@ -320,8 +352,22 @@ export default function TripDetail() {
       if (res.ok && data.success) {
         showToast("Stop updated successfully", "success");
         setIsEditStopOpen(false);
+        
+        // Optimistically update the cache to prevent UI race conditions
+        const updatedStopRaw = data.data;
+        if (updatedStopRaw) {
+          queryClient.setQueryData(["tripStops", id], (old: any) => {
+            if (!old) return old;
+            return old.map((stop: any) => 
+              stop.id === editingStop.id 
+                ? { ...stop, ...updatedStopRaw, total: Number(updatedStopRaw.total_amount) } 
+                : stop
+            );
+          });
+        }
+        
         setEditingStop(null);
-        await fetchTripAndStops();
+        refetchTripAndStops();
       } else {
         showToast(data.message || "Failed to update stop", "error");
       }
@@ -353,9 +399,15 @@ export default function TripDetail() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setStops((prev) => prev.filter((s) => s.id !== stopId));
         showToast("Stop deleted successfully", "success");
-        await fetchTripAndStops();
+        
+        // Optimistically update the cache to prevent UI race conditions
+        queryClient.setQueryData(["tripStops", id], (old: any) => {
+          if (!old) return old;
+          return old.filter((stop: any) => stop.id !== stopId);
+        });
+
+        refetchTripAndStops();
       } else {
         showToast(data.message || "Failed to delete stop", "error");
       }
@@ -399,11 +451,42 @@ export default function TripDetail() {
       if (res.ok && data.success) {
         setConfirmOpen(false);
         setPendingAction(null);
-        showToast("Settlement recorded successfully", "success");
-        if (data.data?.id) {
-          markActivityAsSeen(`settlement-${data.data.id}`);
+        
+        // Manually update cache on success to ensure perfect UI synchronization
+        const newStop = data.data;
+        if (newStop) {
+          const formattedStop = {
+            id: newStop.id,
+            name: newStop.name,
+            date: newStop.date,
+            created_at: newStop.created_at,
+            total: Number(newStop.total_amount || debt.amount),
+            created_by: user?.id,
+            creator_name: "You",
+            edited: false,
+            transactions: [{ paidBy: debt.fromName, paidById: debt.fromId, amount: debt.amount, splitCount: 1, avatarColor: "#AAD9BB" }],
+            splitParticipants: [debt.toId],
+          };
+          queryClient.setQueryData(["tripStops", id], (old: any) => {
+            if (!old) return [formattedStop];
+            // Ensure we don't duplicate if websocket already added it
+            if (old.some((s: any) => s.id === formattedStop.id)) return old;
+            return [formattedStop, ...old];
+          });
         }
-        await fetchTripAndStops();
+
+        queryClient.setQueryData(["trip", id], (old: any) => {
+          if (!old) return old;
+          const updatedDebts = (old.debts || []).filter(
+            (d: any) => !(d.fromId === debt.fromId && d.toId === debt.toId)
+          );
+          return { ...old, debts: updatedDebts };
+        });
+
+        showToast("Settlement recorded successfully", "success");
+        if (newStop?.id) {
+          markActivityAsSeen(`settlement-${newStop.id}`);
+        }
       } else {
         showToast(data.message || "Failed to record settlement", "error");
       }
@@ -676,13 +759,15 @@ export default function TripDetail() {
               ))}
             </div>
             {!trip.end_date && (
-              <button
-                onClick={() => setIsInviteOpen(true)}
-                className="h-9 w-9 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-sm shrink-0 ml-1.5"
-                title="Invite Friends"
-              >
-                <UserPlus size={15} />
-              </button>
+              <Tooltip content="Invite Friends" position="top">
+                <button
+                  onClick={() => setIsInviteOpen(true)}
+                  className="h-9 w-9 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-sm shrink-0 ml-1.5"
+                  aria-label="Invite Friends"
+                >
+                  <UserPlus size={15} />
+                </button>
+              </Tooltip>
             )}
           </div>
 
@@ -801,7 +886,6 @@ export default function TripDetail() {
                                       shape="pill"
                                       size="sm"
                                       className="h-9 w-9 p-0 shrink-0 shadow-sm"
-                                      title="Mark as Paid"
                                     >
                                       <Check size={16} strokeWidth={3} />
                                     </Button>
@@ -961,7 +1045,6 @@ export default function TripDetail() {
                             </span>
                             {stop.edited && (
                               <span
-                                title="This stop was edited"
                                 className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border"
                               >
                                 edited
@@ -976,15 +1059,15 @@ export default function TripDetail() {
                             className="relative"
                             ref={isMenuOpen ? menuRef : undefined}
                           >
-                            <button
-                              onClick={() =>
-                                setOpenMenuStopId(isMenuOpen ? null : stop.id)
-                              }
-                              className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 cursor-pointer"
-                              title="More options"
-                            >
-                              <MoreHorizontal size={16} />
-                            </button>
+                            <Tooltip content="More options" position="top">
+                              <button
+                                onClick={() => setOpenMenuStopId(isMenuOpen ? null : stop.id)}
+                                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                                aria-label="More options"
+                              >
+                                <MoreHorizontal size={18} />
+                              </button>
+                            </Tooltip>
                             <AnimatePresence>
                               {isMenuOpen && (
                                   <motion.div

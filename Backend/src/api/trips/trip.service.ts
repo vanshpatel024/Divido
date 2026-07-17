@@ -614,6 +614,7 @@ export class TripService {
       
       const transactions = stopPayments.map((p: any) => ({
         paidBy: p.user?.display_name || p.user?.username || 'Unknown',
+        paidById: p.user_id,
         amount: Number(p.amount),
         splitCount,
         avatarColor: '#AAD9BB'
@@ -628,7 +629,8 @@ export class TripService {
         created_by: stop.created_by,
         creator_name: creatorNames[stop.created_by] || null,
         edited: Boolean(stop.last_updated_at),
-        transactions
+        transactions,
+        splitParticipants: stopSplits.map(sp => sp.user_id)
       };
     });
   }
@@ -739,7 +741,7 @@ export class TripService {
     // Verify stop exists and belongs to trip
     const { data: existingStop, error: stopError } = await supabaseAdmin
       .from('stops')
-      .select('id, total_amount, name, date')
+      .select('id, total_amount, name, date, stop_payments(user_id, amount), stop_splits(user_id)')
       .eq('id', stopId)
       .eq('trip_id', tripId)
       .single();
@@ -802,11 +804,101 @@ export class TripService {
     // Return updated stop with related data
     const { data: updatedStop, error: fetchError } = await supabaseAdmin
       .from('stops')
-      .select('*')
+      .select('*, trips(name)')
       .eq('id', stopId)
       .single();
 
     if (fetchError) throw fetchError;
+
+    // Fetch editor's name
+    const { data: editorProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('display_name, username')
+      .eq('id', editorId)
+      .single();
+    const editorName = editorProfile?.display_name || editorProfile?.username || 'Someone';
+
+    let participantsChanged = false;
+    
+    // Check if splits changed
+    if (input.splits !== undefined) {
+      const oldSplits = existingStop.stop_splits || [];
+      const oldSplitIds = oldSplits.map((s: any) => s.user_id).sort().join(',');
+      const newSplitIds = [...input.splits].sort().join(',');
+      if (oldSplitIds !== newSplitIds) {
+        participantsChanged = true;
+      }
+    }
+
+    // Check if payments changed
+    if (input.payments !== undefined && !participantsChanged) {
+      const oldPayments = existingStop.stop_payments || [];
+      const oldPayerIds = oldPayments.map((p: any) => p.user_id).sort().join(',');
+      const newPayerIds = input.payments.map(p => p.userId).sort().join(',');
+      
+      if (oldPayerIds !== newPayerIds) {
+        participantsChanged = true;
+      } else {
+        // If single payer, their amount naturally scales with totalAmount, so we don't flag it as a participant change.
+        // If multiple payers, check if their specific amounts changed.
+        if (oldPayments.length > 1) {
+          for (const op of oldPayments) {
+            const match = input.payments.find(p => p.userId === op.user_id && p.amount === Number(op.amount));
+            if (!match) {
+              participantsChanged = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Determine what changed for the activity feed notification
+    let changes: string[] = [];
+    if (input.totalAmount !== undefined && input.totalAmount !== oldTotal) changes.push('amount');
+    if (input.name !== undefined && input.name !== existingStop.name) changes.push('name');
+    
+    if (input.date !== undefined) {
+      try {
+        const oldDateStr = new Date(existingStop.date).toISOString().split('T')[0];
+        const newDateStr = new Date(input.date).toISOString().split('T')[0];
+        if (oldDateStr !== newDateStr) changes.push('date');
+      } catch (e) {
+        if (input.date !== existingStop.date) changes.push('date');
+      }
+    }
+
+    if (participantsChanged) changes.push('participants');
+
+    let changeType = 'none';
+    if (changes.length > 1) changeType = 'multiple';
+    else if (changes.length === 1) changeType = changes[0];
+    else changeType = 'edited'; // fallback
+
+    // The 'status' column in activities is VARCHAR(50). We must compress the data.
+    let statusPayload = changeType;
+    if (changeType === 'amount') {
+      statusPayload = `amount|${oldTotal}|${updatedStop.total_amount}`;
+    } else if (changeType === 'name') {
+      const truncate = (s: string) => s.length > 20 ? s.slice(0, 17) + "..." : s;
+      statusPayload = `name|${truncate(existingStop.name)}|${truncate(updatedStop.name)}`;
+    }
+
+    // Broadcast activity to all participants
+    const participantIds = await this.getTripParticipantIds(tripId);
+    for (const pId of participantIds) {
+      await UserService.createActivity(pId, {
+        type: 'stop_edited',
+        tripId: tripId,
+        tripName: updatedStop.trips?.name || 'Trip',
+        userName: editorName,
+        name: updatedStop.name,
+        actorId: editorId,
+        status: statusPayload, // Store the delimited string in status
+        amount: updatedStop.total_amount,
+        date: new Date().toISOString()
+      });
+    }
 
     return { stop: updatedStop, oldTotal };
   }
@@ -838,9 +930,35 @@ export class TripService {
       throw new Error("Cannot delete settlement stops.");
     }
 
+    const { data: trip } = await supabaseAdmin
+      .from('trips')
+      .select('name')
+      .eq('id', tripId)
+      .single();
+
+    const { data: editorProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('display_name, username')
+      .eq('id', userId)
+      .single();
+    const editorName = editorProfile?.display_name || editorProfile?.username || 'Someone';
+
     await supabaseAdmin.from('stop_payments').delete().eq('stop_id', stopId);
     await supabaseAdmin.from('stop_splits').delete().eq('stop_id', stopId);
     await supabaseAdmin.from('stops').delete().eq('id', stopId);
+
+    const participantIds = await this.getTripParticipantIds(tripId);
+    for (const pId of participantIds) {
+      await UserService.createActivity(pId, {
+        type: 'stop_deleted',
+        tripId: tripId,
+        tripName: trip?.name || 'Trip',
+        userName: editorName,
+        name: existingStop.name,
+        actorId: userId,
+        date: new Date().toISOString()
+      });
+    }
 
     return { success: true };
   }

@@ -75,6 +75,8 @@ export function useRealtimeDashboard(
             msg.type === "trip_created" ||
             msg.type === "trip_ended" ||
             msg.type === "stop_created" ||
+            msg.type === "stop_updated" ||
+            msg.type === "stop_deleted" ||
             msg.type === "participant_joined" ||
             msg.type === "participant_left" ||
             msg.type === "invitation_received" ||

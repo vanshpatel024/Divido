@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Mail } from "lucide-react";
+import { Mail, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import Tooltip from "../ui/Tooltip";
 
 const SEEN_KEY = "divido_activity_last_opened";
 
@@ -192,6 +193,87 @@ export default function NotificationsMenu() {
             <strong>{act.tripName}</strong>
           </span>
         );
+      case "stop_edited": {
+        let details: any = { type: "edited" };
+        const rawStatus = act.status || "";
+        
+        if (rawStatus.includes("|")) {
+          const parts = rawStatus.split("|");
+          details.type = parts[0];
+          if (details.type === "amount" && parts.length >= 3) {
+            details.oldAmount = parts[1];
+            details.newAmount = parts[2];
+          } else if (details.type === "name" && parts.length >= 3) {
+            details.oldName = parts[1];
+            details.newName = parts[2];
+          }
+        } else if (rawStatus === "date" || rawStatus === "participants" || rawStatus === "multiple" || rawStatus === "edited") {
+          details.type = rawStatus;
+        } else if (!isNaN(Number(rawStatus)) && rawStatus.trim() !== "") {
+          // Fallback for legacy format where status was just the old string amount
+          details = { type: "amount", oldAmount: rawStatus, newAmount: act.amount };
+        }
+
+        const truncate = (str: string, len: number) =>
+          str.length > len ? str.slice(0, len) + "..." : str;
+
+        return (
+          <span>
+            <strong>{act.userName}</strong> edited{" "}
+            <strong>{act.name}</strong> in <strong>{act.tripName}</strong>
+            <br />
+            {details.type === "amount" && (
+              <span className="text-muted-foreground text-[11px] flex items-center gap-1.5 mt-1 font-medium bg-muted/50 w-fit px-2 py-0.5 rounded-full border border-border">
+                <span className="line-through opacity-70">
+                  {formatInr(Number(details.oldAmount))}
+                </span>
+                <ArrowRight size={10} className="text-primary/70" />
+                <span className="text-foreground">
+                  {formatInr(Number(details.newAmount))}
+                </span>
+              </span>
+            )}
+            {details.type === "name" && (
+              <span className="text-muted-foreground text-[11px] flex items-center gap-1.5 mt-1 font-medium bg-muted/50 w-fit px-2 py-0.5 rounded-full border border-border">
+                <span className="opacity-70">
+                  {truncate(details.oldName || "", 15)}
+                </span>
+                <ArrowRight size={10} className="text-primary/70" />
+                <span className="text-foreground">
+                  {truncate(details.newName || "", 15)}
+                </span>
+              </span>
+            )}
+            {details.type === "date" && (
+              <span className="text-muted-foreground text-[11px] mt-1 block">
+                Updated the date
+              </span>
+            )}
+            {details.type === "participants" && (
+              <span className="text-muted-foreground text-[11px] mt-1 block">
+                Updated the participants or split
+              </span>
+            )}
+            {details.type === "multiple" && (
+              <span className="text-muted-foreground text-[11px] mt-1 block">
+                Made multiple updates
+              </span>
+            )}
+            {details.type === "edited" && (
+              <span className="text-muted-foreground text-[11px] mt-1 block">
+                Updated the transaction
+              </span>
+            )}
+          </span>
+        );
+      }
+      case "stop_deleted":
+        return (
+          <span>
+            <strong>{act.userName}</strong> deleted{" "}
+            <strong>{act.name}</strong> in <strong>{act.tripName}</strong>
+          </span>
+        );
       case "member_left": {
         const match = act.name.match(
           /^Activity:\s*(.*?)\s+left\s+the\s+(.*?)\s+trip$/i,
@@ -243,19 +325,21 @@ export default function NotificationsMenu() {
 
   return (
     <div className="relative" ref={menuRef}>
-      <button
-        onClick={handleOpen}
-        className="relative flex items-center justify-center p-2 rounded-full hover:bg-muted transition-colors cursor-pointer"
-        title="Activity Feed"
-      >
-        <Mail size={20} className="text-[#8B8A9B]" />
-        {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent"></span>
-          </span>
-        )}
-      </button>
+      <Tooltip content="Activity Feed" position="bottom">
+        <button
+          onClick={handleOpen}
+          className="relative flex items-center justify-center p-2 rounded-full hover:bg-muted transition-colors cursor-pointer"
+          aria-label="Activity Feed"
+        >
+          <Mail size={20} className="text-[#8B8A9B]" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent"></span>
+            </span>
+          )}
+        </button>
+      </Tooltip>
 
       <AnimatePresence>
         {isOpen && (
@@ -304,10 +388,10 @@ export default function NotificationsMenu() {
                       key={act.id}
                       to={act.tripId ? `/trip/${act.tripId}` : "#"}
                       onClick={() => setIsOpen(false)}
-                      className={`relative p-3 border-b border-border hover:bg-muted transition-colors decoration-none block ${
+                      className={`relative p-3 border-b border-border transition-colors decoration-none block ${
                         isUnread
-                          ? "bg-[#f5fbf7] dark:bg-status-getback-bg/20"
-                          : ""
+                          ? "bg-primary/5 hover:bg-primary/10 dark:bg-primary/10 dark:hover:bg-primary/20"
+                          : "hover:bg-muted"
                       }`}
                     >
                       {/* Unread left-border accent */}

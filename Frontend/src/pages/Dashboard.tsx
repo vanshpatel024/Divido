@@ -16,6 +16,7 @@ import type { Trip } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../components/ui/Toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // ─── Hero Header ──────────────────────────────────────────────────────────────
 function HeroHeader({ onNewTrip }: { onNewTrip: () => void }) {
@@ -339,9 +340,29 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
   const { showToast } = useToast();
-  const [tripsList, setTripsList] = useState<Trip[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+  const {
+    data: tripsList = [],
+    isLoading,
+    error,
+  } = useQuery<Trip[], Error>({
+    queryKey: ["trips"],
+    queryFn: async () => {
+      if (!token) throw new Error("No token");
+      const res = await fetch("http://localhost:3000/trips", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        logout();
+        navigate("/auth");
+        throw new Error("Unauthorized");
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to fetch trips");
+      return data.data || [];
+    },
+    enabled: !!token,
+  });
 
   // Modals Visibility
   const [isNewOpen, setIsNewOpen] = useState(false);
@@ -367,43 +388,12 @@ export default function Dashboard() {
   // Dynamic Background SVG Lines
   // Background lines generation has been moved to MainLayout.tsx
 
-  const fetchDashboardData = async () => {
-    if (!token) return;
-    try {
-      const tripsRes = await fetch("http://localhost:3000/trips", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (tripsRes.status === 401) {
-        logout();
-        navigate("/auth");
-        return;
-      }
-      const tripsData = await tripsRes.json();
-      if (tripsData.success) {
-        setTripsList(tripsData.data || []);
-      } else {
-        setError(tripsData.message || "Failed to fetch trips");
-      }
-    } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-      setError(
-        "Network error fetching data. Please check if your server is running.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchDashboardData();
-  }, [token, logout, navigate]);
-
-  useEffect(() => {
-    const handleUpdate = () => fetchDashboardData();
+    const handleUpdate = () => queryClient.invalidateQueries({ queryKey: ["trips"] });
     window.addEventListener("divido_dashboard_update", handleUpdate);
     return () =>
       window.removeEventListener("divido_dashboard_update", handleUpdate);
-  }, [token]);
+  }, [queryClient]);
 
   // ── Derived filtered list ──
   const filteredTrips = tripsList
@@ -444,7 +434,7 @@ export default function Dashboard() {
       }
       const responseData = await res.json();
       if (responseData.success) {
-        setTripsList((prev) => [responseData.data, ...prev]);
+        queryClient.invalidateQueries({ queryKey: ["trips"] });
         setIsNewOpen(false);
       } else {
         showToast(responseData.message || "Failed to create trip", "error");
@@ -472,7 +462,7 @@ export default function Dashboard() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setTripsList(tripsList.filter((t) => t.id !== tripId));
+        queryClient.invalidateQueries({ queryKey: ["trips"] });
         setIsDeleteOpen(false);
       } else {
         showToast(data.message || "Failed to delete trip", "error");
@@ -504,7 +494,7 @@ export default function Dashboard() {
               Failed to Load Trips
             </h3>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              {error}
+              {error instanceof Error ? error.message : "An error occurred"}
             </p>
             <Button
               onClick={() => window.location.reload()}

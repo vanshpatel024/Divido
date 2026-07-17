@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Bell } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
+import Tooltip from "../ui/Tooltip";
 
 const SEEN_KEY = "divido_invite_last_opened";
 
@@ -142,19 +143,21 @@ export default function InvitationsMenu() {
 
   return (
     <div className="relative" ref={menuRef}>
-      <button
-        onClick={handleOpen}
-        className="relative flex items-center justify-center p-2 rounded-full hover:bg-muted transition-colors cursor-pointer"
-        title="Trip Invitations"
-      >
-        <Bell size={20} className="text-[#8B8A9B]" />
-        {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-          </span>
-        )}
-      </button>
+      <Tooltip content="Trip Invitations" position="bottom">
+        <button
+          onClick={handleOpen}
+          className="relative flex items-center justify-center p-2 rounded-full hover:bg-muted transition-colors cursor-pointer"
+          aria-label="Trip Invitations"
+        >
+          <Bell size={20} className="text-[#8B8A9B]" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            </span>
+          )}
+        </button>
+      </Tooltip>
 
       <AnimatePresence>
         {isOpen && (

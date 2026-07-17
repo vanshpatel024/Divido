@@ -125,17 +125,6 @@ export function useRealtimeTrip(
                 "left",
                 msg.payload?.userName || "A participant",
               );
-            } else if (
-              !isOwnAction &&
-              msg.type === "stop_updated" &&
-              msg.payload
-            ) {
-              const { editorName, tripName, oldTotal, newTotal } = msg.payload;
-              window.dispatchEvent(
-                new CustomEvent("divido_stop_edited", {
-                  detail: { editorName, tripName, oldTotal, newTotal },
-                }),
-              );
             }
           }
         } catch {
